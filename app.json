@@ -1,0 +1,33 @@
+{
+  "pages": [
+    "pages/chat/chat",
+    "pages/album/album",
+    "pages/mine/mine",
+    "pages/diary/diary",
+    "pages/model/model",
+    "pages/selftest/selftest"
+  ],
+  "window": {
+    "navigationBarTitleText": "记一下喵",
+    "navigationBarBackgroundColor": "#FAF7F0",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#FFFFFF",
+    "backgroundColorTop": "#FAF7F0",
+    "backgroundColorBottom": "#FFFFFF"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9BA5A0",
+    "selectedColor": "#2F6B4F",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      { "pagePath": "pages/album/album", "text": "时光册" },
+      { "pagePath": "pages/chat/chat", "text": "聊聊" },
+      { "pagePath": "pages/mine/mine", "text": "我的" }
+    ]
+  },
+  "usingComponents": {},
+  "renderer": "webview",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

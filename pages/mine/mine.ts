@@ -1,0 +1,170 @@
+import Dialog from 'tdesign-miniprogram/dialog/index';
+import Toast from 'tdesign-miniprogram/toast/index';
+import { getPets, savePet, removePet, clearAll, petEmoji, getModelConfig, Pet } from '../../utils/store';
+import { isModelReady } from '../../utils/llm';
+import { displayDate, fmt } from '../../utils/date';
+
+const SPECIES = ['猫', '狗', '其他'];
+
+Page({
+  data: {
+    pets: [] as Array<Pet & { emoji: string; birthdayText?: string }>,
+    formVisible: false,
+    form: { id: '', name: '', species: '猫', breed: '', birthday: '' },
+    speciesOptions: SPECIES,
+    birthdayText: '',
+    dateVisible: false,
+    dateValue: 0,
+    formError: '',
+    modelNote: '未接入',
+    devMode: false,
+    aboutTaps: 0,
+    tabbarHeight: 60,
+  },
+
+  onShow() {
+    const app: any = getApp();
+    this.setData({ tabbarHeight: (app && app.globalData && app.globalData.tabbarHeight) || 60 });
+    this.reload();
+    this.setData({ modelNote: isModelReady(getModelConfig()) ? '已接入' : '未接入' });
+    const tabbar = this.getTabBar && this.getTabBar();
+    if (tabbar) tabbar.setData({ selected: 2 });
+  },
+
+  reload() {
+    const pets = getPets().map((p) => ({
+      ...p,
+      emoji: petEmoji(p.species),
+      birthdayText: p.birthday ? displayDate(p.birthday) : '',
+    }));
+    this.setData({ pets });
+  },
+
+  /* ---------- 宠物表单 ---------- */
+
+  onAddPet() {
+    this.setData({
+      formVisible: true,
+      form: { id: '', name: '', species: '猫', breed: '', birthday: '' },
+      birthdayText: '',
+      formError: '',
+    });
+  },
+
+  onEditPet(e: WechatMiniprogram.TouchEvent) {
+    const pet = this.data.pets.find((p) => p.id === e.currentTarget.dataset.id);
+    if (!pet) return;
+    this.setData({
+      formVisible: true,
+      form: { id: pet.id, name: pet.name, species: pet.species, breed: pet.breed || '', birthday: pet.birthday || '' },
+      birthdayText: pet.birthday ? displayDate(pet.birthday) : '',
+      formError: '',
+    });
+  },
+
+  onFormClose() {
+    this.setData({ formVisible: false });
+  },
+
+  onNameInput(e: WechatMiniprogram.CustomEvent) {
+    this.setData({ 'form.name': e.detail.value, formError: '' });
+  },
+
+  onBreedInput(e: WechatMiniprogram.CustomEvent) {
+    this.setData({ 'form.breed': e.detail.value });
+  },
+
+  onSelectSpecies(e: WechatMiniprogram.TouchEvent) {
+    this.setData({ 'form.species': e.currentTarget.dataset.value, formError: '' });
+  },
+
+  onOpenBirthday() {
+    const value = this.data.form.birthday
+      ? new Date(`${this.data.form.birthday}T00:00:00`).getTime()
+      : Date.now();
+    this.setData({ dateVisible: true, dateValue: value });
+  },
+
+  onBirthdayConfirm(e: WechatMiniprogram.CustomEvent) {
+    const d = fmt(new Date(e.detail.value));
+    this.setData({ 'form.birthday': d, birthdayText: displayDate(d), dateVisible: false });
+  },
+
+  onBirthdayCancel() {
+    this.setData({ dateVisible: false });
+  },
+
+  onSavePet() {
+    const { id, name, species, breed, birthday } = this.data.form;
+    if (!name.trim()) {
+      this.setData({ formError: '给它起个名字吧' });
+      return;
+    }
+    if (!species) {
+      this.setData({ formError: '选择一下物种' });
+      return;
+    }
+    savePet({ id: id || undefined, name, species, breed, birthday });
+    this.setData({ formVisible: false });
+    this.reload();
+    Toast({ context: this, selector: '#t-toast', message: id ? '已保存' : '欢迎新伙伴', theme: 'success' });
+  },
+
+  onDeletePet(e: WechatMiniprogram.TouchEvent) {
+    const pet = this.data.pets.find((p) => p.id === e.currentTarget.dataset.id);
+    if (!pet) return;
+    Dialog.confirm({
+      context: this,
+      selector: '#t-dialog',
+      title: `删除「${pet.name}」？`,
+      content: '它的所有日记也会一起删除，且无法恢复',
+      confirmBtn: { content: '删除', theme: 'danger' },
+      cancelBtn: '再想想',
+    }).then(() => {
+      removePet(pet.id);
+      this.reload();
+    }).catch(() => { });
+  },
+
+  /* ---------- 设置 ---------- */
+
+  goModel() {
+    wx.navigateTo({ url: '/pages/model/model' });
+  },
+
+  goSelftest() {
+    wx.navigateTo({ url: '/pages/selftest/selftest' });
+  },
+
+  onAbout() {
+    // 连点 5 次「关于」进入开发者模式（显示开发自检入口）
+    const taps = this.data.aboutTaps + 1;
+    this.setData({ aboutTaps: taps });
+    if (taps >= 5 && !this.data.devMode) {
+      this.setData({ devMode: true });
+      Toast({ context: this, selector: '#t-toast', message: '已进入开发者模式', theme: 'success' });
+    }
+    Dialog.alert({
+      context: this,
+      selector: '#t-dialog',
+      title: '记一下喵',
+      content: '用聊天的方式，记下和小家伙的每一天。\n数据只保存在本机；在「模型连接配置」接入模型后，聊聊由真实模型应答，失败时回退本地演示规则。',
+      confirmBtn: '知道啦',
+    });
+  },
+
+  onClear() {
+    Dialog.confirm({
+      context: this,
+      selector: '#t-dialog',
+      title: '清除全部数据？',
+      content: '宠物、日记和聊天记录都会被删除（模型配置保留）',
+      confirmBtn: { content: '全部清除', theme: 'danger' },
+      cancelBtn: '取消',
+    }).then(() => {
+      clearAll();
+      this.reload();
+      Toast({ context: this, selector: '#t-toast', message: '已清除', theme: 'success' });
+    }).catch(() => { });
+  },
+});

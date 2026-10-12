@@ -1,0 +1,171 @@
+<view class="page" style="padding-bottom: {{keyboardHeight}}px;">
+  <!-- 顶部：当前宠物，点击切换 -->
+  <view wx:if="{{currentPet}}" class="petbar" bindtap="onSwitchPet">
+    <view class="pet-chip">
+      <text class="pet-avatar">{{petAvatar}}</text>
+      <text class="pet-name">{{currentPet.name}}</text>
+      <t-icon name="chevron-down" size="32rpx" color="#2F6B4F" />
+    </view>
+  </view>
+
+  <scroll-view scroll-y class="msgs" scroll-into-view="{{scrollTo}}" scroll-with-animation enhanced show-scrollbar="{{false}}">
+    <!-- 无宠物 -->
+    <view wx:if="{{!pets.length}}" class="empty">
+      <view class="empty-emoji">🐱📖</view>
+      <view class="empty-title">还没有小伙伴</view>
+      <view class="empty-desc">先添加一只宠物，只要名字和物种，就可以开始记一下啦</view>
+      <t-button theme="primary" size="medium" shape="round" bindtap="goAddPet">添加宠物</t-button>
+    </view>
+
+    <!-- 空对话 -->
+    <view wx:elif="{{!messages.length}}" class="empty">
+      <view class="empty-emoji">{{petAvatar}}</view>
+      <view class="empty-title">今天的{{currentPet.name}}，有什么值得记一下？</view>
+      <view class="empty-desc">说说发生的事，或者发张照片，我帮你整理成日记</view>
+    </view>
+
+    <!-- 消息流 -->
+    <block wx:for="{{messages}}" wx:key="id">
+      <view id="m-{{item.id}}" class="msg-row {{item.role === 'user' ? 'is-user' : 'is-ai'}}">
+        <!-- 用户消息 -->
+        <block wx:if="{{item.role === 'user'}}">
+          <view class="bubble is-user">
+            <view wx:if="{{item.text}}" class="bubble-text">{{item.text}}</view>
+            <view wx:if="{{item.photos.length}}" class="bubble-photos">
+              <image
+                wx:for="{{item.photos}}"
+                wx:for-item="p"
+                wx:key="*this"
+                class="bubble-photo"
+                src="{{p}}"
+                mode="aspectFill"
+                data-urls="{{item.photos}}"
+                data-current="{{p}}"
+                bindtap="onPreviewPhoto"
+              />
+            </view>
+          </view>
+        </block>
+
+        <!-- AI 待保存卡片 -->
+        <pending-card
+          wx:elif="{{item.kind === 'draft'}}"
+          draft="{{item.draft}}"
+          pet-name="{{currentPet.name}}"
+          bind:save="onCardSave"
+          bind:edit="onCardEdit"
+          bind:discard="onCardDiscard"
+          bind:setdate="onCardSetDate"
+          bind:viewrecord="onCardViewRecord"
+        />
+
+        <!-- AI 文本 / 查询回答 -->
+        <block wx:else>
+          <view class="bubble is-ai">
+            <view class="bubble-text">{{item.text}}</view>
+            <view
+              wx:for="{{item.refs}}"
+              wx:for-item="ref"
+              wx:key="recordId"
+              class="ref-card"
+              data-id="{{ref.recordId}}"
+              bindtap="onOpenRef"
+            >
+              <t-icon name="bookmark" size="28rpx" color="#2F6B4F" />
+              <view class="ref-info">
+                <text class="ref-label">{{ref.label}}</text>
+                <text class="ref-sub">{{ref.sub}}</text>
+              </view>
+              <t-icon name="chevron-right" size="28rpx" color="#A8D5BA" />
+            </view>
+            <view
+              wx:if="{{item.action === 'draft-from'}}"
+              class="manual-btn"
+              data-text="{{item.sourceText}}"
+              bindtap="onManualDraft"
+            >
+              <t-icon name="edit-1" size="28rpx" color="#2F6B4F" />
+              <text>记一下</text>
+            </view>
+          </view>
+          <view wx:if="{{item.retry}}" class="retry-btn" data-text="{{item.sourceText}}" bindtap="onRetry">
+            <t-icon name="refresh" size="26rpx" color="#2F6B4F" />
+            <text>重试</text>
+          </view>
+          <view wx:if="{{item.demo}}" class="demo-tag">本地演示 · 未接入真实模型</view>
+          <view wx:elif="{{item.mode === 'tool'}}" class="demo-tag">模型 · 工具调用</view>
+          <view wx:elif="{{item.mode === 'model'}}" class="demo-tag">模型回复</view>
+        </block>
+      </view>
+    </block>
+    <!-- 模型思考中 -->
+    <view wx:if="{{aiThinking}}" id="ai-thinking" class="msg-row is-ai">
+      <view class="bubble is-ai typing">
+        <view class="typing-dot"></view>
+        <view class="typing-dot"></view>
+        <view class="typing-dot"></view>
+      </view>
+      <view class="stop-btn" bindtap="onStop">停止</view>
+    </view>
+    <view class="msgs-pad"></view>
+  </scroll-view>
+
+  <!-- 快捷入口 -->
+  <view wx:if="{{currentPet}}" class="quick">
+    <view class="quick-chip" data-mode="record" bindtap="onQuick">
+      <t-icon name="edit-1" size="26rpx" color="#2F6B4F" />
+      <text>记一件小事</text>
+    </view>
+    <view class="quick-chip" data-mode="query" bindtap="onQuick">
+      <t-icon name="search" size="26rpx" color="#2F6B4F" />
+      <text>查查上次</text>
+    </view>
+  </view>
+
+  <!-- 输入区 -->
+  <view wx:if="{{currentPet}}" class="composer">
+    <view wx:if="{{attachments.length}}" class="attach-row">
+      <view wx:for="{{attachments}}" wx:key="*this" class="attach-wrap">
+        <image class="attach-photo" src="{{item}}" mode="aspectFill" />
+        <view class="attach-del" data-index="{{index}}" catchtap="onRemoveAttachment">
+          <t-icon name="close" size="22rpx" color="#FFFFFF" />
+        </view>
+      </view>
+    </view>
+    <view class="input-row">
+      <view class="icon-btn" bindtap="onChoosePhoto">
+        <t-icon name="image" size="44rpx" color="#2F6B4F" />
+      </view>
+      <textarea
+        class="input"
+        value="{{inputValue}}"
+        placeholder="{{placeholder}}"
+        placeholder-class="input-placeholder"
+        auto-height
+        maxlength="500"
+        focus="{{focusFlag}}"
+        adjust-position="{{false}}"
+        cursor-spacing="16"
+        bindinput="onInput"
+        bindkeyboardheightchange="onKeyboardHeight"
+      />
+      <view class="send-btn {{!inputValue && !attachments.length ? 'is-disabled' : ''}}" bindtap="onSend">
+        <t-icon name="send" size="36rpx" color="#FFFFFF" />
+      </view>
+    </view>
+    <!-- 与 tabBar 同高的白色延伸块，消除输入区与导航栏之间的空隙 -->
+    <view class="composer-tail" style="height: {{tabbarHeight}}px;"></view>
+  </view>
+
+  <draft-editor
+    visible="{{editorVisible}}"
+    value="{{editorValue}}"
+    pets="{{pets}}"
+    title="修改这条记录"
+    bind:confirm="onEditorConfirm"
+    bind:close="onEditorClose"
+  />
+
+  <t-action-sheet id="t-action-sheet" bind:selected="onPetSelected" />
+  <t-toast id="t-toast" />
+</view>

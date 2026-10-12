@@ -1,0 +1,117 @@
+<view class="page" style="padding-bottom: {{tabbarHeight}}px;">
+  <!-- 品牌区：矢量头像占位，后续可替换为「猫咪抱日记本」插画 -->
+  <view class="brand">
+    <view class="brand-avatar">
+      <t-icon name="cat" size="72rpx" color="#2F6B4F" />
+    </view>
+    <view class="brand-name">记一下喵</view>
+    <view class="brand-slogan">记下和小家伙的每一天</view>
+  </view>
+
+  <!-- 宠物档案 -->
+  <view class="section-title">宠物档案</view>
+  <view class="jd-card panel">
+    <view wx:if="{{!pets.length}}" class="panel-empty">还没有宠物，先添加一只吧（只要名字和物种）</view>
+    <view wx:for="{{pets}}" wx:key="id" class="pet-row" data-id="{{item.id}}" bindtap="onEditPet">
+      <view class="pet-avatar">{{item.emoji}}</view>
+      <view class="pet-info">
+        <text class="pet-name">{{item.name}}</text>
+        <text class="pet-sub">{{item.species}}{{item.breed ? ' · ' + item.breed : ''}}{{item.birthdayText ? ' · ' + item.birthdayText + ' 出生' : ''}}</text>
+      </view>
+      <view class="pet-del" data-id="{{item.id}}" catchtap="onDeletePet">
+        <t-icon name="delete" size="36rpx" color="#C9CFCC" />
+      </view>
+    </view>
+    <view class="add-btn" bindtap="onAddPet">
+      <t-icon name="add" size="36rpx" color="#2F6B4F" />
+      <text>添加宠物</text>
+    </view>
+  </view>
+
+  <!-- 设置 -->
+  <view class="section-title">设置</view>
+  <view class="jd-card panel">
+    <view class="cell" bindtap="goModel">
+      <view class="cell-left">
+        <t-icon name="setting" size="36rpx" color="#2F6B4F" />
+        <text class="cell-text">模型连接配置</text>
+      </view>
+      <view class="cell-right">
+        <text class="cell-note">{{modelNote}}</text>
+        <t-icon name="chevron-right" size="32rpx" color="#C9CFCC" />
+      </view>
+    </view>
+    <view wx:if="{{devMode}}" class="cell" bindtap="goSelftest">
+      <view class="cell-left">
+        <t-icon name="check-circle" size="36rpx" color="#2F6B4F" />
+        <text class="cell-text">开发自检</text>
+      </view>
+      <view class="cell-right">
+        <text class="cell-note">跑一遍确定性逻辑</text>
+        <t-icon name="chevron-right" size="32rpx" color="#C9CFCC" />
+      </view>
+    </view>
+    <view class="cell" bindtap="onAbout">
+      <view class="cell-left">
+        <t-icon name="info-circle" size="36rpx" color="#2F6B4F" />
+        <text class="cell-text">关于记一下喵</text>
+      </view>
+      <t-icon name="chevron-right" size="32rpx" color="#C9CFCC" />
+    </view>
+    <view class="cell" bindtap="onClear">
+      <view class="cell-left">
+        <t-icon name="delete" size="36rpx" color="#D54941" />
+        <text class="cell-text is-danger">清除全部数据</text>
+      </view>
+      <t-icon name="chevron-right" size="32rpx" color="#C9CFCC" />
+    </view>
+  </view>
+
+  <!-- 宠物表单弹层 -->
+  <t-popup visible="{{formVisible}}" placement="bottom" bind:visible-change="onFormClose">
+    <view class="form">
+      <view class="form-head">
+        <text class="form-title">{{form.id ? '编辑宠物' : '添加宠物'}}</text>
+        <t-icon name="close" size="40rpx" color="#8A948E" bindtap="onFormClose" />
+      </view>
+
+      <t-input label="名字" placeholder="必填，比如：咪咪" value="{{form.name}}" bind:change="onNameInput" />
+
+      <view class="form-label">物种（必选）</view>
+      <view class="species-row">
+        <view
+          wx:for="{{speciesOptions}}"
+          wx:key="*this"
+          class="species-chip {{form.species === item ? 'is-active' : ''}}"
+          data-value="{{item}}"
+          bindtap="onSelectSpecies"
+        >{{item}}</view>
+      </view>
+
+      <t-input label="品种" placeholder="选填，以后补也可以" value="{{form.breed}}" bind:change="onBreedInput" />
+
+      <view class="form-label">生日（选填）</view>
+      <view class="birthday-row" bindtap="onOpenBirthday">
+        <t-icon name="calendar" size="36rpx" color="#2F6B4F" />
+        <text class="{{birthdayText ? 'birthday-value' : 'birthday-placeholder'}}">{{birthdayText || '以后补也可以'}}</text>
+        <t-icon name="chevron-down" size="32rpx" color="#8A948E" />
+      </view>
+
+      <view wx:if="{{formError}}" class="form-error">{{formError}}</view>
+
+      <t-button theme="primary" size="large" block shape="round" bind:tap="onSavePet">保存</t-button>
+    </view>
+  </t-popup>
+
+  <t-date-time-picker
+    visible="{{dateVisible}}"
+    mode="date"
+    title="生日"
+    value="{{dateValue}}"
+    bind:change="onBirthdayConfirm"
+    bind:cancel="onBirthdayCancel"
+  />
+
+  <t-dialog id="t-dialog" />
+  <t-toast id="t-toast" />
+</view>

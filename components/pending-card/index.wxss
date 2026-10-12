@@ -1,0 +1,164 @@
+.pcard {
+  padding: 24rpx;
+  margin: 8rpx 0;
+  border-left: 8rpx solid #f2a65a;
+}
+
+.pcard.status-saved {
+  border-left-color: #2f6b4f;
+}
+
+.pcard.status-failed {
+  border-left-color: #d54941;
+}
+
+.pcard.status-discarded {
+  border-left-color: #c9cfcb;
+}
+
+.pcard-head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.pcard-badge {
+  font-size: 22rpx;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+  margin-right: 12rpx;
+}
+
+.pcard-badge.is-pending {
+  background: #fdf0dd;
+  color: #c07a1f;
+}
+
+.pcard-badge.is-saved {
+  background: #e3efe8;
+  color: #2f6b4f;
+  margin-left: 8rpx;
+}
+
+.pcard-badge.is-failed {
+  background: #fbe7e6;
+  color: #d54941;
+  margin-left: 8rpx;
+}
+
+.pcard-badge.is-discarded {
+  background: #f0f1f0;
+  color: #8a948e;
+}
+
+.pcard-title {
+  font-size: 22rpx;
+  color: #8a948e;
+}
+
+.pcard-link {
+  margin-left: auto;
+  font-size: 26rpx;
+  color: #2f6b4f;
+  font-weight: 600;
+}
+
+.pcard-body.is-muted {
+  opacity: 0.45;
+}
+
+.pcard-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.pcard-label {
+  font-size: 24rpx;
+  color: #8a948e;
+  width: 88rpx;
+  flex-shrink: 0;
+}
+
+.pcard-value {
+  font-size: 26rpx;
+  color: #2b3a33;
+  font-weight: 500;
+}
+
+.pcard-chips {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.pcard-chip {
+  font-size: 24rpx;
+  color: #2f6b4f;
+  background: #e3efe8;
+  border-radius: 24rpx;
+  padding: 6rpx 24rpx;
+  margin: 4rpx 12rpx 4rpx 0;
+}
+
+.pcard-chip.is-more {
+  background: transparent;
+  border: 1rpx solid #a8d5ba;
+}
+
+.pcard-text {
+  font-size: 28rpx;
+  color: #2b3a33;
+  margin: 12rpx 0 4rpx;
+  word-break: break-all;
+}
+
+.pcard-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 12rpx;
+}
+
+.pcard-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 16rpx;
+}
+
+.pcard-photo {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 16rpx;
+  background: #f0ece4;
+}
+
+.pcard-actions {
+  display: flex;
+  align-items: center;
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f0ece4;
+}
+
+.pcard-btn {
+  font-size: 26rpx;
+  border-radius: 32rpx;
+  padding: 12rpx 32rpx;
+  margin-right: 16rpx;
+}
+
+.pcard-btn.is-primary {
+  background: #2f6b4f;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.pcard-btn.is-outline {
+  border: 1rpx solid #2f6b4f;
+  color: #2f6b4f;
+}
+
+.pcard-btn.is-ghost {
+  color: #8a948e;
+}

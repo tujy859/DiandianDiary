@@ -1,0 +1,54 @@
+<view wx:if="{{record}}" class="page">
+  <view class="jd-card card">
+    <view class="head">
+      <text class="pet">{{record.petAvatar}} {{record.petName}}</text>
+      <view class="date-wrap">
+        <text class="date">{{record.dateText}}</text>
+        <text class="rel">{{record.rel}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{record.text}}" class="text">{{record.text}}</view>
+
+    <view wx:if="{{record.photos.length}}" class="photos">
+      <image
+        wx:for="{{record.photos}}"
+        wx:key="*this"
+        class="photo"
+        src="{{item}}"
+        mode="aspectFill"
+        data-current="{{item}}"
+        bindtap="onPreview"
+      />
+    </view>
+
+    <view wx:if="{{record.tags.length}}" class="tags">
+      <t-tag wx:for="{{record.tags}}" wx:key="*this" size="small" theme="primary" variant="light">{{item}}</t-tag>
+    </view>
+  </view>
+
+  <view class="actions">
+    <t-button theme="primary" size="large" block shape="round" icon="edit-1" bind:tap="onEdit">编辑</t-button>
+    <view class="delete-btn" bindtap="onDelete">
+      <t-icon name="delete" size="32rpx" color="#D54941" />
+      <text>删除这条日记</text>
+    </view>
+  </view>
+
+  <draft-editor
+    visible="{{editorVisible}}"
+    value="{{editorValue}}"
+    pets="{{pets}}"
+    title="编辑日记"
+    bind:confirm="onEditorConfirm"
+    bind:close="onEditorClose"
+  />
+</view>
+
+<view wx:else class="missing">
+  <view class="missing-emoji">🍃</view>
+  <view class="missing-text">这条日记不存在或已被删除</view>
+</view>
+
+<t-dialog id="t-dialog" />
+<t-toast id="t-toast" />

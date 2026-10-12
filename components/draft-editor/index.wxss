@@ -1,0 +1,120 @@
+.editor {
+  background: #faf7f0;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 32rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
+}
+
+.editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8rpx;
+}
+
+.editor-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #2b3a33;
+}
+
+.editor-label {
+  font-size: 24rpx;
+  color: #8a948e;
+  margin: 24rpx 0 12rpx;
+}
+
+.editor-pets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.editor-pet {
+  font-size: 26rpx;
+  padding: 10rpx 32rpx;
+  border-radius: 32rpx;
+  background: #ffffff;
+  color: #2b3a33;
+  border: 1rpx solid #e6e0d5;
+}
+
+.editor-pet.is-active {
+  background: #2f6b4f;
+  color: #ffffff;
+  border-color: #2f6b4f;
+  font-weight: 600;
+}
+
+.editor-date {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+}
+
+.editor-date-value {
+  flex: 1;
+  font-size: 28rpx;
+  color: #2b3a33;
+}
+
+.editor-date-placeholder {
+  flex: 1;
+  font-size: 28rpx;
+  color: #a7b3ac;
+}
+
+.editor-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.editor-photo-wrap {
+  position: relative;
+  width: 144rpx;
+  height: 144rpx;
+}
+
+.editor-photo {
+  width: 144rpx;
+  height: 144rpx;
+  border-radius: 16rpx;
+  background: #efeae1;
+}
+
+.editor-photo-del {
+  position: absolute;
+  top: -12rpx;
+  right: -12rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-photo-add {
+  width: 144rpx;
+  height: 144rpx;
+  border-radius: 16rpx;
+  background: #ffffff;
+  border: 1rpx dashed #c9cfcb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-error {
+  color: #d54941;
+  font-size: 24rpx;
+  margin: 20rpx 0 4rpx;
+}
+
+.editor .t-button {
+  margin-top: 28rpx;
+}

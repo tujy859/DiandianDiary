@@ -1,0 +1,70 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+  box-sizing: border-box;
+}
+
+.banner {
+  display: flex;
+  gap: 12rpx;
+  background: #fdf0dd;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  font-size: 24rpx;
+  color: #8a6d3b;
+  line-height: 1.6;
+}
+
+.label {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #6b7a72;
+  margin: 32rpx 8rpx 16rpx;
+}
+
+.provider-row {
+  display: flex;
+  gap: 16rpx;
+  flex-wrap: wrap;
+}
+
+.provider-chip {
+  font-size: 26rpx;
+  padding: 10rpx 32rpx;
+  border-radius: 32rpx;
+  background: #ffffff;
+  border: 1rpx solid #e6e0d5;
+  color: #2b3a33;
+}
+
+.provider-chip.is-active {
+  background: #2f6b4f;
+  color: #ffffff;
+  border-color: #2f6b4f;
+  font-weight: 600;
+}
+
+.panel {
+  margin-top: 32rpx;
+  padding: 12rpx 24rpx;
+}
+
+.panel .t-input {
+  border-radius: 12rpx;
+  margin: 12rpx 0;
+}
+
+.default-link {
+  margin-top: 24rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #2f6b4f;
+}
+
+.page .t-button {
+  margin-top: 32rpx;
+}
+
+.page .t-button + .t-button {
+  margin-top: 24rpx;
+}

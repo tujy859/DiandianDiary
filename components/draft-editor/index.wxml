@@ -1,0 +1,62 @@
+<t-popup visible="{{visible}}" placement="bottom" bind:visible-change="onCancel">
+  <view class="editor" catchtouchmove="noop">
+    <view class="editor-head">
+      <text class="editor-title">{{title}}</text>
+      <t-icon name="close" size="40rpx" color="#8A948E" bindtap="onCancel" />
+    </view>
+
+    <view class="editor-label">宠物</view>
+    <view class="editor-pets">
+      <view
+        wx:for="{{pets}}"
+        wx:key="id"
+        class="editor-pet {{petId === item.id ? 'is-active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onSelectPet"
+      >{{item.name}}</view>
+    </view>
+
+    <view class="editor-label">发生日期</view>
+    <view class="editor-date" bindtap="onOpenDate">
+      <t-icon name="calendar" size="36rpx" color="#2F6B4F" />
+      <text class="{{date ? 'editor-date-value' : 'editor-date-placeholder'}}">{{dateText || '选择日期'}}</text>
+      <t-icon name="chevron-down" size="32rpx" color="#8A948E" />
+    </view>
+
+    <view class="editor-label">描述</view>
+    <t-textarea
+      value="{{text}}"
+      placeholder="发生了什么？比如：给咪咪洗了澡，洗完一直躲在床底"
+      maxlength="500"
+      indicator
+      autosize="{{ { minHeight: 120 } }}"
+      bind:change="onText"
+    />
+
+    <view class="editor-label">照片</view>
+    <view class="editor-photos">
+      <view wx:for="{{photos}}" wx:key="*this" class="editor-photo-wrap">
+        <image class="editor-photo" src="{{item}}" mode="aspectFill" data-index="{{index}}" bindtap="onPreview" />
+        <view class="editor-photo-del" data-index="{{index}}" catchtap="onRemovePhoto">
+          <t-icon name="close" size="24rpx" color="#FFFFFF" />
+        </view>
+      </view>
+      <view wx:if="{{photos.length < 9}}" class="editor-photo-add" bindtap="onAddPhoto">
+        <t-icon name="add" size="48rpx" color="#8A948E" />
+      </view>
+    </view>
+
+    <view wx:if="{{error}}" class="editor-error">{{error}}</view>
+
+    <t-button theme="primary" size="large" block shape="round" bind:tap="onConfirm">完成</t-button>
+  </view>
+</t-popup>
+
+<t-date-time-picker
+  visible="{{dateVisible}}"
+  mode="date"
+  title="发生日期"
+  value="{{dateValue}}"
+  bind:change="onDateConfirm"
+  bind:cancel="onDateCancel"
+/>

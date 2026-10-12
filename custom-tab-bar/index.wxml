@@ -1,0 +1,16 @@
+<view class="tabbar">
+  <view
+    wx:for="{{list}}"
+    wx:key="pagePath"
+    class="tabbar-item {{item.center ? 'tabbar-center' : ''}} {{selected === index ? 'is-active' : ''}}"
+    data-path="{{item.pagePath}}"
+    data-index="{{index}}"
+    bindtap="onSwitch"
+  >
+    <view wx:if="{{item.center}}" class="center-btn">
+      <t-icon name="{{item.icon}}" size="56rpx" color="#FFFFFF" />
+    </view>
+    <t-icon wx:else name="{{item.icon}}" size="44rpx" color="{{selected === index ? '#2F6B4F' : '#9BA5A0'}}" />
+    <text class="tabbar-text">{{item.text}}</text>
+  </view>
+</view>

@@ -1,0 +1,27 @@
+# Dependencies and test outputs
+node_modules/
+coverage/
+.jest-cache/
+*.tsbuildinfo
+
+# Local WeChat developer-tool state
+project.private.config.json
+project.private.*.json
+
+# Local credentials and environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+
+# Keep miniprogram_npm: this project currently ships built TDesign components.

@@ -1,0 +1,88 @@
+<view class="page" style="padding-bottom: {{tabbarHeight}}px;">
+  <!-- 头部：宠物 + 视角切换 -->
+  <view class="header">
+    <view wx:if="{{currentPet}}" class="pet-chip" bindtap="onSwitchPet">
+      <text class="pet-avatar">{{petAvatar}}</text>
+      <text class="pet-name">{{currentPet.name}}</text>
+      <t-icon name="chevron-down" size="30rpx" color="#2F6B4F" />
+    </view>
+    <view class="seg">
+      <view class="seg-item {{view === 'timeline' ? 'is-active' : ''}}" data-view="timeline" bindtap="onSwitchView">时间轴</view>
+      <view class="seg-item {{view === 'gallery' ? 'is-active' : ''}}" data-view="gallery" bindtap="onSwitchView">画廊</view>
+    </view>
+  </view>
+
+  <scroll-view scroll-y class="body" enhanced show-scrollbar="{{false}}">
+    <!-- 空状态 -->
+    <view wx:if="{{!currentPet}}" class="empty">
+      <view class="empty-emoji">🐾</view>
+      <view class="empty-text">先在「我的」添加一只宠物吧</view>
+    </view>
+    <view wx:elif="{{!records.length}}" class="empty">
+      <view class="empty-emoji">📖</view>
+      <view class="empty-text">还没有{{currentPet.name}}的日记</view>
+      <view class="empty-sub">去「聊聊」记下第一件小事吧</view>
+      <t-button theme="primary" size="medium" shape="round" bindtap="goChat">去聊聊</t-button>
+    </view>
+
+    <!-- 时间轴视角 -->
+    <block wx:elif="{{view === 'timeline'}}">
+      <view wx:for="{{records}}" wx:key="id" class="tl-item" data-id="{{item.id}}" bindtap="onOpenDiary">
+        <view class="tl-dot-wrap">
+          <view class="tl-dot"></view>
+          <view class="tl-line" wx:if="{{index < records.length - 1}}"></view>
+        </view>
+        <view class="tl-card jd-card">
+          <view class="tl-date-row">
+            <text class="tl-date">{{item.dateText}}</text>
+            <text class="tl-rel">{{item.rel}}</text>
+          </view>
+          <view wx:if="{{item.text}}" class="tl-text">{{item.text}}</view>
+          <view wx:if="{{item.photos.length}}" class="tl-photos count-{{item.photos.length >= 4 ? 'multi' : item.photos.length}}">
+            <image
+              wx:for="{{item.photos}}"
+              wx:for-item="p"
+              wx:key="*this"
+              class="tl-photo"
+              src="{{p}}"
+              mode="aspectFill"
+              data-urls="{{item.photos}}"
+              data-current="{{p}}"
+              catchtap="onPreviewPhoto"
+            />
+          </view>
+          <view wx:if="{{item.tags.length}}" class="tl-tags">
+            <t-tag wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this" size="small" theme="primary" variant="light">{{t}}</t-tag>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 画廊视角 -->
+    <block wx:else>
+      <view wx:if="{{!gallery.length}}" class="empty">
+        <view class="empty-emoji">🖼️</view>
+        <view class="empty-text">还没有照片，发张照片给{{currentPet.name}}记一条吧</view>
+      </view>
+      <view class="gallery">
+        <view wx:for="{{gallery}}" wx:key="src" class="polaroid">
+          <image
+            class="polaroid-img"
+            src="{{item.src}}"
+            mode="aspectFill"
+            data-urls="{{item.urls}}"
+            data-current="{{item.src}}"
+            bindtap="onPreviewPhoto"
+          />
+          <view class="polaroid-foot">
+            <text class="polaroid-date">{{item.dateText}}</text>
+            <text class="polaroid-link" data-id="{{item.recordId}}" catchtap="onOpenDiary">日记</text>
+          </view>
+        </view>
+      </view>
+    </block>
+    <view class="body-pad"></view>
+  </scroll-view>
+
+  <t-action-sheet id="t-action-sheet" bind:selected="onPetSelected" />
+</view>

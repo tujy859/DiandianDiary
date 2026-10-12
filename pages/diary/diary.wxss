@@ -1,0 +1,108 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+  box-sizing: border-box;
+}
+
+.card {
+  padding: 32rpx;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #f0ece4;
+}
+
+.pet {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #2b3a33;
+}
+
+.date-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.date {
+  font-size: 26rpx;
+  color: #2f6b4f;
+  font-weight: 600;
+}
+
+.rel {
+  font-size: 22rpx;
+  color: #b7a77a;
+  margin-top: 4rpx;
+}
+
+.text {
+  font-size: 30rpx;
+  line-height: 1.7;
+  color: #2b3a33;
+  margin-top: 24rpx;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+
+.photo {
+  width: 206rpx;
+  height: 206rpx;
+  border-radius: 16rpx;
+  background: #f0ece4;
+}
+
+.photo:only-child {
+  width: 420rpx;
+  height: 420rpx;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 24rpx;
+}
+
+.actions {
+  margin-top: 48rpx;
+}
+
+.delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  margin-top: 32rpx;
+  font-size: 26rpx;
+  color: #d54941;
+  padding: 16rpx;
+}
+
+.missing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 240rpx;
+}
+
+.missing-emoji {
+  font-size: 88rpx;
+}
+
+.missing-text {
+  margin-top: 24rpx;
+  font-size: 28rpx;
+  color: #8a948e;
+}

@@ -1,0 +1,25 @@
+<view class="page">
+  <view class="summary">
+    <view class="sum-item">
+      <text class="sum-num is-pass">{{passed}}</text>
+      <text class="sum-label">通过</text>
+    </view>
+    <view class="sum-item">
+      <text class="sum-num is-fail">{{failed}}</text>
+      <text class="sum-label">失败</text>
+    </view>
+    <t-button theme="primary" size="small" shape="round" loading="{{running}}" bind:tap="onRerun">重新运行</t-button>
+  </view>
+
+  <view wx:if="{{lastRunAt}}" class="lastrun">上次运行：{{lastRunAt}}（共 {{results.length}} 项）</view>
+  <view wx:if="{{running}}" class="lastrun">运行中…</view>
+  <view wx:if="{{!results.length && !running}}" class="lastrun">暂无结果</view>
+
+  <view wx:for="{{results}}" wx:key="name" class="case {{item.pass ? 'is-pass' : 'is-fail'}}">
+    <view class="case-head">
+      <t-icon name="{{item.pass ? 'check-circle-filled' : 'close-circle-filled'}}" size="32rpx" color="{{item.pass ? '#2F6B4F' : '#D54941'}}" />
+      <text class="case-name">{{item.name}}</text>
+    </view>
+    <view wx:if="{{item.detail}}" class="case-detail">{{item.detail}}</view>
+  </view>
+</view>

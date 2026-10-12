@@ -1,0 +1,11 @@
+{
+  "navigationBarTitleText": "日记",
+  "usingComponents": {
+    "t-icon": "tdesign-miniprogram/icon/icon",
+    "t-tag": "tdesign-miniprogram/tag/tag",
+    "t-dialog": "tdesign-miniprogram/dialog/dialog",
+    "t-toast": "tdesign-miniprogram/toast/toast",
+    "t-button": "tdesign-miniprogram/button/button",
+    "draft-editor": "../../components/draft-editor/index"
+  }
+}

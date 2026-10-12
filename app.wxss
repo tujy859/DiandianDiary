@@ -1,0 +1,51 @@
+/* 记一下喵 全局主题：暖白底 / 深绿主色 / 薄荷绿辅助 / 杏橙点缀，并统一覆盖 TDesign 令牌 */
+page {
+  background: #faf7f0;
+  color: #2b3a33;
+  font-size: 28rpx;
+  line-height: 1.6;
+
+  /* TDesign 主题令牌覆盖 */
+  --td-brand-color: #2f6b4f;
+  --td-brand-color-hover: #3d8264;
+  --td-brand-color-active: #275b44;
+  --td-brand-color-disabled: #b9cfc4;
+  --td-brand-color-focus: rgba(47, 107, 79, 0.12);
+  --td-brand-color-light: #e3efe8;
+  --td-brand-color-light-hover: #d2e6dc;
+  --td-success-color: #58b28c;
+  --td-warning-color: #f2a65a;
+  --td-error-color: #d54941;
+  --td-bg-color-page: #faf7f0;
+  --td-bg-color-container: #ffffff;
+  --td-text-color-primary: #2b3a33;
+  --td-text-color-secondary: #6b7a72;
+  --td-text-color-placeholder: #a7b3ac;
+  --td-radius-medium: 16rpx;
+  --td-radius-large: 24rpx;
+}
+
+view,
+text,
+textarea,
+input,
+button,
+scroll-view {
+  box-sizing: border-box;
+}
+
+/* 通用卡片 */
+.jd-card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(47, 107, 79, 0.06);
+}
+
+/* 杏橙小圆点装饰 */
+.jd-dot {
+  display: inline-block;
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: #f2a65a;
+}

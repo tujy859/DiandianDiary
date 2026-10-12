@@ -1,0 +1,19 @@
+{
+  "name": "diandian-diary-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "记一下喵 · 逻辑层单元测试（Node + Jest）。tools 目录不参与小程序打包。",
+  "scripts": {
+    "test": "jest",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:watch": "jest --watch",
+    "coverage": "jest --coverage"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.30",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.4.3"
+  }
+}
