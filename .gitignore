@@ -16,6 +16,18 @@ project.private.*.json
 *.key
 *.p12
 *.pfx
+*.jks
+*.keystore
+tcb_custom_login.json
+apiclient_cert.*
+apiclient_key.*
+.cloudbase/
+.tcb/
+.npmrc
+
+# Local exports, database dumps and user media backups
+local-data/
+backups/
 
 # Editor and OS files
 .idea/

@@ -31,6 +31,10 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: tools/package-lock.json
+      - name: Check repository configuration and credentials
+        # Run before installing dependencies; inspect only repository files.
+        # This command requires Node.js but no npm packages.
+        run: node check-repository-security.cjs
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Install cloud function SDK for adapter contract tests

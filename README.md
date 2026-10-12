@@ -19,13 +19,15 @@
 ## 开发运行
 
 1. 使用微信开发者工具导入仓库根目录，项目类型选择小程序。
-2. 配置自己有权限的小程序 AppID；仓库的 `project.config.json` 是现有项目配置，AppID 不是服务密钥。
+2. 仓库的 `project.config.json` 使用 `touristappid` 占位。在本机 `project.private.config.json` 中填写自己有权限的真实 `appid`；新环境可复制 `project.private.config.json.example`，已有文件只添加 `appid` 字段，保留其他设置。云开发和真机预览需要真实 AppID。
 3. 项目使用原生 WXML / WXSS / TypeScript 和 WebView 渲染；TypeScript 由开发者工具编译。
 4. TDesign 构建产物已包含在 `miniprogram_npm/`，当前预览不需要重新构建组件库。
 5. 编译后可以不配置模型，先用明确标识的本地演示交互体验记录闭环。
 6. 如需真实模型，在「我的 → 模型连接配置」填写自己的服务配置；真机请求域名还需按微信要求配置。
 
 `project.private.config.json` 仅用于本机开发，已从 Git 排除。当前开发配置关闭了 URL 检查，不代表真实发布可以跳过合法域名和权限配置。
+
+提交与推送前运行 `node tools/check-repository-security.cjs --staged`，检查暂存内容中的真实 AppID、常见密钥模式及禁止提交的本机文件；CI 也会检查仓库快照。这只是基础防护，不替代 GitHub 的凭据扫描。哪些文件不能提交、历史提醒如何处理，见 [仓库配置与凭据](docs/repository-security.md)。
 
 ## 逻辑层测试
 
