@@ -52,6 +52,15 @@ describe('用户意图区分（聊天 ≠ 正式记录）', () => {
     const res = outs('今天给咪咪洗澡了，上次是什么时候洗的？');
     expect(hasDraft(res)).toBe(true);
     expect(res.some((o) => o.kind === 'query' || o.kind === 'text')).toBe(true);
+    expect(draftOf(res).draft.text).not.toContain('上次');
+  });
+
+  test('最近发生过的事实仍生成日期待确认卡，不误当查询', () => {
+    const draft = draftOf(outs('最近给咪咪驱虫了'));
+    expect(draft.draft.date).toBeNull();
+  });
+  test.each(['下个月给咪咪驱虫', '今天尚未驱虫', '明年打疫苗'])('计划和未发生事实 %s 不出卡', (text) => {
+    expect(hasDraft(outs(text))).toBe(false);
   });
 });
 

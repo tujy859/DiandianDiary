@@ -1,4 +1,4 @@
-import { displayDate, fmt } from '../../utils/date';
+import { displayDate, fmt, isValidDate } from '../../utils/date';
 import { Pet } from '../../utils/store';
 
 Component({
@@ -28,7 +28,7 @@ Component({
       const val = this.data.value || {};
       this.setData({
         petId: val.petId || (this.data.pets[0] && (this.data.pets[0] as Pet).id) || '',
-        date: val.date || '',
+        date: isValidDate(val.date) ? val.date : '',
         dateText: val.date ? displayDate(val.date) : '',
         text: val.text || '',
         photos: (val.photos || []).slice(),
@@ -39,7 +39,7 @@ Component({
       this.setData({ petId: e.currentTarget.dataset.id });
     },
     onOpenDate() {
-      const value = this.data.date ? new Date(`${this.data.date}T00:00:00`).getTime() : Date.now();
+      const value = isValidDate(this.data.date) ? new Date(`${this.data.date}T00:00:00`).getTime() : Date.now();
       this.setData({ dateVisible: true, dateValue: value });
     },
     onDateConfirm(e: WechatMiniprogram.CustomEvent) {
@@ -83,8 +83,8 @@ Component({
         this.setData({ error: '请选择宠物' });
         return;
       }
-      if (!date) {
-        this.setData({ error: '请选择发生日期' });
+      if (!isValidDate(date)) {
+        this.setData({ error: '请选择有效的发生日期' });
         return;
       }
       if (!text.trim() && !photos.length) {

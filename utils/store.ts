@@ -1,4 +1,5 @@
 /** 本地数据层：宠物、日记记录、聊天消息、模型配置的持久化（本轮无后端，全部走 Storage） */
+import { isValidDate } from './date';
 
 export interface Pet {
   id: string;
@@ -47,6 +48,7 @@ export interface ChatMessage {
   refs?: RefInfo[];
   action?: string; // 'draft-from'：手动“记一下”
   sourceText?: string;
+  sourcePhotos?: string[]; // 重试使用原请求照片，不丢失图文上下文
   demo?: boolean; // 本地演示规则生成
   mode?: 'local' | 'model' | 'tool'; // 本条回复的产生方式
   retry?: boolean; // 调用失败，可重试
@@ -146,6 +148,7 @@ export function getRecord(id: string): DiaryRecord | null {
 }
 
 export function addRecord(input: { petId: string; date: string; text: string; tags: string[]; photos: string[] }): DiaryRecord {
+  if (!isValidDate(input.date)) throw new Error('记录日期无效');
   const all = read<DiaryRecord[]>(RECORDS_KEY, []);
   const rec: DiaryRecord = {
     id: uid(),
@@ -163,6 +166,7 @@ export function addRecord(input: { petId: string; date: string; text: string; ta
 }
 
 export function updateRecord(id: string, patch: Partial<DiaryRecord>): DiaryRecord | null {
+  if (patch.date !== undefined && !isValidDate(patch.date)) throw new Error('记录日期无效');
   const all = read<DiaryRecord[]>(RECORDS_KEY, []);
   const idx = all.findIndex((r) => r.id === id);
   if (idx < 0) return null;

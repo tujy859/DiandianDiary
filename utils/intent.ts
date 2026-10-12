@@ -1,10 +1,9 @@
 /**
- * 【演示应答器】本轮 AI 能力由本地规则模拟，用于验证聊天交互，未接入真实模型。
- * 界面中所有 AI 回复都会带「本地演示」标识，正式版将替换为云端模型调用。
+ * 【演示应答器】未配置模型或模型调用失败时使用，本模块输出标记为「本地演示」。
  * 查询类回答只读取已保存记录 + utils/date 的确定性计算，不做任何猜测。
  */
-import { getRecords, DiaryRecord } from './store';
-import { today, parseDateWords, displayDate, diffDays, relDay } from './date';
+import { parseDateWords, relDay, today } from './date';
+import { isHistoryQuery, queryRecords, resolveQueryOptions } from './query';
 
 export interface RespondInput {
   text: string;
@@ -46,31 +45,27 @@ function matchRule(text: string) {
   return TAG_RULES.find((r) => r.words.some((w) => text.indexOf(w) >= 0)) || null;
 }
 
-/** 按标签名或别名查找规则（供真实模型的 queryTag 映射回本地确定性查询） */
+/** 展示分类的兼容映射；具体事实检索使用 query.ts，不以此扩大检索范围。 */
 export function findRuleByTag(tag: string) {
   if (!tag) return null;
   return TAG_RULES.find((r) => r.tag === tag || r.words.some((w) => tag.indexOf(w) >= 0 || w.indexOf(tag) >= 0)) || null;
 }
 
-function recordMatches(rec: DiaryRecord, rule: { tag: string; words: string[] }): boolean {
-  if (rec.tags.indexOf(rule.tag) >= 0) return true;
-  return rule.words.some((w) => (rec.text || '').indexOf(w) >= 0);
-}
-
-function refOf(rec: DiaryRecord) {
-  const snippet = rec.text ? `「${rec.text.slice(0, 20)}${rec.text.length > 20 ? '…' : ''}」` : '（照片日记）';
-  return {
-    recordId: rec.id,
-    label: '查看那天的记录',
-    sub: `${displayDate(rec.date)} ${snippet}`,
-  };
-}
-
-const RE_NEG = /没(有)?|没有|不打算/;
-const RE_FUTURE = /明天|后天|下周|打算|准备|想要|计划|想给|晚点|回头/;
-const RE_QUERY = /上次|最近|什么时候|啥时候|多久|多少天|几次|多少次|第几次/;
-const RE_CONSULT = /吗[？?]?$|该不该|要不要|可以.*吗|行吗|好不好/;
+const RE_NEG = /没(有)?|未|不曾|不打算/;
+const RE_FUTURE = /明天|后天|下周|下个月|下月|明年|下次|将要|将会|打算|准备|想要|计划|想给|晚点|回头/;
+const RE_QUERY = /上次|什么时候|啥时候|多久|多少天|几次|多少次|第几次/;
+const RE_CONSULT = /吗[？?]?$|该不该|要不要|可以.*吗|行吗|好不好|怎么办|如何|建议/;
 const RE_FACT_DONE = /(今天|昨天|前天|刚刚|刚才)[^。？！]*了/;
+
+/** 保留用户原话中的事实分句，问题、计划、否定不能混入草稿正文。 */
+export function sourceForDraft(text: string): string | null {
+  const parts = text.match(/[^，,。；;！？!?\n]+[！？!?]?/g) || [];
+  const facts = parts.map((p) => p.trim()).filter((p) => {
+    if (RE_NEG.test(p) || RE_FUTURE.test(p) || RE_QUERY.test(p) || RE_CONSULT.test(p) || /[？?]/.test(p)) return false;
+    return !!matchRule(p) || /了$|了。|过了|完|体重\s*\d|精神|食欲/.test(p);
+  });
+  return facts.length ? facts.join('，') : null;
+}
 
 function makeDraft(input: RespondInput, date: string | null): AiOutput {
   return {
@@ -87,52 +82,32 @@ function makeDraft(input: RespondInput, date: string | null): AiOutput {
 
 /** 查询已保存记录（确定性，不猜测） */
 export function answerQuery(input: RespondInput, rule: { tag: string; words: string[] } | null): AiOutput {
-  let matchedRule = rule;
-  if (!matchedRule) {
-    // 问法把关键词隔开时（如「洗了几次澡」），剥掉疑问词后再匹配一次
-    const cleaned = input.text.replace(
-      /(上次|最近|这个月|上个月|什么时候|啥时候|多久|多少天|多少次|几次|有没有|的|了|吗|呢|？|\?|，|。|,|\.|\s)/g,
-      '',
-    );
-    matchedRule = matchRule(cleaned);
+  try {
+    // rule 只作为旧调用兼容参数；不能用宽泛的「医疗」替代原话中的「驱虫」。
+    const options = resolveQueryOptions(input.text);
+    if (!options.eventType && !options.keyword && !/记录|日记/.test(input.text)) {
+      return { kind: 'text', text: '想查哪类事情？比如「上次什么时候驱虫」「这个月洗了几次澡」。' };
+    }
+    const result = queryRecords({ ...options, petId: input.petId });
+    return { kind: 'query', text: result.summary, refs: result.refs };
+  } catch (error: any) {
+    return { kind: 'text', text: error.message };
   }
-  if (!matchedRule) {
-    return {
-      kind: 'text',
-      text: `想查哪一类的事呢？比如可以问：「上次什么时候洗澡」「这个月吃了几次罐头」。我只会查已经保存的记录哦。`,
-    };
-  }
-  const matched = getRecords(input.petId).filter((r) => recordMatches(r, matchedRule));
-  if (!matched.length) {
-    return {
-      kind: 'text',
-      text: `翻遍了时光册，还没有找到${input.petName}的「${matchedRule.tag}」记录。记一条之后就能查到啦。`,
-    };
-  }
-  const latest = matched[0]; // getRecords 已按日期倒序
-  const n = diffDays(latest.date, today());
-  const when = n === 0 ? '就是今天' : `${displayDate(latest.date)}，${relDay(latest.date)}`;
-  let text = `最近一条「${matchedRule.tag}」记录是${when}。`;
-  if (latest.text) text += `\n当时记的是：「${latest.text}」`;
-  if (/(几次|多少次|第几次)/.test(input.text)) {
-    text = `时光册里一共有 ${matched.length} 条「${matchedRule.tag}」记录。\n` + text;
-  }
-  return { kind: 'query', text, refs: [refOf(latest)] };
 }
 
 /** 咨询类：结合已保存记录给出（演示）建议，不生成记录 */
 function answerConsult(input: RespondInput, rule: { tag: string; words: string[] } | null): AiOutput {
   if (rule && rule.tag === '洗澡') {
-    const matched = getRecords(input.petId).filter((r) => recordMatches(r, rule));
-    if (matched.length) {
-      const latest = matched[0];
+    const result = queryRecords({ petId: input.petId, eventType: 'bath', mode: 'latest' });
+    if (result.records.length) {
+      const latest = result.records[0];
       return {
         kind: 'query',
-        text: `上次洗澡是${displayDate(latest.date)}（${relDay(latest.date)}）。一般来说猫咪不用频繁洗澡，短毛猫两三个月一次即可，可以再结合它最近的状态决定～`,
-        refs: [refOf(latest)],
+        text: `最近一条洗澡记录是${latest.date}（${relDay(latest.date)}）。仅凭记录不能判断今天是否适合洗澡，还需要结合物种、年龄、皮肤和当前身体状态。`,
+        refs: result.refs,
       };
     }
-    return { kind: 'text', text: `还没有${input.petName}的洗澡记录可以参考。一般来说猫咪不需要频繁洗澡，别太紧张～` };
+    return { kind: 'text', text: `还没有${input.petName}的洗澡记录可以参考，仅凭这些信息还不能判断今天是否适合洗澡。` };
   }
   if (rule) {
     return {
@@ -163,20 +138,23 @@ export function respond(input: RespondInput): AiOutput[] {
 
   const rule = matchRule(text);
   const neg = RE_NEG.test(text);
-  const future = RE_FUTURE.test(text);
-  const query = RE_QUERY.test(text);
+  const date = parseDateWords(text);
+  const future = RE_FUTURE.test(text) || !!(date && date > today());
+  const query = RE_QUERY.test(text) || isHistoryQuery(text);
   const consult = !query && RE_CONSULT.test(text);
   const outs: AiOutput[] = [];
 
   // 事实 + 问题同时出现：分别处理（事实进待确认卡，问题正常回答）
-  const factInside = rule && RE_FACT_DONE.test(text) && !neg && !future;
+  const factSource = sourceForDraft(text);
+  const factInside = !!factSource && RE_FACT_DONE.test(factSource);
 
   if (query) {
-    if (factInside) outs.push(makeDraft(input, parseDateWords(text)));
+    if (factInside) outs.push(makeDraft({ ...input, text: factSource! }, parseDateWords(factSource!)));
     outs.push(answerQuery(input, rule));
     return outs;
   }
   if (consult) {
+    if (factInside) outs.push(makeDraft({ ...input, text: factSource! }, parseDateWords(factSource!)));
     outs.push(answerConsult(input, rule));
     return outs;
   }

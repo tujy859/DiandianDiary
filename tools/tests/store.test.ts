@@ -35,6 +35,15 @@ describe('宠物档案', () => {
 });
 
 describe('日记记录', () => {
+  test('非法日期不能新增或修改，失败不破坏原记录', () => {
+    const pet = savePet({ name: '咪咪', species: '猫' });
+    const input = { petId: pet.id, date: '2026-02-30', text: '洗澡', tags: ['洗澡'], photos: [] };
+    expect(() => addRecord(input)).toThrow('日期');
+    expect(getRecords(pet.id)).toHaveLength(0);
+    const record = addRecord({ ...input, date: today() });
+    expect(() => updateRecord(record.id, { date: '2026-99-99' })).toThrow('日期');
+    expect(getRecords(pet.id)[0].date).toBe(today());
+  });
   test('按发生日期倒序', () => {
     const pet = savePet({ name: '咪咪', species: '猫' });
     const older = addRecord({ petId: pet.id, date: addDays(today(), -10), text: '十天前', tags: [], photos: [] });

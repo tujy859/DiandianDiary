@@ -4,3 +4,10 @@ declare function Page(options: any): any;
 declare function Component(options: any): any;
 declare function App(options: any): any;
 declare function getApp(): any;
+
+declare namespace WechatMiniprogram {
+  interface CustomEvent { detail: any; currentTarget: { dataset: any }; }
+  interface TouchEvent { detail: any; currentTarget: { dataset: any }; }
+}
+declare module 'tdesign-miniprogram/action-sheet/index' { const ActionSheet: any; export default ActionSheet; }
+declare module 'tdesign-miniprogram/toast/index' { const Toast: any; export default Toast; }

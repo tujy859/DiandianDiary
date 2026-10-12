@@ -1,4 +1,14 @@
-import { today, addDays, diffDays, parseDateWords, relDay, displayDate, weekday } from '../../utils/date';
+import { today, addDays, diffDays, parseDateWords, relDay, displayDate, weekday, isValidDate, parse } from '../../utils/date';
+
+test('真实日历校验：闰年、越界和非日期', () => {
+  expect(isValidDate('2024-02-29')).toBe(true);
+  for (const value of ['2026-02-29', '2026-04-31', '2026-99-99', '2026-00-01', '2026-1-01', '', null]) expect(isValidDate(value)).toBe(false);
+  expect(() => parse('2026-02-30')).toThrow();
+  expect(parseDateWords('2024年2月29日洗澡', '2026-10-12')).toBe('2024-02-29');
+  expect(parseDateWords('2026-02-30洗澡', '2026-10-12')).toBeNull();
+  expect(parseDateWords('2月30日洗澡', '2026-10-12')).toBeNull();
+  expect(parseDateWords('31号洗澡', '2026-04-12')).toBeNull();
+});
 
 describe('日期工具（确定性计算）', () => {
   test('今天 / 昨天 / 前天', () => {
@@ -10,16 +20,18 @@ describe('日期工具（确定性计算）', () => {
   });
 
   test('明确日期：X月X日', () => {
-    expect(parseDateWords('10月5日洗的')).toMatch(/^\d{4}-10-05$/);
+    expect(parseDateWords('10月5日洗的', '2026-10-12')).toBe('2026-10-05');
   });
 
-  test('只说「几号」时按当月（晚于今天则算上个月）', () => {
-    const t = today();
-    const parsed = parseDateWords('3号打的疫苗');
+  test('只说「几号」时接受当月已过去日期，晚于今天不猜上个月', () => {
+    const t = '2026-10-12';
+    const parsed = parseDateWords('3号打的疫苗', t);
     expect(parsed).not.toBeNull();
     expect(Number(parsed!.slice(8))).toBe(3);
     // 结果不应晚于今天
     expect(diffDays(t, parsed!)).toBeLessThanOrEqual(0);
+    expect(parseDateWords('3号打的疫苗', '2026-10-02')).toBeNull();
+    expect(parseDateWords('12月5日洗的澡', t)).toBeNull();
   });
 
   test('模糊时间绝不猜精确日期', () => {
@@ -40,5 +52,7 @@ describe('日期工具（确定性计算）', () => {
   test('展示格式', () => {
     expect(displayDate('2026-10-12')).toMatch(/^10月12日 · 周[一二三四五六日]$/);
     expect(weekday('2026-10-12')).toBe('周一');
+    expect(displayDate('2026-99-99')).toBe('日期待修正');
+    expect(relDay('2026-99-99')).toBe('');
   });
 });

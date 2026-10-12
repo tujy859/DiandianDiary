@@ -6,10 +6,13 @@ import {
   getModelConfig, getRecords,
   Pet, ChatMessage,
 } from '../../utils/store';
-import { respond, extractTags, answerQuery, findRuleByTag } from '../../utils/intent';
+import { respond, extractTags } from '../../utils/intent';
 import { chatWithModel, isModelReady } from '../../utils/llm';
 import { runAgent, AbortedError } from '../../utils/agent';
-import { today, parseDateWords } from '../../utils/date';
+import { today, isValidDate } from '../../utils/date';
+import { RequestToken } from '../../utils/cancellation';
+import { isHistoryQuery, queryRecords, resolveQueryOptions } from '../../utils/query';
+import { validateDraft } from '../../utils/draft';
 
 Page({
   data: {
@@ -31,7 +34,25 @@ Page({
     tabbarHeight: 60,
   },
 
-  _abort: null as null | { aborted: boolean },
+  _abort: null as RequestToken | null,
+
+  isActive(token: RequestToken, petId: string): boolean {
+    return this._abort === token && !token.aborted && this.data.currentPet?.id === petId;
+  },
+
+  assertActive(token: RequestToken, petId: string) {
+    if (!this.isActive(token, petId)) throw new AbortedError();
+  },
+
+  cancelGeneration(notice = false) {
+    const token = this._abort;
+    if (!token) return;
+    token.cancel();
+    this._abort = null;
+    this.setData({ aiThinking: false });
+    wx.hideLoading();
+    if (notice) this.appendMessages([this.toMessage({ kind: 'text', text: '已停止生成。' }, false, 'local')]);
+  },
 
   tabbarHeight(): number {
     const app: any = getApp();
@@ -57,7 +78,12 @@ Page({
   /* ---------- 键盘 ---------- */
 
   onHide() {
+    this.cancelGeneration(true);
     if (this.data.keyboardHeight) this.setData({ keyboardHeight: 0 });
+  },
+
+  onUnload() {
+    this.cancelGeneration();
   },
 
   onKeyboardHeight(e: WechatMiniprogram.CustomEvent) {
@@ -73,12 +99,14 @@ Page({
   },
 
   onChoosePhoto() {
+    const petId = this.data.currentPet?.id;
     const remain = 9 - this.data.attachments.length;
     if (remain <= 0) return;
     wx.chooseMedia({
       count: remain,
       mediaType: ['image'],
       success: (res) => {
+        if (this.data.currentPet?.id !== petId) return;
         const paths = res.tempFiles.map((f) => f.tempFilePath);
         this.setData({ attachments: this.data.attachments.concat(paths) });
       },
@@ -97,38 +125,38 @@ Page({
     const photos = this.data.attachments.slice();
     const pet = this.data.currentPet;
     if (!pet || (!text && !photos.length) || this.data.aiThinking) return;
-
-    let savedPhotos: string[] = [];
-    if (photos.length) {
-      wx.showLoading({ title: '处理照片…', mask: true });
-      try {
+    const token = new RequestToken();
+    const historyMessages = this.data.messages.slice();
+    this._abort = token;
+    this.setData({ aiThinking: true }); // 照片处理阶段也锁定发送，防止连点重复提交
+    try {
+      let savedPhotos: string[] = [];
+      if (photos.length) {
+        wx.showLoading({ title: '处理照片…', mask: true });
         savedPhotos = await persistPhotos(photos);
-      } catch (e) {
+        this.assertActive(token, pet.id);
         wx.hideLoading();
-        Toast({ context: this, selector: '#t-toast', message: '照片处理失败，请重试', theme: 'error' });
-        return;
       }
-      wx.hideLoading();
-    }
-
-    const userMsg: ChatMessage = { id: uid(), role: 'user', kind: 'text', text, photos: savedPhotos, time: Date.now() };
-    this.setData({
-      messages: this.data.messages.concat(userMsg),
-      inputValue: '',
-      attachments: [],
-      placeholder: '说点什么，比如：今天给咪咪洗澡了',
-    });
-    this.persist();
-
-    if (text && this.data.modelOn) {
-      await this.replyByAI(text, savedPhotos, pet);
-    } else {
-      const outputs = respond({ text, photos: savedPhotos, petId: pet.id, petName: pet.name });
-      this.appendMessages(outputs.map((o) => this.toMessage(o, true, 'local')));
+      this.assertActive(token, pet.id);
+      const userMsg: ChatMessage = { id: uid(), role: 'user', kind: 'text', text, photos: savedPhotos, time: Date.now() };
+      this.setData({ messages: this.data.messages.concat(userMsg), inputValue: '', attachments: [],
+        placeholder: '说点什么，比如：今天给咪咪洗澡了' });
+      this.persist();
+      if (text && this.data.modelOn) await this.replyByAI(text, savedPhotos, pet, token, historyMessages);
+      else this.appendMessages(respond({ text, photos: savedPhotos, petId: pet.id, petName: pet.name })
+        .map((o) => this.toMessage(o, true, 'local')));
+    } catch (error) {
+      if (this.isActive(token, pet.id)) Toast({ context: this, selector: '#t-toast', message: '照片处理失败，请重试', theme: 'error' });
+    } finally {
+      if (this._abort === token) {
+        this._abort = null;
+        this.setData({ aiThinking: false });
+        wx.hideLoading();
+      }
     }
   },
 
-  toMessage(o: any, demo: boolean, mode: string): ChatMessage {
+  toMessage(o: any, demo: boolean, mode: 'local' | 'model' | 'tool'): ChatMessage {
     const msg: ChatMessage = {
       id: uid(),
       role: 'ai',
@@ -147,98 +175,92 @@ Page({
     return msg;
   },
 
-  /** 三级降级：工具调用 → JSON 模式 → 本地演示规则 */
-  async replyByAI(text: string, savedPhotos: string[], pet: Pet) {
-    this._abort = { aborted: false };
+  /** 三级降级共享请求信号、草稿校验和查询服务。 */
+  async replyByAI(text: string, savedPhotos: string[], pet: Pet, token = new RequestToken(), historyMessages?: ChatMessage[]) {
+    this._abort = token;
     this.setData({ aiThinking: true });
     this.scrollToBottom();
-    const history = this.data.messages
-      .filter((m) => m.kind === 'text' && m.text)
-      .slice(-8)
-      .map((m) => ({ role: m.role === 'user' ? ('user' as const) : ('assistant' as const), content: m.text! }));
-
+    const referenceDate = today();
+    const history = (historyMessages || []).filter((m) => m.kind === 'text' && m.text)
+      .slice(-8).map((m) => ({ role: m.role === 'user' ? ('user' as const) : ('assistant' as const), content: m.text! }));
+    const cfg = getModelConfig(); // 请求全程使用同一个配置快照
     try {
-      const res = await runAgent(getModelConfig(), text, { pet, history, photos: savedPhotos, abortToken: this._abort! });
-      if (this._abort && this._abort.aborted) throw new AbortedError();
+      const res = await runAgent(cfg, text, { pet, history, photos: savedPhotos, abortToken: token });
+      this.assertActive(token, pet.id);
       const msgs: ChatMessage[] = res.drafts.map((d) => this.toMessage({ kind: 'draft', draft: d }, false, 'tool'));
-      if (res.reply || res.refs.length) {
-        msgs.push(this.toMessage({ kind: 'text', text: res.reply || '', refs: res.refs }, false, 'tool'));
-      }
+      if (res.reply || res.refs.length) msgs.push(this.toMessage({ kind: res.refs.length ? 'query' : 'text', text: res.reply || '', refs: res.refs }, false, 'tool'));
       if (!msgs.length) msgs.push(this.toMessage({ kind: 'text', text: '我在呢，继续说～' }, false, 'tool'));
       this.appendMessages(msgs);
     } catch (err: any) {
-      if (err instanceof AbortedError) {
-        this.appendMessages([this.toMessage({ kind: 'text', text: '已停止生成。' }, false, 'local')]);
-        return;
-      }
-      // 降级一：JSON 模式
+      if (err instanceof AbortedError || !this.isActive(token, pet.id)) return;
       try {
-        const records = getRecords(pet.id).slice(0, 20).map((r) => ({ date: r.date, text: r.text, tags: r.tags }));
-        const out = await chatWithModel(getModelConfig(), text, {
-          petName: pet.name,
-          species: pet.species,
-          today: today(),
-          history,
-          records,
-        });
+        const out = await chatWithModel(cfg, text, {
+          petName: pet.name, species: pet.species, today: referenceDate, history,
+          records: getRecords(pet.id).slice(0, 20).map((r) => ({ date: r.date, text: r.text, tags: r.tags })),
+        }, token);
+        this.assertActive(token, pet.id);
         const msgs: ChatMessage[] = [];
         if (out.draft) {
-          msgs.push(
-            this.toMessage(
-              {
-                kind: 'draft',
-                draft: {
-                  petId: pet.id,
-                  date: out.draft.date || parseDateWords(text),
-                  text: out.draft.text || text,
-                  tags: out.draft.tags.length ? out.draft.tags : extractTags(text),
-                  photos: savedPhotos,
-                },
-              },
-              false,
-              'model',
-            ),
-          );
+          const draft = validateDraft(out.draft, { text, petId: pet.id, photos: savedPhotos }, referenceDate);
+          msgs.push(this.toMessage({ kind: 'draft', draft }, false, 'model'));
         }
-        if (out.queryTag) {
-          const q = answerQuery({ text, photos: savedPhotos, petId: pet.id, petName: pet.name }, findRuleByTag(out.queryTag));
-          msgs.push(this.toMessage(q, false, 'model'));
+        const historical = isHistoryQuery(text);
+        const querying = !!out.query || historical;
+        if (querying) {
+          const options = resolveQueryOptions(text, out.query || {}, referenceDate);
+          if (!options.eventType && !options.keyword && !/记录|日记/.test(text)) throw new Error('请补充要查询的事件关键词');
+          const result = queryRecords({ ...options, petId: pet.id });
+          msgs.push(this.toMessage({ kind: 'query', text: result.summary, refs: result.refs }, false, 'model'));
         }
-        if (out.reply) msgs.push(this.toMessage({ kind: 'text', text: out.reply }, false, 'model'));
+        if (out.draft) msgs.push(this.toMessage({ kind: 'text', text: '已整理为待确认草稿，点击「保存这条」后才会记进时光册。' }, false, 'model'));
+        else if (!historical && out.reply) msgs.push(this.toMessage({ kind: 'text', text: out.reply }, false, 'model'));
         if (!msgs.length) msgs.push(this.toMessage({ kind: 'text', text: '我在呢，继续说～' }, false, 'model'));
         this.appendMessages(msgs);
-      } catch (e2: any) {
-        // 降级二：本地演示规则 + 明确告知
-        const reason = (e2 && e2.message) || '未知错误';
-        const notice = this.toMessage({ kind: 'text', text: `模型调用失败（${reason}），本次先用本地演示规则应答。` }, true, 'local');
-        const outputs = respond({ text, photos: savedPhotos, petId: pet.id, petName: pet.name });
+      } catch (error: any) {
+        if (error instanceof AbortedError || !this.isActive(token, pet.id)) return;
+        const notice = this.toMessage({ kind: 'text', text: `模型调用失败（工具：${err.message || '未知错误'}；JSON：${error.message || '未知错误'}），本次先用本地演示规则应答。` }, true, 'local');
         notice.retry = true;
         notice.sourceText = text;
-        this.appendMessages([notice].concat(outputs.map((o) => this.toMessage(o, true, 'local'))));
+        notice.sourcePhotos = savedPhotos.slice();
+        this.appendMessages([notice].concat(respond({ text, photos: savedPhotos, petId: pet.id, petName: pet.name })
+          .map((o) => this.toMessage(o, true, 'local'))));
       }
     } finally {
-      this.setData({ aiThinking: false });
-      this._abort = null;
+      // 旧请求迟到，不能清掉后续新请求的思考状态和取消句柄。
+      if (this._abort === token) {
+        this._abort = null;
+        this.setData({ aiThinking: false });
+      }
     }
   },
 
   onStop() {
-    if (this._abort) this._abort.aborted = true;
-    this.setData({ aiThinking: false });
+    this.cancelGeneration(true);
   },
 
-  /** 重试上一条失败的消息 */
+  /** 重试保留原请求照片，并且不重复向模型发送最后一条用户消息。 */
   onRetry(e: WechatMiniprogram.TouchEvent) {
-    const { text } = e.currentTarget.dataset;
+    const { text, id } = e.currentTarget.dataset;
     const pet = this.data.currentPet;
     if (!pet || !text || this.data.aiThinking) return;
-    const idx = this.data.messages.findIndex((m) => m.retry && m.sourceText === text);
-    if (idx >= 0) {
-      const messages = this.data.messages.slice(0, idx);
-      messages.push({ ...this.data.messages[idx], retry: false });
-      this.setData({ messages });
+    const idx = id ? this.data.messages.findIndex((m) => m.id === id && m.retry)
+      : this.data.messages.map((m) => m.retry && m.sourceText === text).lastIndexOf(true);
+    if (idx < 0) return;
+    const newestUser = this.data.messages.map((m) => m.role).lastIndexOf('user');
+    if (idx < newestUser) {
+      Toast({ context: this, selector: '#t-toast', message: '这条之后已有新对话，请重新发送想问的内容' });
+      return;
     }
-    this.replyByAI(text, [], pet);
+    const notice = this.data.messages[idx];
+    const before = this.data.messages.slice(0, idx);
+    const lastUser = before.map((m) => m.role).lastIndexOf('user');
+    const sourceMessage = lastUser >= 0 ? before[lastUser] : null;
+    const photos = notice.sourcePhotos || sourceMessage?.photos || [];
+    const historyMessages = sourceMessage?.text === text ? before.slice(0, lastUser) : before;
+    // 用新的结果替换本次失败后的演示内容，保留用户原消息。
+    this.setData({ messages: before });
+    this.persist();
+    this.replyByAI(text, photos, pet, new RequestToken(), historyMessages);
   },
 
   appendMessages(msgs: ChatMessage[]) {
@@ -276,7 +298,8 @@ Page({
     const idx = this.findDraft(key);
     if (idx < 0) return;
     const draft = this.data.messages[idx].draft!;
-    if (!draft.date) {
+    if (draft.status !== 'pending' && draft.status !== 'failed') return;
+    if (!isValidDate(draft.date)) {
       Toast({ context: this, selector: '#t-toast', message: '先点选一下发生日期吧', theme: 'warning' });
       return;
     }
@@ -298,12 +321,14 @@ Page({
     const { key } = e.detail;
     const idx = this.findDraft(key);
     if (idx < 0) return;
+    if (this.data.messages[idx].draft!.status === 'saved') return;
     this.setData({ editorVisible: true, editorKey: key, editorValue: { ...this.data.messages[idx].draft } });
   },
 
   onCardDiscard(e: WechatMiniprogram.CustomEvent) {
     const idx = this.findDraft(e.detail.key);
     if (idx < 0) return;
+    if (this.data.messages[idx].draft!.status === 'saved') return;
     this.updateDraft(idx, { status: 'discarded' });
   },
 
@@ -311,6 +336,7 @@ Page({
     const { key, date } = e.detail;
     const idx = this.findDraft(key);
     if (idx < 0) return;
+    if (!isValidDate(date) || this.data.messages[idx].draft!.status === 'saved') return;
     this.updateDraft(idx, { date });
   },
 
@@ -338,6 +364,7 @@ Page({
       return;
     }
     const old = this.data.messages[idx].draft!;
+    if (old.status === 'saved' || !isValidDate(date)) return;
     const tags = text !== old.text ? extractTags(text) : old.tags;
     this.updateDraft(idx, { petId, date, text, photos, tags, status: 'pending' });
     this.setData({ editorVisible: false });
@@ -400,11 +427,14 @@ Page({
       return;
     }
     const pet = this.data.pets[index];
+    if (!pet || pet.id === this.data.currentPet?.id) return;
+    this.cancelGeneration(true);
     setCurrentPet(pet.id);
     this.setData({
       currentPet: pet,
       petAvatar: petEmoji(pet.species),
       messages: getMessages(pet.id),
+      inputValue: '', attachments: [], editorVisible: false, editorKey: '', editorValue: {},
     });
     this.scrollToBottom();
   },

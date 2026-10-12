@@ -88,7 +88,7 @@
               <text>记一下</text>
             </view>
           </view>
-          <view wx:if="{{item.retry}}" class="retry-btn" data-text="{{item.sourceText}}" bindtap="onRetry">
+          <view wx:if="{{item.retry}}" class="retry-btn" data-id="{{item.id}}" data-text="{{item.sourceText}}" bindtap="onRetry">
             <t-icon name="refresh" size="26rpx" color="#2F6B4F" />
             <text>重试</text>
           </view>
