@@ -1,0 +1,191 @@
+# 微信云开发后端与家庭共享
+
+本次提供可部署的 `diaryApi` 云函数、客户端接入、家庭管理入口与测试。已配置云环境 ID `cloud1-d5g3cyroib9fc6099`，通过「账号与家庭空间」连接云端，本机模式仍可使用。代码验证已经完成，真实环境的部署、数据库规则和双微信账号验收仍需按下文执行。
+
+## 1. 身份与登录
+
+- 小程序不能读取用户的「微信号」字符串。使用云函数 `cloud.getWXContext()` 的 `APPID + OPENID` 区分当前微信账号，不依赖昵称、头像或用户填写的账号。
+- `auth.login` 将其映射为稳定的内部 `userId`。首次登录在事务中创建用户和默认家庭；重复或并发登录不会重复创建。
+- 前端 `wx.cloud.callFunction` 已携带微信调用身份，无需自己保存 JWT、AppSecret 或 session_key。前端发送的 `userId`、`openid`、`role` 均不作为身份凭证。
+- OpenID 只保存在服务端 `users` 文档，不通过业务接口返回。昵称通过 `type="nickname"` 输入框由用户填写，仅作展示；头像不是登录前提。
+- 可设置云函数环境变量 `WECHAT_APP_ID` 为当前小程序 AppID，进一步限制调用来源。它是公开标识，不是密钥。
+- 同一微信在不同 AppID 下的 OpenID 不同，当前不做跨应用账号合并。未来需要微信开放平台统一账号时，可单独设计 UnionID 关联流程。
+
+官方接口参考：[微信云函数调用与 getWXContext](https://docs.cloudbase.net/en/recipes/add-cloud-function-wechat-miniprogram)、[微信服务端 SDK 类型定义](https://github.com/wechat-miniprogram/wx-server-sdk/blob/master/index.d.ts)。
+
+## 2. 数据归属
+
+```mermaid
+flowchart LR
+  U[微信账号 / users] --> M[家庭成员与角色]
+  M --> F[家庭空间 / families]
+  F --> P[宠物 / pets]
+  P --> D[日记 / diaries]
+  D --> R[不可变的原始输入]
+  D --> O[可编辑的整理结果]
+  F --> I[一次性邀请 / invites]
+  F --> A[私有照片 / media + 云存储]
+```
+
+一只宠物属于一个家庭，家庭内多人共同记录。一个微信账号可以加入多个家庭，通过当前家庭切换数据范围。家庭之间不能引用对方的宠物、日记或照片。当前上限为每个用户 10 个家庭（包括默认家庭）、每个家庭 20 位成员。
+
+| 集合 | 核心字段 | 作用 |
+|---|---|---|
+| `users` | `_id`, `appid`, `openid`, `nickname`, `familyIds`, `createdAt` | 微信身份映射；`familyIds` 是家庭列表索引，不作权限凭证 |
+| `families` | `_id`, `name`, `members[]`, `revision`, `createdAt`, `updatedAt` | 权限的唯一依据；成员包含 `userId`, `role`, `joinedAt` |
+| `pets` | `_id`, `familyId`, `name`, `species`, `breed`, `birthday`, `createdBy`, `version`, `deletedAt` | 家庭共享的宠物档案 |
+| `diaries` | `_id`, `familyId`, `petId`, `rawInput`, `formatted`, `formatting`, `createdBy`, `updatedBy`, `version`, 时间戳, `deletedAt` | 记录原文与整理结果 |
+| `invites` | `_id`（token 哈希）, `familyId`, `createdBy`, `expiresAt`, `usedBy`, `usedAt`, `revoked` | 一次性、24 小时有效的加入凭证 |
+| `media` | `_id`（fileID 哈希）, `fileId`, `familyId`, `uploadedBy`, `createdAt` | 照片所属家庭与访问验证 |
+
+成员列表存于家庭文档，适合小型家庭。成员变更与用户家庭索引同时提交事务，避免出现「已退出但列表仍可访问」。若未来扩大到社群，应迁移到单独的 membership 集合，并重新设计角色与索引。
+
+日记示例：
+
+```json
+{
+  "_id": "d_...",
+  "familyId": "f_...",
+  "petId": "p_...",
+  "rawInput": {
+    "text": "今天早晨给点点洗了澡，乖乖的！",
+    "photos": ["cloud://..."],
+    "provenance": "direct"
+  },
+  "formatted": {
+    "date": "2026-10-12",
+    "text": "点点洗澡",
+    "tags": ["洗澡"],
+    "photos": ["cloud://..."]
+  },
+  "formatting": { "schemaVersion": 1, "mode": "tool" },
+  "createdBy": "u_...",
+  "updatedBy": "u_...",
+  "version": 1,
+  "createdAt": 1791792000000,
+  "updatedAt": 1791792000000,
+  "deletedAt": null
+}
+```
+
+`rawInput` 首次确认保存时写入，后续编辑不得替换。当前聊天入口保留整理前的完整输入（包括首尾空白），草稿编辑只改 `formatted`。照片保存的是压缩后的文件，原始输入照片列表与整理结果照片列表分别保留；不承诺保存相机原始分辨率。
+
+`formatting.mode` 是客户端上报的整理方式：`local / model / tool / manual / legacy`，用于展示来源，不当作模型真实性的服务端审计证明。当前保存最新整理结果和版本号，尚未保留每次编辑的完整历史快照。
+
+日期是用户确认的事件日期；时间戳由服务器生成，不能由客户端冒充。只在用户点击保存后上传日记；普通聊天、未确认草稿、模型 API Key 不上传到此后端。家庭成员能够查看日记原始输入，界面在导入前会提示分享范围。
+
+## 3. 权限与一致性
+
+| 操作 | 家庭创建者 owner | 普通成员 member | 非成员 |
+|---|---|---|---|
+| 查看宠物、日记及原始输入、获取照片链接 | 是 | 是 | 否 |
+| 新增日记和照片 | 是 | 是 | 否 |
+| 修改或删除自己的日记 | 是 | 是 | 否 |
+| 修改或删除其他人的日记 | 是 | 否 | 否 |
+| 新增、编辑、删除宠物 | 是 | 否 | 否 |
+| 创建或撤销邀请、移除成员 | 是 | 否 | 否 |
+| 退出家庭 | 当前不支持创建者退出 | 是 | — |
+
+创建者转让、家庭解散、只读访客目前不实现。UI 隐藏部分管理入口，服务端仍对每次操作重新鉴权。退出/移除后，其历史日记留在家庭中，作者 ID 不会变更。
+
+写操作使用事务，并更新家庭 `revision`，与成员移除竞争同一文档，避免使用旧成员快照授权写入。邀请接受同时更新邀请、家庭和用户索引；并发接受只有一位新成员能成功。邀请码由服务端生成 192 位随机数，数据库仅存哈希，不能通过日志或列表读取原始 token。
+
+所有可编辑资源都有整数 `version`。修改/删除必须携带读取时的版本，过期返回 `CONFLICT`，需要刷新后重新编辑。新建请求使用 `clientId` 派生确定 ID，网络响应丢失后使用同一 ID 重试不会重复创建；客户端卡片保存和当前宠物表单均防止连点。宠物新增的重试 ID 保留于当前表单，跨进程关闭后重新新建不视为同一个请求。
+
+宠物和日记采用软删除。删除宠物后其日记不能通过列表、详情或修改接口继续访问；后台暂时保留数据，不执行不可恢复的批量物理删除。删除日记不自动删除被原始输入引用的照片；当前没有自动清理任务或保留期限承诺。
+
+服务端对字段做白名单赋值，并校验真实日期、文本长度、标签、照片数量、家庭归属和版本，不直接把请求对象写入数据库。对外错误包含业务 code 与简短提示，内部异常不返回堆栈或日记内容。
+
+事务机制参考：[CloudBase 事务操作](https://docs.cloudbase.net/database/transaction)。
+
+## 4. 接口
+
+统一调用 `wx.cloud.callFunction({ name: 'diaryApi', data: { action, data } })`。成功返回 `{ ok: true, data }`；失败返回 `{ ok: false, error: { code, message } }`。
+
+| action | 主要输入 | 返回 |
+|---|---|---|
+| `auth.login` | 无 | 用户公开资料；自动创建默认家庭 |
+| `user.profile` | `nickname` | 当前用户公开资料 |
+| `family.list` | 无 | 当前用户仍有成员资格的家庭 |
+| `family.create` | `clientId`, `name` | 新家庭 |
+| `family.removeMember` | `familyId`, `userId` | 移除结果 |
+| `family.leave` | `familyId` | 退出结果 |
+| `invite.create` | `familyId` | 一次性 token 与过期时间 |
+| `invite.revoke` | `familyId`, `token` | 撤销结果 |
+| `invite.accept` | `token` | 加入的家庭；已成功接受者可重试 |
+| `pet.list` | `familyId`, `after?`, `limit?` | `{ items, next }` |
+| `pet.save` | `familyId`, 新建 `clientId` 或编辑 `id + version`, 名称等字段 | 宠物 |
+| `pet.delete` | `familyId`, `id`, `version` | 删除结果 |
+| `diary.list` | `familyId`, `petId`, `after?`, `limit?` | `{ items, next }` |
+| `diary.get` | `familyId`, `id` | 日记 |
+| `diary.save` | `familyId`, `petId`, 新建 `clientId + rawInput` 或编辑 `id + version`, `formatted`, `mode?` | 日记 |
+| `diary.delete` | `familyId`, `id`, `version` | 删除结果 |
+| `media.upload` | `familyId`, `base64` | `{ fileId }` |
+| `media.urls` | `familyId`, `fileIds`（最多 9 个） | 已鉴权的照片临时 URL 列表 |
+
+列表用 `_id` 升序游标，每页最多 10 条，兼顾云函数响应体大小；客户端拉完所有页后按事件日期排序，维持现有查询和时间轴行为。这适合当前小规模家庭，尚未实现时间轴按需加载和云端事实检索。分页过程中的并发新增可能要下次刷新才出现，不宣称跨分页的全局快照一致性。
+
+主要错误：`UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`, `INVALID`, `CONFLICT`, `INVALID_INVITE`, `LIMIT`, `MEDIA_UNAVAILABLE`, `INTERNAL`。云端写入失败时不会显示保存成功或偷偷写入本机模式。
+
+## 5. 照片与本机缓存
+
+云存储和数据库都关闭客户端直接读写，客户端经鉴权云函数上传照片、获取下载 URL。这避免仅凭知道 fileID 就绕过家庭权限。每张照片压缩后限 1MB，只接受 JPG/PNG，日记每个照片列表最多 9 张。小文件通过云函数转传以简化访问边界；大文件将来应使用经过授权的上传凭证流程。
+
+文件路径包含家庭、上传用户与内容哈希，重复上传相同内容不会创建不同路径。临时 URL 不作为长期数据写入日记，数据库始终存 fileID。SDK 获取的签名 URL 有效期依赖云环境；不承诺 `maxAge` 能强制缩短经典云存储链接的寿命。移除成员后不能再获取新链接，已经下载的照片和已发出的 URL 无法立即收回。参考：[经典云存储链接有效期限制](https://docs.cloudbase.net/en/api-reference/webv3-next/storage)。
+
+存储操作不能与数据库事务原子提交；上传后数据库失败可能产生孤立文件。当前重试复用路径，后台人工核查孤立文件。后续维护任务须检查日记 `rawInput.photos` 和 `formatted.photos` 的全部引用，不能仅根据图库看不见就删除。
+
+缓存按 `userId + familyId` 隔离，与原有 `jd_pets/jd_records` 匿名本机数据分开。进入云端页面先重新验证微信身份再展示数据；身份改变或权限撤销会清空当前家庭缓存，要求重连或切换家庭。迟到的跨家庭请求不能提交缓存，同一家庭的旧刷新不能覆盖刚完成的写入。离线时云端页面显示失败，不提供离线写队列。
+
+聊天和模型配置继续保存在本机。云模式聊天按用户和家庭隔离，模型配置仍是设备级配置。清除本机缓存只清除当前家庭缓存和本机聊天；云端宠物、日记保留。返回本机模式后可以继续查看原有本机数据。
+
+旧数据只通过「账号与家庭空间 → 导入本机宠物和日记」上传到明确选择的家庭，使用旧 ID 派生幂等请求，可重复执行。导入不删除本机原件，不上传聊天或模型配置。旧记录如果没有原始输入，以 `provenance: "legacy"` 标记为从已保存文字重建，详情明确提示，不能声称恢复了当时的原话。导入时间为服务端创建时间，原事件日期保留。
+
+## 6. 部署
+
+1. 用有权限的小程序 AppID 打开微信开发者工具，开通微信云开发并创建环境。
+2. 创建 **六个集合**：`users`, `families`, `pets`, `diaries`, `invites`, `media`。
+3. **每个集合**的自定义安全规则设为 `cloudfunctions/database.rules.json` 的内容：`{ "read": false, "write": false }`。云函数使用服务端权限执行业务鉴权；不要把集合改成所有用户可读写来消除错误。
+4. 云存储也设置 `cloudfunctions/storage.rules.json` 的禁止客户端直接读写规则，或控制台等价的「仅管理员可读写」。这些 JSON 是部署模板，不会因为文件在仓库就自动生效。
+5. 添加下列复合索引（`_id` 自带唯一索引）：
+
+   | 集合 | 字段与顺序 | 用途 |
+   |---|---|---|
+   | `pets` | `familyId ASC, deletedAt ASC, _id ASC` | 家庭宠物分页 |
+   | `diaries` | `familyId ASC, petId ASC, deletedAt ASC, _id ASC` | 宠物日记分页 |
+
+   其他业务通过文档 ID 直接读取，无需索引。邀请码到期由代码判断；没有 TTL 自动删除，以保留重试记录。
+6. `utils/cloud-config.ts` 已填写环境 ID `cloud1-d5g3cyroib9fc6099`，部署时选择同一环境。`project.config.json` 已设置 `cloudfunctionRoot`，并排除后端、文档、测试目录进入小程序包。
+7. 右键 `cloudfunctions/diaryApi`，上传部署并安装依赖。SDK 固定为 `wx-server-sdk@4.0.2`，已有 lockfile；本地可在该目录执行 `npm ci --ignore-scripts`。使用云开发控制台支持的维护中 Node.js 运行时；建议先配置 256MB 内存、20 秒超时，再根据测试观察调整。
+8. 在云函数环境变量配置 `WECHAT_APP_ID`。仅保留微信小程序调用入口，不配置公开 HTTP 触发器。不要在客户端放 AppSecret、腾讯云密钥或共享模型密钥。
+9. 真机打开「我的 → 账号与家庭空间」，点击使用微信身份连接云端。未部署时会显示配置/调用错误，本机模式仍可使用。
+
+当前工作区已填写云环境 ID，但尚未验证云端管理访问，因此没有执行上述部署或对真实云数据库写入测试。上线前还需按产品实际数据用途配置小程序隐私声明、备份和内容审核；此接口没有接入文本/图片审核或服务器模型代理。现有模型直连密钥问题见 README。
+
+## 7. 验证
+
+本地：
+
+```sh
+cd cloudfunctions/diaryApi
+npm ci --ignore-scripts
+cd ../../tools
+npm ci
+npm run typecheck
+npm test -- --runInBand
+```
+
+新增测试覆盖真实 SDK 的文档/事务封装契约（只替换网络传输）、身份来源、重复登录与创建、跨家庭拒绝、作者权限、邀请码并发/过期/撤销、多人版本冲突、原始输入不可变、照片归属、软删除、分页、失败不回退本机、重试幂等、导入恢复、微信身份与缓存隔离、迟到刷新。内存事务模拟与 SDK 契约测试不能替代平台规则和真机集成验证。
+
+双账号验收：
+
+1. A 登录、创建宠物，保存图文日记；重启/换设备用 A 登录，确认原文、整理结果和照片恢复。
+2. A 生成邀请；B 登录并加入，看到同一宠物与日记，可新增自己的日记。
+3. B 编辑自己的日记成功，编辑 A 的日记/管理宠物/创建邀请被拒绝。尝试改请求里的 `familyId/userId/role`，确认不能越权。
+4. 两端打开同一条日记，依次编辑；后提交者得到版本冲突，刷新后可重新编辑。
+5. 第三账号复用已接受、过期、撤销的邀请码均失败。
+6. A 移除 B；B 再次进入页面、保存日记和获取照片链接均失败，A 仍可见 B 的历史日记。
+7. 用客户端 SDK 直接查询集合、读取或写入云存储，确认规则拒绝；通过业务云函数读取当前家庭照片成功。
+8. 模拟保存响应丢失并重试，确认没有重复日记；导入同一批本机记录两次也不重复。
+9. 清除云模式本机缓存，确认重新进入可从云端恢复；切换家庭或微信账号不会展示前一个空间数据。
+10. 核对日志没有日记正文、原始照片、OpenID、邀请码、模型密钥。确认所选运行时、超时、索引与存储权限全部匹配真实环境。

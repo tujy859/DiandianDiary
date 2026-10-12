@@ -33,6 +33,9 @@ jobs:
           cache-dependency-path: tools/package-lock.json
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Install cloud function SDK for adapter contract tests
+        run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: cloudfunctions/diaryApi
       - name: Check logic-layer types
         run: npm run typecheck
       - name: Run unit tests

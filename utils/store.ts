@@ -1,4 +1,4 @@
-/** 本地数据层：宠物、日记记录、聊天消息、模型配置的持久化（本轮无后端，全部走 Storage） */
+/** 本地数据/云端读取缓存。云端写操作通过 repository 等待服务器确认。 */
 import { isValidDate } from './date';
 
 export interface Pet {
@@ -8,6 +8,14 @@ export interface Pet {
   breed?: string;
   birthday?: string;
   createdAt: number;
+  familyId?: string;
+  version?: number;
+}
+
+export interface RawInput {
+  text: string;
+  photos: string[];
+  provenance?: 'direct' | 'legacy';
 }
 
 export interface DiaryRecord {
@@ -19,6 +27,11 @@ export interface DiaryRecord {
   photos: string[];
   createdAt: number;
   updatedAt: number;
+  rawInput?: RawInput;
+  familyId?: string;
+  version?: number;
+  createdBy?: string;
+  formatting?: { schemaVersion: number; mode: string };
 }
 
 export interface Draft {
@@ -30,6 +43,7 @@ export interface Draft {
   photos: string[];
   status: 'pending' | 'saved' | 'failed' | 'discarded';
   recordId?: string;
+  rawInput?: RawInput;
 }
 
 export interface RefInfo {
@@ -61,6 +75,28 @@ const MSGS_PREFIX = 'jd_messages_';
 const MSGS_LEGACY_KEY = 'jd_messages';
 const CUR_KEY = 'jd_current_pet';
 const MODEL_KEY = 'jd_model_config';
+const SESSION_KEY = 'jd_cloud_session';
+export interface CloudSession { userId: string; familyId: string }
+export function getCloudSession(): CloudSession | null { return wx.getStorageSync(SESSION_KEY) || null; }
+export function setCloudSession(session: CloudSession | null): void {
+  if (session) wx.setStorageSync(SESSION_KEY, session);
+  else wx.removeStorageSync(SESSION_KEY);
+}
+function scopedKey(key: string): string {
+  const session = getCloudSession();
+  return session && key !== MODEL_KEY ? `jd_cloud_${session.userId}_${session.familyId}_${key}` : key;
+}
+/** Commit a complete fetched snapshot only after all pages and media resolve. */
+export function cacheCloudData(pets: Pet[], records: DiaryRecord[]): void {
+  if (!getCloudSession()) throw new Error('云端会话不存在');
+  write(PETS_KEY, pets);
+  write(RECORDS_KEY, records);
+  write('jd_cache_revision', getCloudCacheRevision() + 1);
+}
+export function getCloudCacheRevision(): number { return read<number>('jd_cache_revision', 0); }
+export function getLocalData(): { pets: Pet[]; records: DiaryRecord[] } {
+  return { pets: wx.getStorageSync(PETS_KEY) || [], records: wx.getStorageSync(RECORDS_KEY) || [] };
+}
 
 export function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -68,7 +104,7 @@ export function uid(): string {
 
 function read<T>(key: string, fallback: T): T {
   try {
-    const v = wx.getStorageSync(key);
+    const v = wx.getStorageSync(scopedKey(key));
     return v === '' || v === undefined || v === null ? fallback : (v as T);
   } catch (e) {
     return fallback;
@@ -76,7 +112,7 @@ function read<T>(key: string, fallback: T): T {
 }
 
 function write(key: string, value: unknown): void {
-  wx.setStorageSync(key, value);
+  wx.setStorageSync(scopedKey(key), value);
 }
 
 /* ---------------- 宠物 ---------------- */
@@ -147,7 +183,7 @@ export function getRecord(id: string): DiaryRecord | null {
   return read<DiaryRecord[]>(RECORDS_KEY, []).find((r) => r.id === id) || null;
 }
 
-export function addRecord(input: { petId: string; date: string; text: string; tags: string[]; photos: string[] }): DiaryRecord {
+export function addRecord(input: { petId: string; date: string; text: string; tags: string[]; photos: string[]; rawInput?: RawInput; mode?: string }): DiaryRecord {
   if (!isValidDate(input.date)) throw new Error('记录日期无效');
   const all = read<DiaryRecord[]>(RECORDS_KEY, []);
   const rec: DiaryRecord = {
@@ -157,6 +193,8 @@ export function addRecord(input: { petId: string; date: string; text: string; ta
     text: input.text || '',
     tags: input.tags || [],
     photos: input.photos || [],
+    rawInput: input.rawInput || { text: input.text || '', photos: (input.photos || []).slice(), provenance: 'direct' },
+    formatting: { schemaVersion: 1, mode: input.mode || 'manual' },
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
@@ -170,7 +208,7 @@ export function updateRecord(id: string, patch: Partial<DiaryRecord>): DiaryReco
   const all = read<DiaryRecord[]>(RECORDS_KEY, []);
   const idx = all.findIndex((r) => r.id === id);
   if (idx < 0) return null;
-  all[idx] = { ...all[idx], ...patch, id, updatedAt: Date.now() };
+  all[idx] = { ...all[idx], ...patch, rawInput: all[idx].rawInput, id, updatedAt: Date.now() };
   write(RECORDS_KEY, all);
   return all[idx];
 }
@@ -187,7 +225,7 @@ function migrateLegacyMessages(petId: string): void {
   if (legacy && legacy.length && petId) {
     write(`${MSGS_PREFIX}${petId}`, legacy);
   }
-  wx.removeStorageSync(MSGS_LEGACY_KEY);
+  wx.removeStorageSync(scopedKey(MSGS_LEGACY_KEY));
 }
 
 export function getMessages(petId: string): ChatMessage[] {
@@ -219,8 +257,13 @@ export function saveModelConfig(cfg: ModelConfig): void {
 }
 
 export function clearAll(): void {
-  getPets().forEach((p) => wx.removeStorageSync(`${MSGS_PREFIX}${p.id}`));
-  [PETS_KEY, RECORDS_KEY, MSGS_LEGACY_KEY, CUR_KEY].forEach((k) => wx.removeStorageSync(k));
+  const session = getCloudSession();
+  if (session) {
+    write('jd_cache_revision', getCloudCacheRevision() + 1);
+    wx.removeStorageSync(`jd_media_${session.userId}_${session.familyId}`);
+  }
+  getPets().forEach((p) => wx.removeStorageSync(scopedKey(`${MSGS_PREFIX}${p.id}`)));
+  [PETS_KEY, RECORDS_KEY, MSGS_LEGACY_KEY, CUR_KEY].forEach((k) => wx.removeStorageSync(scopedKey(k)));
 }
 
 function getStorage(key: string): string {
@@ -231,7 +274,7 @@ function getStorage(key: string): string {
 
 /** 压缩后转存：先压缩再落盘，控制本机占用（压缩失败则用原图） */
 function compressPhoto(p: string): Promise<string> {
-  if (p.indexOf(wx.env.USER_DATA_PATH) === 0 || p.indexOf('http') === 0) return Promise.resolve(p);
+  if (p.indexOf(wx.env.USER_DATA_PATH) === 0 || p.indexOf('http') === 0 || p.indexOf('cloud://') === 0) return Promise.resolve(p);
   return new Promise((resolve) => {
     wx.compressImage({
       src: p,
@@ -255,7 +298,7 @@ export function persistPhotos(paths: string[]): Promise<string[]> {
   }
   return Promise.all(
     paths.map(async (p, i) => {
-      if (p.indexOf(wx.env.USER_DATA_PATH) === 0 || p.indexOf('http') === 0) return p;
+      if (p.indexOf(wx.env.USER_DATA_PATH) === 0 || p.indexOf('http') === 0 || p.indexOf('cloud://') === 0) return p;
       const src = await compressPhoto(p);
       const filePath = `${dir}/p_${Date.now()}_${i}_${Math.floor(Math.random() * 1e6)}.jpg`;
       return new Promise<string>((resolve, reject) => {

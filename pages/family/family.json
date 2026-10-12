@@ -1,0 +1,4 @@
+{
+  "navigationBarTitleText": "账号与家庭空间",
+  "usingComponents": { "t-dialog": "tdesign-miniprogram/dialog/dialog" }
+}

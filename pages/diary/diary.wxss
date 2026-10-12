@@ -79,6 +79,9 @@
   margin-top: 48rpx;
 }
 
+.original { margin-top: 32rpx; padding-top: 24rpx; border-top: 1rpx solid #E6EBE5; font-size: 26rpx; color: #67766C; white-space: pre-wrap; }
+.original-title { margin-bottom: 12rpx; font-weight: 600; }
+
 .delete-btn {
   display: flex;
   align-items: center;

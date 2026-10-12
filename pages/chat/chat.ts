@@ -2,8 +2,8 @@ import ActionSheet from 'tdesign-miniprogram/action-sheet/index';
 import Toast from 'tdesign-miniprogram/toast/index';
 import {
   getPets, getCurrentPet, setCurrentPet, petEmoji,
-  getMessages, saveMessages, addRecord, persistPhotos, uid,
-  getModelConfig, getRecords,
+  getMessages, saveMessages, persistPhotos, uid,
+  getModelConfig, getRecords, getCloudSession,
   Pet, ChatMessage,
 } from '../../utils/store';
 import { respond, extractTags } from '../../utils/intent';
@@ -13,6 +13,7 @@ import { today, isValidDate } from '../../utils/date';
 import { RequestToken } from '../../utils/cancellation';
 import { isHistoryQuery, queryRecords, resolveQueryOptions } from '../../utils/query';
 import { validateDraft } from '../../utils/draft';
+import { addRecord, refreshCloud } from '../../utils/repository';
 
 Page({
   data: {
@@ -59,7 +60,14 @@ Page({
     return (app && app.globalData && app.globalData.tabbarHeight) || 60;
   },
 
-  onShow() {
+  async onShow() {
+    if (getCloudSession()) {
+      this.setData({ pets: [], currentPet: null, messages: [] });
+      try { await refreshCloud(); } catch (err: any) {
+        Toast({ context: this, selector: '#t-toast', message: err.message || '云端读取失败，请重新进入页面', theme: 'error' });
+        return;
+      }
+    }
     const pets = getPets();
     const currentPet = getCurrentPet();
     this.setData({
@@ -121,7 +129,8 @@ Page({
   },
 
   async onSend() {
-    const text = this.data.inputValue.trim();
+    const originalText = this.data.inputValue;
+    const text = originalText.trim();
     const photos = this.data.attachments.slice();
     const pet = this.data.currentPet;
     if (!pet || (!text && !photos.length) || this.data.aiThinking) return;
@@ -138,7 +147,7 @@ Page({
         wx.hideLoading();
       }
       this.assertActive(token, pet.id);
-      const userMsg: ChatMessage = { id: uid(), role: 'user', kind: 'text', text, photos: savedPhotos, time: Date.now() };
+      const userMsg: ChatMessage = { id: uid(), role: 'user', kind: 'text', text, sourceText: originalText, photos: savedPhotos, time: Date.now() };
       this.setData({ messages: this.data.messages.concat(userMsg), inputValue: '', attachments: [],
         placeholder: '说点什么，比如：今天给咪咪洗澡了' });
       this.persist();
@@ -170,7 +179,11 @@ Page({
       time: Date.now(),
     };
     if (o.draft) {
-      msg.draft = { ...o.draft, key: msg.id, status: 'pending' };
+      const source = this.data.messages.slice().reverse().find((m: ChatMessage) => m.role === 'user');
+      msg.draft = { ...o.draft, key: msg.id, status: 'pending', rawInput: o.draft.rawInput || {
+        text: o.sourceText !== undefined ? o.sourceText : source?.sourceText !== undefined ? source.sourceText : source?.text || o.draft.text || '',
+        photos: (o.sourcePhotos || source?.photos || o.draft.photos || []).slice(), provenance: 'direct',
+      } };
     }
     return msg;
   },
@@ -184,10 +197,12 @@ Page({
     const history = (historyMessages || []).filter((m) => m.kind === 'text' && m.text)
       .slice(-8).map((m) => ({ role: m.role === 'user' ? ('user' as const) : ('assistant' as const), content: m.text! }));
     const cfg = getModelConfig(); // 请求全程使用同一个配置快照
+    const source = this.data.messages.slice().reverse().find((m: ChatMessage) => m.role === 'user' && m.text === text);
+    const originalText = source?.sourceText !== undefined ? source.sourceText : text;
     try {
       const res = await runAgent(cfg, text, { pet, history, photos: savedPhotos, abortToken: token });
       this.assertActive(token, pet.id);
-      const msgs: ChatMessage[] = res.drafts.map((d) => this.toMessage({ kind: 'draft', draft: d }, false, 'tool'));
+      const msgs: ChatMessage[] = res.drafts.map((d) => this.toMessage({ kind: 'draft', draft: d, sourceText: originalText, sourcePhotos: savedPhotos }, false, 'tool'));
       if (res.reply || res.refs.length) msgs.push(this.toMessage({ kind: res.refs.length ? 'query' : 'text', text: res.reply || '', refs: res.refs }, false, 'tool'));
       if (!msgs.length) msgs.push(this.toMessage({ kind: 'text', text: '我在呢，继续说～' }, false, 'tool'));
       this.appendMessages(msgs);
@@ -202,7 +217,7 @@ Page({
         const msgs: ChatMessage[] = [];
         if (out.draft) {
           const draft = validateDraft(out.draft, { text, petId: pet.id, photos: savedPhotos }, referenceDate);
-          msgs.push(this.toMessage({ kind: 'draft', draft }, false, 'model'));
+          msgs.push(this.toMessage({ kind: 'draft', draft, sourceText: originalText, sourcePhotos: savedPhotos }, false, 'model'));
         }
         const historical = isHistoryQuery(text);
         const querying = !!out.query || historical;
@@ -223,7 +238,7 @@ Page({
         notice.sourceText = text;
         notice.sourcePhotos = savedPhotos.slice();
         this.appendMessages([notice].concat(respond({ text, photos: savedPhotos, petId: pet.id, petName: pet.name })
-          .map((o) => this.toMessage(o, true, 'local'))));
+          .map((o) => this.toMessage({ ...o, sourceText: originalText, sourcePhotos: savedPhotos }, true, 'local'))));
       }
     } finally {
       // 旧请求迟到，不能清掉后续新请求的思考状态和取消句柄。
@@ -293,32 +308,48 @@ Page({
     return this.data.messages.findIndex((m) => m.draft && m.draft.key === key);
   },
 
-  onCardSave(e: WechatMiniprogram.CustomEvent) {
+  async onCardSave(e: WechatMiniprogram.CustomEvent) {
     const { key } = e.detail;
     const idx = this.findDraft(key);
     if (idx < 0) return;
     const draft = this.data.messages[idx].draft!;
+    const mode = this.data.messages[idx].mode || 'manual';
+    if (this._savingDrafts?.[key]) return;
     if (draft.status !== 'pending' && draft.status !== 'failed') return;
     if (!isValidDate(draft.date)) {
       Toast({ context: this, selector: '#t-toast', message: '先点选一下发生日期吧', theme: 'warning' });
       return;
     }
     try {
-      const rec = addRecord({
+      this._savingDrafts = { ...this._savingDrafts, [key]: true };
+      const scope = JSON.stringify(getCloudSession());
+      const currentPetId = this.data.currentPet?.id;
+      const savedPhotos = await persistPhotos(draft.photos);
+      if (scope !== JSON.stringify(getCloudSession())) throw new Error('家庭空间已切换，请重试');
+      const rec = await addRecord({
         petId: draft.petId,
         date: draft.date,
         text: draft.text,
         tags: draft.tags,
-        photos: draft.photos,
+        photos: savedPhotos,
+        rawInput: draft.rawInput || { text: draft.text, photos: draft.photos, provenance: 'legacy' },
+        mode,
+        clientId: key,
       });
-      this.updateDraft(idx, { status: 'saved', recordId: rec.id });
-    } catch (err) {
-      this.updateDraft(idx, { status: 'failed' });
+      if (scope === JSON.stringify(getCloudSession()) && currentPetId === this.data.currentPet?.id && this.data.messages[idx]?.draft?.key === key) {
+        this.updateDraft(idx, { status: 'saved', recordId: rec.id });
+      }
+    } catch (err: any) {
+      if (this.data.messages[idx]?.draft?.key === key) this.updateDraft(idx, { status: 'failed' });
+      Toast({ context: this, selector: '#t-toast', message: err.message || '保存失败，请重试', theme: 'error' });
+    } finally {
+      delete this._savingDrafts[key];
     }
   },
 
   onCardEdit(e: WechatMiniprogram.CustomEvent) {
     const { key } = e.detail;
+    if (this._savingDrafts?.[key]) return;
     const idx = this.findDraft(key);
     if (idx < 0) return;
     if (this.data.messages[idx].draft!.status === 'saved') return;
@@ -326,6 +357,7 @@ Page({
   },
 
   onCardDiscard(e: WechatMiniprogram.CustomEvent) {
+    if (this._savingDrafts?.[e.detail.key]) return;
     const idx = this.findDraft(e.detail.key);
     if (idx < 0) return;
     if (this.data.messages[idx].draft!.status === 'saved') return;
@@ -334,6 +366,7 @@ Page({
 
   onCardSetDate(e: WechatMiniprogram.CustomEvent) {
     const { key, date } = e.detail;
+    if (this._savingDrafts?.[key]) return;
     const idx = this.findDraft(key);
     if (idx < 0) return;
     if (!isValidDate(date) || this.data.messages[idx].draft!.status === 'saved') return;
@@ -357,6 +390,7 @@ Page({
   },
 
   onEditorConfirm(e: WechatMiniprogram.CustomEvent) {
+    if (this._savingDrafts?.[this.data.editorKey]) return;
     const { petId, date, text, photos } = e.detail;
     const idx = this.findDraft(this.data.editorKey);
     if (idx < 0) {
@@ -383,7 +417,7 @@ Page({
       demo: true,
       mode: 'local',
       time: Date.now(),
-      draft: { key: '', petId: pet.id, date: null, text, tags: extractTags(text), photos: [], status: 'pending' },
+      draft: { key: '', petId: pet.id, date: null, text, tags: extractTags(text), photos: [], status: 'pending', rawInput: { text, photos: [], provenance: 'direct' } },
     };
     msg.draft!.key = msg.id;
     this.appendMessages([msg]);

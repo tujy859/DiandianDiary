@@ -1,10 +1,11 @@
 import Dialog from 'tdesign-miniprogram/dialog/index';
 import Toast from 'tdesign-miniprogram/toast/index';
 import {
-  getRecord, updateRecord, removeRecord, getPets, persistPhotos, petEmoji, Pet, DiaryRecord,
+  getRecord, getPets, persistPhotos, petEmoji, Pet, DiaryRecord, getCloudSession,
 } from '../../utils/store';
 import { displayDate, relDay } from '../../utils/date';
 import { extractTags } from '../../utils/intent';
+import { updateRecord, removeRecord, refreshCloud } from '../../utils/repository';
 
 Page({
   data: {
@@ -19,7 +20,15 @@ Page({
     this.setData({ id: options.id || '', pets: getPets() });
   },
 
-  onShow() {
+  async onShow() {
+    if (getCloudSession()) {
+      this.setData({ record: null });
+      try { await refreshCloud(); } catch (err: any) {
+        Toast({ context: this, selector: '#t-toast', message: err.message || '云端读取失败', theme: 'error' });
+        return;
+      }
+    }
+    this.setData({ pets: getPets() });
     this.reload();
   },
 
@@ -59,20 +68,22 @@ Page({
   },
 
   async onEditorConfirm(e: WechatMiniprogram.CustomEvent) {
+    if (this._saving) return;
+    this._saving = true;
     const { petId, date, text, photos } = e.detail;
     wx.showLoading({ title: '保存中…', mask: true });
     try {
       const savedPhotos = await persistPhotos(photos);
       const tags = text !== this.data.record!.text ? extractTags(text) : this.data.record!.tags;
-      updateRecord(this.data.id, { petId, date, text, photos: savedPhotos, tags });
+      await updateRecord(this.data.id, { petId, date, text, photos: savedPhotos, tags });
       wx.hideLoading();
       this.setData({ editorVisible: false });
       this.reload();
       Toast({ context: this, selector: '#t-toast', message: '已保存', theme: 'success' });
-    } catch (err) {
+    } catch (err: any) {
       wx.hideLoading();
-      Toast({ context: this, selector: '#t-toast', message: '保存失败，请重试', theme: 'error' });
-    }
+      Toast({ context: this, selector: '#t-toast', message: err.message || '保存失败，请重试', theme: 'error' });
+    } finally { this._saving = false; }
   },
 
   onDelete() {
@@ -83,9 +94,9 @@ Page({
       content: '删除后，时间轴、画廊和查询里都看不到了',
       confirmBtn: { content: '删除', theme: 'danger' },
       cancelBtn: '再想想',
-    }).then(() => {
-      removeRecord(this.data.id);
+    }).then(async () => {
+      await removeRecord(this.data.id);
       wx.navigateBack();
-    }).catch(() => { });
+    }).catch((err: any) => { if (err?.message) Toast({ context: this, selector: '#t-toast', message: err.message, theme: 'error' }); });
   },
 });

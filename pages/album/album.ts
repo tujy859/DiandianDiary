@@ -1,8 +1,9 @@
 import ActionSheet from 'tdesign-miniprogram/action-sheet/index';
 import {
-  getPets, getCurrentPet, setCurrentPet, getRecords, petEmoji, Pet, DiaryRecord,
+  getPets, getCurrentPet, setCurrentPet, getRecords, petEmoji, Pet, DiaryRecord, getCloudSession,
 } from '../../utils/store';
 import { displayDate, relDay } from '../../utils/date';
+import { refreshCloud } from '../../utils/repository';
 
 interface TimelineItem extends DiaryRecord {
   dateText: string;
@@ -28,7 +29,14 @@ Page({
     tabbarHeight: 60,
   },
 
-  onShow() {
+  async onShow() {
+    if (getCloudSession()) {
+      this.setData({ pets: [], currentPet: null, records: [], gallery: [] });
+      try { await refreshCloud(); } catch (err: any) {
+        wx.showToast({ title: err.message || '云端读取失败', icon: 'none' });
+        return;
+      }
+    }
     const pets = getPets();
     const currentPet = getCurrentPet();
     const app: any = getApp();

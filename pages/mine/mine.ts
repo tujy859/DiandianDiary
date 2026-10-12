@@ -1,6 +1,7 @@
 import Dialog from 'tdesign-miniprogram/dialog/index';
 import Toast from 'tdesign-miniprogram/toast/index';
-import { getPets, savePet, removePet, clearAll, petEmoji, getModelConfig, Pet } from '../../utils/store';
+import { getPets, clearAll, petEmoji, getModelConfig, Pet, getCloudSession, uid } from '../../utils/store';
+import { savePet, removePet, refreshCloud } from '../../utils/repository';
 import { isModelReady } from '../../utils/llm';
 import { displayDate, fmt } from '../../utils/date';
 
@@ -20,9 +21,18 @@ Page({
     devMode: false,
     aboutTaps: 0,
     tabbarHeight: 60,
+    cloudOn: false,
   },
 
-  onShow() {
+  async onShow() {
+    this.setData({ cloudOn: !!getCloudSession() });
+    if (getCloudSession()) {
+      this.setData({ pets: [] });
+      try { await refreshCloud(); } catch (err: any) {
+        Toast({ context: this, selector: '#t-toast', message: err.message || '云端读取失败', theme: 'error' });
+        return;
+      }
+    }
     const app: any = getApp();
     this.setData({ tabbarHeight: (app && app.globalData && app.globalData.tabbarHeight) || 60 });
     this.reload();
@@ -43,6 +53,7 @@ Page({
   /* ---------- 宠物表单 ---------- */
 
   onAddPet() {
+    this._petCreateId = uid();
     this.setData({
       formVisible: true,
       form: { id: '', name: '', species: '猫', breed: '', birthday: '' },
@@ -94,7 +105,8 @@ Page({
     this.setData({ dateVisible: false });
   },
 
-  onSavePet() {
+  async onSavePet() {
+    if (this._savingPet) return;
     const { id, name, species, breed, birthday } = this.data.form;
     if (!name.trim()) {
       this.setData({ formError: '给它起个名字吧' });
@@ -104,10 +116,16 @@ Page({
       this.setData({ formError: '选择一下物种' });
       return;
     }
-    savePet({ id: id || undefined, name, species, breed, birthday });
-    this.setData({ formVisible: false });
-    this.reload();
-    Toast({ context: this, selector: '#t-toast', message: id ? '已保存' : '欢迎新伙伴', theme: 'success' });
+    this._savingPet = true;
+    try {
+      if (!this._petCreateId) this._petCreateId = uid();
+      await savePet({ id: id || undefined, name, species, breed, birthday, clientId: this._petCreateId });
+      this.setData({ formVisible: false });
+      this.reload();
+      Toast({ context: this, selector: '#t-toast', message: id ? '已保存' : '欢迎新伙伴', theme: 'success' });
+    } catch (err: any) {
+      this.setData({ formError: err.message || '保存失败，请重试' });
+    } finally { this._savingPet = false; }
   },
 
   onDeletePet(e: WechatMiniprogram.TouchEvent) {
@@ -117,13 +135,13 @@ Page({
       context: this,
       selector: '#t-dialog',
       title: `删除「${pet.name}」？`,
-      content: '它的所有日记也会一起删除，且无法恢复',
+      content: '它的所有日记也会从当前空间隐藏。云端操作仅家庭创建者可执行。',
       confirmBtn: { content: '删除', theme: 'danger' },
       cancelBtn: '再想想',
-    }).then(() => {
-      removePet(pet.id);
+    }).then(async () => {
+      await removePet(pet.id);
       this.reload();
-    }).catch(() => { });
+    }).catch((err: any) => { if (err?.message) Toast({ context: this, selector: '#t-toast', message: err.message, theme: 'error' }); });
   },
 
   /* ---------- 设置 ---------- */
@@ -131,6 +149,8 @@ Page({
   goModel() {
     wx.navigateTo({ url: '/pages/model/model' });
   },
+
+  goFamily() { wx.navigateTo({ url: '/pages/family/family' }); },
 
   goSelftest() {
     wx.navigateTo({ url: '/pages/selftest/selftest' });
@@ -148,7 +168,7 @@ Page({
       context: this,
       selector: '#t-dialog',
       title: '记一下喵',
-      content: '用聊天的方式，记下和小家伙的每一天。\n数据只保存在本机；在「模型连接配置」接入模型后，聊聊由真实模型应答，失败时回退本地演示规则。',
+      content: '用聊天的方式，记下和小家伙的每一天。\n在「账号与家庭空间」连接云端后，已确认的日记保存到家庭空间；本地模式的数据仍在本机。',
       confirmBtn: '知道啦',
     });
   },
@@ -157,8 +177,8 @@ Page({
     Dialog.confirm({
       context: this,
       selector: '#t-dialog',
-      title: '清除全部数据？',
-      content: '宠物、日记和聊天记录都会被删除（模型配置保留）',
+      title: getCloudSession() ? '清除本机缓存？' : '清除本机数据？',
+      content: getCloudSession() ? '清除当前家庭在本机的缓存和聊天记录。云端宠物和日记保留，下次进入会重新读取。' : '本机宠物、日记和聊天记录都会被删除（模型配置保留）',
       confirmBtn: { content: '全部清除', theme: 'danger' },
       cancelBtn: '取消',
     }).then(() => {

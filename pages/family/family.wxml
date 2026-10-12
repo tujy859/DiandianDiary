@@ -1,0 +1,40 @@
+<view class="page">
+  <view class="intro">与家人一起记录宠物生活</view>
+  <view class="note">连接后，已确认的日记会保存到云端；加入同一家庭即可查看共同宠物和日记。</view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <button wx:if="{{!connected}}" type="primary" loading="{{busy}}" disabled="{{busy}}" bindtap="onConnect">使用微信身份连接云端</button>
+  <block wx:if="{{connected}}">
+    <view class="card">
+      <view class="title">我的账号</view>
+      <view class="note">微信身份已连接。昵称仅供展示，留空也可使用。</view>
+      <input type="nickname" placeholder="填写昵称" maxlength="40" value="{{nickname}}" bindinput="onNickname" />
+      <button size="mini" disabled="{{busy}}" bindtap="onSaveProfile">保存昵称</button>
+    </view>
+    <view class="card">
+      <view class="title">家庭空间</view>
+      <button wx:for="{{families}}" wx:key="id" data-id="{{item.id}}" disabled="{{busy}}" bindtap="onSwitch">{{item.id === familyId ? '✓ ' : ''}}{{item.name}}</button>
+      <view class="note">{{owner ? '你是家庭创建者，可以管理宠物和成员。' : '你可以记录日记，编辑自己的日记。'}}</view>
+      <view wx:for="{{members}}" wx:key="userId" class="member">
+        <text>{{item.label}} · {{item.role === 'owner' ? '创建者' : '成员'}}</text>
+        <button wx:if="{{owner && item.role !== 'owner'}}" size="mini" data-id="{{item.userId}}" disabled="{{busy}}" bindtap="onRemove">移除</button>
+      </view>
+      <button wx:if="{{owner}}" disabled="{{busy}}" bindtap="onInvite">生成一次性邀请码</button>
+      <view wx:if="{{inviteToken}}" class="invite"><text selectable>{{inviteToken}}</text><view class="note">{{inviteExpiry}}</view><button size="mini" bindtap="onCopy">复制邀请码</button><button size="mini" disabled="{{busy}}" bindtap="onRevoke">撤销邀请</button></view>
+      <button wx:if="{{!owner}}" disabled="{{busy}}" bindtap="onLeave">退出此家庭</button>
+      <button wx:if="{{owner}}" disabled="{{busy}}" bindtap="onImport">导入本机宠物和日记到当前家庭</button>
+    </view>
+    <view class="card">
+      <view class="title">加入家人的空间</view>
+      <input placeholder="粘贴家人提供的邀请码" maxlength="48" value="{{inviteInput}}" bindinput="onInviteInput" />
+      <button disabled="{{busy || !inviteInput}}" bindtap="onJoin">加入家庭</button>
+      <view class="title">创建新家庭</view>
+      <input placeholder="家庭名称" maxlength="40" value="{{familyName}}" bindinput="onFamilyName" />
+      <button disabled="{{busy || !familyName}}" bindtap="onCreate">创建家庭空间</button>
+    </view>
+    <button disabled="{{busy}}" bindtap="onConnect">刷新云端数据</button>
+    <button disabled="{{busy}}" bindtap="onLocal">返回本机模式</button>
+  </block>
+  <view wx:if="{{busy}}" class="note">正在连接或保存，请稍候…</view>
+  <view class="note">本机模式的数据独立保存。导入前请确认当前微信账号和目标家庭。</view>
+  <t-dialog id="t-dialog" />
+</view>

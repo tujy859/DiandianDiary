@@ -1,0 +1,11 @@
+.page { padding: 32rpx; background: #FAF7F0; min-height: 100vh; box-sizing: border-box; }
+.intro { font-size: 40rpx; font-weight: 600; color: #2F6B4F; margin: 16rpx 0; }
+.note { font-size: 25rpx; color: #67766C; line-height: 1.7; margin: 16rpx 0; }
+.card { background: white; border-radius: 24rpx; padding: 28rpx; margin: 28rpx 0; }
+.title { font-size: 30rpx; font-weight: 600; margin: 18rpx 0; }
+input { background: #F4F6F3; padding: 20rpx; border-radius: 12rpx; margin: 18rpx 0; }
+button { margin: 18rpx 0; font-size: 27rpx; }
+.error { color: #A93228; background: #FFF0EE; padding: 20rpx; border-radius: 12rpx; word-break: break-all; margin: 20rpx 0; }
+.invite { word-break: break-all; background: #EDF5EF; padding: 20rpx; border-radius: 12rpx; }
+.member { display: flex; align-items: center; justify-content: space-between; font-size: 25rpx; min-height: 70rpx; }
+.member button { margin: 0; }

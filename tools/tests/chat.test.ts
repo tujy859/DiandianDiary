@@ -118,11 +118,25 @@ test('照片处理中切换宠物，旧照片不会产生串宠物消息', async
   expect(page.data.messages).toHaveLength(0);
   expect(run).not.toHaveBeenCalled();
 });
-test('重复点击已保存卡片不能新增重复记录', () => {
+test('重复点击已保存卡片不能新增重复记录', async () => {
   page.data.messages = [{ id: 'draft', role: 'ai', kind: 'draft', draft: { key: 'draft', petId: a.id, date: today(), text: '洗澡', tags: ['洗澡'], photos: [], status: 'pending' } }];
-  page.onCardSave({ detail: { key: 'draft' } });
-  page.onCardSave({ detail: { key: 'draft' } });
+  await Promise.all([page.onCardSave({ detail: { key: 'draft' } }), page.onCardSave({ detail: { key: 'draft' } })]);
   expect(store.getRecords(a.id)).toHaveLength(1);
+  expect(page.data.messages[0].draft.status).toBe('saved');
+});
+
+test('草稿和日记保留未整理的完整输入，编辑草稿不会改写原文', async () => {
+  run.mockResolvedValueOnce({ ...result('已整理'), drafts: [{ petId: a.id, date: today(), text: '点点洗澡', tags: ['洗澡'], photos: [] }] });
+  page.data.inputValue = '  今天给点点洗澡了，乖乖的！\n';
+  await page.onSend();
+  const draft = page.data.messages.find((m: any) => m.draft).draft;
+  expect(draft.rawInput.text).toBe('  今天给点点洗澡了，乖乖的！\n');
+  page.data.editorKey = draft.key;
+  page.onEditorConfirm({ detail: { petId: a.id, date: today(), text: '补充整理结果', photos: [] } });
+  await page.onCardSave({ detail: { key: draft.key } });
+  const rec = store.getRecords(a.id)[0];
+  expect(rec.text).toBe('补充整理结果');
+  expect(rec.rawInput!.text).toBe('  今天给点点洗澡了，乖乖的！\n');
 });
 test('JSON 查询不能被模型的日期和次数覆盖', async () => {
   store.addRecord({ petId: a.id, date: today(), text: '驱虫', tags: ['医疗'], photos: [] });

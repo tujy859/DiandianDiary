@@ -31,6 +31,10 @@
   <!-- 设置 -->
   <view class="section-title">设置</view>
   <view class="jd-card panel">
+    <view class="cell" bindtap="goFamily">
+      <view class="cell-left"><t-icon name="usergroup" size="36rpx" color="#2F6B4F" /><text class="cell-text">账号与家庭空间</text></view>
+      <view class="cell-right"><text class="cell-note">{{cloudOn ? '已连接云端' : '本机模式'}}</text><t-icon name="chevron-right" size="32rpx" color="#C9CFCC" /></view>
+    </view>
     <view class="cell" bindtap="goModel">
       <view class="cell-left">
         <t-icon name="setting" size="36rpx" color="#2F6B4F" />
@@ -61,7 +65,7 @@
     <view class="cell" bindtap="onClear">
       <view class="cell-left">
         <t-icon name="delete" size="36rpx" color="#D54941" />
-        <text class="cell-text is-danger">清除全部数据</text>
+        <text class="cell-text is-danger">{{cloudOn ? '清除本机缓存' : '清除本机数据'}}</text>
       </view>
       <t-icon name="chevron-right" size="32rpx" color="#C9CFCC" />
     </view>

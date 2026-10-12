@@ -11,3 +11,4 @@ declare namespace WechatMiniprogram {
 }
 declare module 'tdesign-miniprogram/action-sheet/index' { const ActionSheet: any; export default ActionSheet; }
 declare module 'tdesign-miniprogram/toast/index' { const Toast: any; export default Toast; }
+declare module 'tdesign-miniprogram/dialog/index' { const Dialog: any; export default Dialog; }

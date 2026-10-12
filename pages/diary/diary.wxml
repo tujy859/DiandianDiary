@@ -25,6 +25,11 @@
     <view wx:if="{{record.tags.length}}" class="tags">
       <t-tag wx:for="{{record.tags}}" wx:key="*this" size="small" theme="primary" variant="light">{{item}}</t-tag>
     </view>
+    <view wx:if="{{record.rawInput}}" class="original">
+      <view class="original-title">{{record.rawInput.provenance === 'legacy' ? '旧记录导入内容（原始输入未留存）' : '原始输入'}}</view>
+      <text selectable>{{record.rawInput.text || '（仅照片）'}}</text>
+      <view wx:if="{{record.rawInput.photos.length}}">原始照片 {{record.rawInput.photos.length}} 张</view>
+    </view>
   </view>
 
   <view class="actions">
