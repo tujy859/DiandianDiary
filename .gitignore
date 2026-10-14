@@ -29,6 +29,9 @@ apiclient_key.*
 local-data/
 backups/
 
+# Local assistant working notes (shared history belongs in docs/)
+.workbuddy/
+
 # Editor and OS files
 .idea/
 .vscode/
