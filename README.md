@@ -81,6 +81,8 @@ npm test -- --runInBand
 
 ## 项目文档
 
+项目背景、设计原则和协作约定见 [AGENTS.md](AGENTS.md)。后续说明书和 PPT 放在[交付文档目录](docs/deliverables/README.md)，参考资料与图表源稿放在[文档素材目录](resources/document-assets/README.md)。
+
 [文档索引](docs/README.md)汇总维护说明；重要修改、合并、部署及验收状态记录在[开发记录](docs/development-log.md)中，随代码提交更新。
 
 ## 当前已知限制
