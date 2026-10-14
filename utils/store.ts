@@ -7,6 +7,7 @@ export interface Pet {
   species: string; // 猫 / 狗 / 其他
   breed?: string;
   birthday?: string;
+  avatarId?: string; // 稳定的内置头像 ID，旧记录按物种显示默认头像
   createdAt: number;
   familyId?: string;
   version?: number;
@@ -137,6 +138,7 @@ export function savePet(pet: Partial<Pet> & { name: string; species: string }): 
     species: pet.species,
     breed: pet.breed || '',
     birthday: pet.birthday || '',
+    avatarId: pet.avatarId || '',
     createdAt: Date.now(),
   };
   pets.push(created);

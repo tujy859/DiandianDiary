@@ -1,7 +1,6 @@
-import ActionSheet from 'tdesign-miniprogram/action-sheet/index';
 import Toast from 'tdesign-miniprogram/toast/index';
 import {
-  getPets, getCurrentPet, setCurrentPet, petEmoji,
+  getPets, getCurrentPet, setCurrentPet,
   getMessages, saveMessages, persistPhotos, uid,
   getModelConfig, getRecords, getCloudSession,
   Pet, ChatMessage,
@@ -14,6 +13,9 @@ import { RequestToken } from '../../utils/cancellation';
 import { isHistoryQuery, queryRecords, resolveQueryOptions } from '../../utils/query';
 import { validateDraft } from '../../utils/draft';
 import { addRecord, refreshCloud } from '../../utils/repository';
+import { petAvatar } from '../../utils/pet-avatars';
+import { showPetPicker } from '../../utils/pet-picker';
+import { getLayout } from '../../utils/layout';
 
 Page({
   data: {
@@ -33,6 +35,7 @@ Page({
     editorValue: {} as any,
     editorKey: '',
     tabbarHeight: 60,
+    viewportHeight: 667,
   },
 
   _abort: null as RequestToken | null,
@@ -73,10 +76,10 @@ Page({
     this.setData({
       pets,
       currentPet,
-      petAvatar: currentPet ? petEmoji(currentPet.species) : '',
+      petAvatar: currentPet ? petAvatar(currentPet) : '',
       messages: currentPet ? getMessages(currentPet.id) : [],
       modelOn: isModelReady(getModelConfig()),
-      tabbarHeight: this.tabbarHeight(),
+      ...getLayout(),
     });
     const tabbar = this.getTabBar && this.getTabBar();
     if (tabbar) tabbar.setData({ selected: 1 });
@@ -87,6 +90,8 @@ Page({
 
   onHide() {
     this.cancelGeneration(true);
+    const tabbar = this.getTabBar && this.getTabBar();
+    if (tabbar) tabbar.setData({ hidden: false });
     if (this.data.keyboardHeight) this.setData({ keyboardHeight: 0 });
   },
 
@@ -96,7 +101,9 @@ Page({
 
   onKeyboardHeight(e: WechatMiniprogram.CustomEvent) {
     const h = e.detail.height || 0;
-    this.setData({ keyboardHeight: h });
+    this.setData({ keyboardHeight: h, ...(!h ? { focusFlag: false } : {}) });
+    const tabbar = this.getTabBar && this.getTabBar();
+    if (tabbar) tabbar.setData({ hidden: h > 0 });
     if (h > 0) this.scrollToBottom();
   },
 
@@ -424,12 +431,12 @@ Page({
   },
 
   onQuick(e: WechatMiniprogram.TouchEvent) {
-    const { mode } = e.currentTarget.dataset;
+    const { mode, prompt } = e.currentTarget.dataset;
     this.setData({
+      ...(prompt ? { inputValue: String(prompt).replace('{pet}', this.data.currentPet?.name || '小家伙') } : {}),
       placeholder: mode === 'record' ? '说说发生的小事，比如：今天给咪咪洗了澡' : '比如：上次什么时候洗澡？',
       focusFlag: true,
     });
-    setTimeout(() => this.setData({ focusFlag: false }), 300);
   },
 
   onOpenRef(e: WechatMiniprogram.TouchEvent) {
@@ -444,14 +451,8 @@ Page({
   /* ---------- 宠物切换 ---------- */
 
   onSwitchPet() {
-    const pets = this.data.pets;
-    if (!pets.length) return;
-    ActionSheet.show({
-      theme: 'list',
-      selector: '#t-action-sheet',
-      context: this,
-      items: pets.map((p) => ({ label: `${petEmoji(p.species)} ${p.name}` })).concat([{ label: '＋ 添加宠物' }]),
-    });
+    wx.hideKeyboard && wx.hideKeyboard();
+    showPetPicker(this, this.data.pets);
   },
 
   onPetSelected(e: WechatMiniprogram.CustomEvent) {
@@ -466,7 +467,7 @@ Page({
     setCurrentPet(pet.id);
     this.setData({
       currentPet: pet,
-      petAvatar: petEmoji(pet.species),
+      petAvatar: petAvatar(pet),
       messages: getMessages(pet.id),
       inputValue: '', attachments: [], editorVisible: false, editorKey: '', editorValue: {},
     });

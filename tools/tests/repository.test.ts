@@ -31,6 +31,23 @@ beforeEach(() => {
 const input = (petId: string) => ({ petId, date: '2026-10-12', text: '整理的洗澡记录', tags: ['洗澡'], photos: [],
   rawInput: { text: '今天早上给点点洗澡了，好乖', photos: [] }, clientId: 'draft-one', mode: 'tool' });
 
+test('云端头像跨刷新保留，旧客户端编辑不清空头像，拒绝跨物种或任意路径', async () => {
+  await repo.connectCloud();
+  const pet = await repo.savePet({ name: '点点', species: '猫', avatarId: 'cat-british-longhair-gray' });
+  await repo.refreshCloud();
+  expect(local.getPets()[0].avatarId).toBe('cat-british-longhair-gray');
+  await repo.savePet({ id: pet.id, name: '点点改名', species: '猫' });
+  expect(local.getPets()[0].avatarId).toBe('cat-british-longhair-gray');
+  await expect(repo.savePet({ id: pet.id, name: '点点', species: '猫', avatarId: 'dog-cream' })).rejects.toMatchObject({ code: 'INVALID' });
+  await expect(repo.savePet({ id: pet.id, name: '点点', species: '猫', avatarId: '/assets/anything.png' })).rejects.toMatchObject({ code: 'INVALID' });
+});
+
+test('导入本机宠物到家庭空间时携带已选择的头像', async () => {
+  local.savePet({ name: '本机英长', species: '猫', avatarId: 'cat-british-longhair-gray' });
+  await repo.connectCloud(); await repo.importLocalData();
+  expect(local.getPets()[0].avatarId).toBe('cat-british-longhair-gray');
+});
+
 test('本机模式仍可使用；连接云端后按账号和家庭隔离缓存', async () => {
   const personal = await repo.savePet({ name: '本机猫', species: '猫' });
   expect(local.getPets()[0].id).toBe(personal.id);

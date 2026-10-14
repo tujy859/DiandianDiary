@@ -1,30 +1,23 @@
 <view class="page" style="padding-bottom: {{tabbarHeight}}px;">
-  <!-- 品牌区：矢量头像占位，后续可替换为「猫咪抱日记本」插画 -->
+  <!-- 品牌小猫与用户宠物头像分开 -->
   <view class="brand">
     <view class="brand-avatar">
-      <t-icon name="cat" size="72rpx" color="#2F6B4F" />
+      <image class="brand-image" src="/assets/brand/app-icon.png" mode="aspectFit" />
     </view>
-    <view class="brand-name">记一下喵</view>
-    <view class="brand-slogan">记下和小家伙的每一天</view>
+    <view class="brand-copy"><view class="brand-name">记一下喵</view><view class="brand-slogan">记下和小家伙的每一天</view></view>
   </view>
 
   <!-- 宠物档案 -->
-  <view class="section-title">宠物档案</view>
+  <view class="section-heading"><view class="section-title">宠物档案</view><view class="section-add" bindtap="onAddPet" aria-role="button"><t-icon name="add" size="28rpx" color="#32694F" /><text>添加宠物</text></view></view>
   <view class="jd-card panel">
     <view wx:if="{{!pets.length}}" class="panel-empty">还没有宠物，先添加一只吧（只要名字和物种）</view>
     <view wx:for="{{pets}}" wx:key="id" class="pet-row" data-id="{{item.id}}" bindtap="onEditPet">
-      <view class="pet-avatar">{{item.emoji}}</view>
+      <image class="pet-avatar" src="{{item.avatar}}" mode="aspectFit" />
       <view class="pet-info">
         <text class="pet-name">{{item.name}}</text>
         <text class="pet-sub">{{item.species}}{{item.breed ? ' · ' + item.breed : ''}}{{item.birthdayText ? ' · ' + item.birthdayText + ' 出生' : ''}}</text>
       </view>
-      <view class="pet-del" data-id="{{item.id}}" catchtap="onDeletePet">
-        <t-icon name="delete" size="36rpx" color="#C9CFCC" />
-      </view>
-    </view>
-    <view class="add-btn" bindtap="onAddPet">
-      <t-icon name="add" size="36rpx" color="#2F6B4F" />
-      <text>添加宠物</text>
+      <t-icon name="chevron-right" size="30rpx" color="#A4ACA5" />
     </view>
   </view>
 
@@ -72,7 +65,9 @@
   </view>
 
   <!-- 宠物表单弹层 -->
+  <view class="brand-footnote">每一天，都有一点值得记住</view>
   <t-popup visible="{{formVisible}}" placement="bottom" bind:visible-change="onFormClose">
+    <scroll-view scroll-y class="form-scroll">
     <view class="form">
       <view class="form-head">
         <text class="form-title">{{form.id ? '编辑宠物' : '添加宠物'}}</text>
@@ -92,6 +87,14 @@
         >{{item}}</view>
       </view>
 
+      <view class="form-label">选择头像</view>
+      <view class="avatar-options">
+        <view wx:for="{{avatarChoices}}" wx:key="id" class="avatar-option {{form.avatarId === item.id ? 'is-selected' : ''}}" data-id="{{item.id}}" bindtap="onSelectAvatar" aria-role="button" aria-label="{{item.label}}" aria-pressed="{{form.avatarId === item.id}}">
+          <image src="{{item.src}}" mode="aspectFit" /><text>{{item.label}}</text>
+          <view wx:if="{{form.avatarId === item.id}}" class="avatar-check"><t-icon name="check" size="22rpx" color="#FFFFFF" /></view>
+        </view>
+      </view>
+
       <t-input label="品种" placeholder="选填，以后补也可以" value="{{form.breed}}" bind:change="onBreedInput" />
 
       <view class="form-label">生日（选填）</view>
@@ -104,7 +107,9 @@
       <view wx:if="{{formError}}" class="form-error">{{formError}}</view>
 
       <t-button theme="primary" size="large" block shape="round" bind:tap="onSavePet">保存</t-button>
+      <view wx:if="{{form.id}}" class="delete-pet" data-id="{{form.id}}" bindtap="onDeletePet" aria-role="button"><t-icon name="delete" size="28rpx" color="#C45148" /><text>删除宠物档案</text></view>
     </view>
+    </scroll-view>
   </t-popup>
 
   <t-date-time-picker

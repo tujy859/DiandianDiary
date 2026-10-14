@@ -1,9 +1,10 @@
 Component({
     data: {
         selected: 1,
+        hidden: false,
         list: [
             { pagePath: '/pages/album/album', text: '时光册', icon: 'image' },
-            { pagePath: '/pages/chat/chat', text: '聊聊', icon: 'cat', center: true },
+            { pagePath: '/pages/chat/chat', text: '聊聊', icon: 'chat' },
             { pagePath: '/pages/mine/mine', text: '我的', icon: 'user-circle' },
         ],
     },

@@ -18,6 +18,8 @@
 
 ## 开发运行
 
+UI 已采用统一的暖白/深绿样式，宠物档案支持内置头像选择，时光册保留竖线时间轴。运行时资源位于 `assets/`；高清源图与文档分别放在不入包的 `resources/`、`docs/`，见 [打包与资源维护](docs/package-size.md)。
+
 1. 使用微信开发者工具导入仓库根目录，项目类型选择小程序。
 2. 仓库的 `project.config.json` 使用 `touristappid` 占位。在本机 `project.private.config.json` 中填写自己有权限的真实 `appid`；新环境可复制 `project.private.config.json.example`，已有文件只添加 `appid` 字段，保留其他设置。云开发和真机预览需要真实 AppID。
 3. 项目使用原生 WXML / WXSS / TypeScript 和 WebView 渲染；TypeScript 由开发者工具编译。
@@ -37,6 +39,7 @@
 cd tools
 npm ci
 npm run typecheck
+npm run check:package
 npm test -- --runInBand
 ```
 

@@ -1,9 +1,11 @@
-import ActionSheet from 'tdesign-miniprogram/action-sheet/index';
 import {
-  getPets, getCurrentPet, setCurrentPet, getRecords, petEmoji, Pet, DiaryRecord, getCloudSession,
+  getPets, getCurrentPet, setCurrentPet, getRecords, Pet, DiaryRecord, getCloudSession,
 } from '../../utils/store';
 import { displayDate, relDay } from '../../utils/date';
 import { refreshCloud } from '../../utils/repository';
+import { petAvatar } from '../../utils/pet-avatars';
+import { showPetPicker } from '../../utils/pet-picker';
+import { getLayout } from '../../utils/layout';
 
 interface TimelineItem extends DiaryRecord {
   dateText: string;
@@ -27,6 +29,7 @@ Page({
     records: [] as TimelineItem[],
     gallery: [] as GalleryItem[],
     tabbarHeight: 60,
+    viewportHeight: 667,
   },
 
   async onShow() {
@@ -39,12 +42,11 @@ Page({
     }
     const pets = getPets();
     const currentPet = getCurrentPet();
-    const app: any = getApp();
     this.setData({
       pets,
       currentPet,
-      petAvatar: currentPet ? petEmoji(currentPet.species) : '',
-      tabbarHeight: (app && app.globalData && app.globalData.tabbarHeight) || 60,
+      petAvatar: currentPet ? petAvatar(currentPet) : '',
+      ...getLayout(),
     });
     this.reload();
     const tabbar = this.getTabBar && this.getTabBar();
@@ -86,13 +88,7 @@ Page({
   },
 
   onSwitchPet() {
-    if (!this.data.pets.length) return;
-    ActionSheet.show({
-      theme: 'list',
-      selector: '#t-action-sheet',
-      context: this,
-      items: this.data.pets.map((p) => ({ label: `${petEmoji(p.species)} ${p.name}` })).concat([{ label: '＋ 添加宠物' }]),
-    });
+    showPetPicker(this, this.data.pets);
   },
 
   onPetSelected(e: WechatMiniprogram.CustomEvent) {
@@ -102,8 +98,9 @@ Page({
       return;
     }
     const pet = this.data.pets[index];
+    if (!pet) return;
     setCurrentPet(pet.id);
-    this.setData({ currentPet: pet, petAvatar: petEmoji(pet.species) });
+    this.setData({ currentPet: pet, petAvatar: petAvatar(pet) });
     this.reload();
   },
 

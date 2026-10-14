@@ -1,6 +1,8 @@
 import Dialog from 'tdesign-miniprogram/dialog/index';
 import Toast from 'tdesign-miniprogram/toast/index';
-import { getPets, clearAll, petEmoji, getModelConfig, Pet, getCloudSession, uid } from '../../utils/store';
+import { getPets, clearAll, getModelConfig, Pet, getCloudSession, uid } from '../../utils/store';
+import { petAvatar, avatarIdFor, avatarOptions } from '../../utils/pet-avatars';
+import { getLayout } from '../../utils/layout';
 import { savePet, removePet, refreshCloud } from '../../utils/repository';
 import { isModelReady } from '../../utils/llm';
 import { displayDate, fmt } from '../../utils/date';
@@ -9,9 +11,10 @@ const SPECIES = ['猫', '狗', '其他'];
 
 Page({
   data: {
-    pets: [] as Array<Pet & { emoji: string; birthdayText?: string }>,
+    pets: [] as Array<Pet & { avatar: string; birthdayText?: string }>,
     formVisible: false,
-    form: { id: '', name: '', species: '猫', breed: '', birthday: '' },
+    form: { id: '', name: '', species: '猫', breed: '', birthday: '', avatarId: 'cat-cream-orange' },
+    avatarChoices: avatarOptions('猫'),
     speciesOptions: SPECIES,
     birthdayText: '',
     dateVisible: false,
@@ -33,8 +36,7 @@ Page({
         return;
       }
     }
-    const app: any = getApp();
-    this.setData({ tabbarHeight: (app && app.globalData && app.globalData.tabbarHeight) || 60 });
+    this.setData({ tabbarHeight: getLayout().tabbarHeight });
     this.reload();
     this.setData({ modelNote: isModelReady(getModelConfig()) ? '已接入' : '未接入' });
     const tabbar = this.getTabBar && this.getTabBar();
@@ -44,7 +46,7 @@ Page({
   reload() {
     const pets = getPets().map((p) => ({
       ...p,
-      emoji: petEmoji(p.species),
+      avatar: petAvatar(p),
       birthdayText: p.birthday ? displayDate(p.birthday) : '',
     }));
     this.setData({ pets });
@@ -56,7 +58,8 @@ Page({
     this._petCreateId = uid();
     this.setData({
       formVisible: true,
-      form: { id: '', name: '', species: '猫', breed: '', birthday: '' },
+      form: { id: '', name: '', species: '猫', breed: '', birthday: '', avatarId: 'cat-cream-orange' },
+      avatarChoices: avatarOptions('猫'),
       birthdayText: '',
       formError: '',
     });
@@ -67,7 +70,8 @@ Page({
     if (!pet) return;
     this.setData({
       formVisible: true,
-      form: { id: pet.id, name: pet.name, species: pet.species, breed: pet.breed || '', birthday: pet.birthday || '' },
+      form: { id: pet.id, name: pet.name, species: pet.species, breed: pet.breed || '', birthday: pet.birthday || '', avatarId: avatarIdFor(pet) },
+      avatarChoices: avatarOptions(pet.species),
       birthdayText: pet.birthday ? displayDate(pet.birthday) : '',
       formError: '',
     });
@@ -86,7 +90,13 @@ Page({
   },
 
   onSelectSpecies(e: WechatMiniprogram.TouchEvent) {
-    this.setData({ 'form.species': e.currentTarget.dataset.value, formError: '' });
+    const species = e.currentTarget.dataset.value;
+    this.setData({ 'form.species': species, 'form.avatarId': avatarIdFor({ species, avatarId: this.data.form.avatarId }), avatarChoices: avatarOptions(species), formError: '' });
+  },
+
+  onSelectAvatar(e: WechatMiniprogram.TouchEvent) {
+    const id = e.currentTarget.dataset.id;
+    if (this.data.avatarChoices.some(option => option.id === id)) this.setData({ 'form.avatarId': id });
   },
 
   onOpenBirthday() {
@@ -107,7 +117,7 @@ Page({
 
   async onSavePet() {
     if (this._savingPet) return;
-    const { id, name, species, breed, birthday } = this.data.form;
+    const { id, name, species, breed, birthday, avatarId } = this.data.form;
     if (!name.trim()) {
       this.setData({ formError: '给它起个名字吧' });
       return;
@@ -119,7 +129,7 @@ Page({
     this._savingPet = true;
     try {
       if (!this._petCreateId) this._petCreateId = uid();
-      await savePet({ id: id || undefined, name, species, breed, birthday, clientId: this._petCreateId });
+      await savePet({ id: id || undefined, name, species, breed, birthday, avatarId, clientId: this._petCreateId });
       this.setData({ formVisible: false });
       this.reload();
       Toast({ context: this, selector: '#t-toast', message: id ? '已保存' : '欢迎新伙伴', theme: 'success' });
@@ -140,6 +150,7 @@ Page({
       cancelBtn: '再想想',
     }).then(async () => {
       await removePet(pet.id);
+      this.setData({ formVisible: false });
       this.reload();
     }).catch((err: any) => { if (err?.message) Toast({ context: this, selector: '#t-toast', message: err.message, theme: 'error' }); });
   },

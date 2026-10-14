@@ -1,7 +1,7 @@
 <view wx:if="{{record}}" class="page">
   <view class="jd-card card">
     <view class="head">
-      <text class="pet">{{record.petAvatar}} {{record.petName}}</text>
+      <view class="pet"><image class="diary-avatar" src="{{record.petAvatar}}" mode="aspectFit" /><text>{{record.petName}}</text></view>
       <view class="date-wrap">
         <text class="date">{{record.dateText}}</text>
         <text class="rel">{{record.rel}}</text>
@@ -51,7 +51,7 @@
 </view>
 
 <view wx:else class="missing">
-  <view class="missing-emoji">🍃</view>
+  <image class="missing-illustration" src="/assets/illustrations/missing-diary.png" mode="aspectFit" />
   <view class="missing-text">这条日记不存在或已被删除</view>
 </view>
 

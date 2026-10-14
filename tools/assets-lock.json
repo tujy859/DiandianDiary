@@ -1,0 +1,98 @@
+[
+  {
+    "source": "resources/brand/jiyixiamiao-app-icon-original.png",
+    "target": "assets/brand/app-icon.png",
+    "width": 192,
+    "colors": 128,
+    "sourceSha256": "b077cec17407a54b7910866d9c107ffe86824606366e23f71b56bf0581bab0ce",
+    "targetSha256": "99c29547f2465ff54af42a8c07ae865b5acdb99d5b12cd3bedc4eae384f45c5b"
+  },
+  {
+    "source": "resources/pets/default-cat-v1.png",
+    "target": "assets/pets/cat-cream-orange.png",
+    "width": 128,
+    "colors": 128,
+    "sourceSha256": "40964a7b7c9913684b9569021e4372715f39e61a2d4df64ed506ca3e7d693ac2",
+    "targetSha256": "21de09f7c74510076df468ab995ab99db33d73773994aec221b03f512840846f"
+  },
+  {
+    "source": "resources/pets/british-longhair-gray-v1.png",
+    "target": "assets/pets/cat-british-longhair-gray.png",
+    "width": 128,
+    "colors": 128,
+    "sourceSha256": "83b0e9a6abc12fe96ff606cb81357ad9fc154289db11cd4217070d77a9490442",
+    "targetSha256": "aa8dc576052204be8b12b7550221d69cb31c49ad852f0a0054d1dcdfcbbbcb3a"
+  },
+  {
+    "source": "resources/pets/default-dog-v1.png",
+    "target": "assets/pets/dog-cream.png",
+    "width": 128,
+    "colors": 128,
+    "sourceSha256": "1d88d828d640a10bb77a86d8509408abbcab2f1321ccf863399facfa27c4a4c7",
+    "targetSha256": "1cdae413b1a0cbbfe76795fb714461226e495e4aeba85ada01942b30bbb1fb0e"
+  },
+  {
+    "source": "resources/icons-src/paw.png",
+    "target": "assets/pets/other-paw.png",
+    "width": 96,
+    "colors": 64,
+    "sourceSha256": "7a385276fa8523479e451d895eb4c38c9b319c45ccee8da9c3ecb2eb42a11949",
+    "targetSha256": "e5cde763fa64fbcc2378b1f423cefc4a1069b5a2f295b2a836dc77898391bbaa"
+  },
+  {
+    "source": "resources/illustrations/empty-album.png",
+    "target": "assets/illustrations/empty-album.png",
+    "width": 320,
+    "colors": 128,
+    "sourceSha256": "c6a1154571a2933bac3b0003d2ece7bdf533232b45f37dd246fdb11391a62682",
+    "targetSha256": "573171ce45ff1ecf6b73315f39610cdb6d097e00f704ceb8e6c951af16c2fc1f"
+  },
+  {
+    "source": "resources/illustrations/empty-gallery.png",
+    "target": "assets/illustrations/empty-gallery.png",
+    "width": 320,
+    "colors": 128,
+    "sourceSha256": "5790cfd18c45b16807449b974460c7bbff1ea4ce613c60fd639f467f3167d5c4",
+    "targetSha256": "c35abfe743d08937d32a6b08d6190f9070a32a110646babe9c1a6857321d28d3"
+  },
+  {
+    "source": "resources/illustrations/missing-diary.png",
+    "target": "assets/illustrations/missing-diary.png",
+    "width": 320,
+    "colors": 128,
+    "sourceSha256": "24ae612ac48a6c986331346fce343e3516ffe921d5449d97db9c740867178f11",
+    "targetSha256": "1955d0a66a7a155b74c643b58fe75e66ea331c564cef646caf12c794a21056a7"
+  },
+  {
+    "source": "resources/icons-src/pencil.png",
+    "target": "assets/icons/pencil.png",
+    "width": 96,
+    "colors": 64,
+    "sourceSha256": "131112a66f20d08040b5fd0bfad27f87766c60c6c3c6f7ef0861e264f59918cb",
+    "targetSha256": "5c50fd60ce64cf3ac5ff47d40d5b3f20f3c4ed3cbcd7784962f433d9b4265f3f"
+  },
+  {
+    "source": "resources/icons-src/bath.png",
+    "target": "assets/icons/bath.png",
+    "width": 96,
+    "colors": 64,
+    "sourceSha256": "39949e02f1ba74fcbab52ac1b8683935a167a96b9e910160f0ed437c180cb520",
+    "targetSha256": "d5efb231a3173a3e9c3887adeac5ce7f2bc94f51efdf54c136d19c180339eb5c"
+  },
+  {
+    "source": "resources/icons-src/pill.png",
+    "target": "assets/icons/pill.png",
+    "width": 96,
+    "colors": 64,
+    "sourceSha256": "c10cba18fae633a324266bdc3bb28b562df10fb6499c84f989fd28111036af74",
+    "targetSha256": "be2cece595e23acdc8e001dba2361b05e53169978b210950072d14faa41cc7e6"
+  },
+  {
+    "source": "resources/icons-src/heart.png",
+    "target": "assets/icons/heart.png",
+    "width": 96,
+    "colors": 64,
+    "sourceSha256": "282fcc4c49c119b0723fbe002b91e02163c1360e2723ffde5b8111fe43a04e9a",
+    "targetSha256": "8cc1d1bb9ab0442e20f5fbf11abe06abf5fb43d50d594329097a3053cac2067f"
+  }
+]

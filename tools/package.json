@@ -7,7 +7,9 @@
     "test": "jest",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test:watch": "jest --watch",
-    "coverage": "jest --coverage"
+    "coverage": "jest --coverage",
+    "assets:build": "python build-assets.py",
+    "check:package": "node check-package-size.cjs"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

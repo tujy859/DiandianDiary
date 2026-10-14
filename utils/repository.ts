@@ -175,7 +175,7 @@ export async function importLocalData(): Promise<number> {
   for (const pet of snapshot.pets) {
     sameSession(s);
     const created = await callCloud<Pet>('pet.save', { familyId: s.familyId, clientId: `legacy-pet-${pet.id}`,
-      name: pet.name, species: pet.species, breed: pet.breed, birthday: pet.birthday });
+      name: pet.name, species: pet.species, breed: pet.breed, birthday: pet.birthday, avatarId: pet.avatarId });
     for (const rec of snapshot.records.filter((r) => r.petId === pet.id)) {
       sameSession(s);
       await addRecord({ ...rec, petId: created.id, clientId: `legacy-diary-${rec.id}`, mode: rec.formatting?.mode || 'legacy',

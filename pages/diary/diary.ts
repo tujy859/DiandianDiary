@@ -1,11 +1,12 @@
 import Dialog from 'tdesign-miniprogram/dialog/index';
 import Toast from 'tdesign-miniprogram/toast/index';
 import {
-  getRecord, getPets, persistPhotos, petEmoji, Pet, DiaryRecord, getCloudSession,
+  getRecord, getPets, persistPhotos, Pet, DiaryRecord, getCloudSession,
 } from '../../utils/store';
 import { displayDate, relDay } from '../../utils/date';
 import { extractTags } from '../../utils/intent';
 import { updateRecord, removeRecord, refreshCloud } from '../../utils/repository';
+import { petAvatar } from '../../utils/pet-avatars';
 
 Page({
   data: {
@@ -45,7 +46,7 @@ Page({
         dateText: displayDate(rec.date),
         rel: relDay(rec.date),
         petName: pet ? pet.name : '未知宠物',
-        petAvatar: pet ? petEmoji(pet.species) : '🐾',
+        petAvatar: petAvatar(pet || { species: '其他' }),
       },
     });
   },
