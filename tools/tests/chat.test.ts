@@ -55,6 +55,20 @@ beforeEach(() => {
 });
 afterEach(() => { jest.restoreAllMocks(); jest.clearAllTimers(); jest.useRealTimers(); });
 
+test('快捷问题填入当前宠物名字但不自动发送，收起键盘后恢复导航空间', () => {
+  const tabbar = { data: { hidden: false }, setData: jest.fn((patch) => Object.assign(tabbar.data, patch)) };
+  page.getTabBar = () => tabbar;
+  page.onQuick({ currentTarget: { dataset: { mode: 'query', prompt: '上次给{pet}洗澡是什么时候？' } } });
+  expect(page.data.inputValue).toBe('上次给A洗澡是什么时候？');
+  expect(page.data.messages).toHaveLength(0);
+  page.onKeyboardHeight({ detail: { height: 300 } });
+  expect(tabbar.setData).toHaveBeenLastCalledWith({ hidden: true });
+  page.onBlur();
+  page.onKeyboardHeight({ detail: { height: 0 } });
+  expect(tabbar.setData).toHaveBeenLastCalledWith({ hidden: false });
+  expect(page.data.focusFlag).toBe(false);
+});
+
 test('停止后立即发新消息，旧请求迟到不能清除新请求或追加回复', async () => {
   const old = deferred(); const fresh = deferred();
   run.mockReturnValueOnce(old.promise).mockReturnValueOnce(fresh.promise);

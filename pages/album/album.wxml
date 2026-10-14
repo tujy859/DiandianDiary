@@ -1,9 +1,9 @@
-<view class="page" style="padding-bottom: {{tabbarHeight}}px;">
+<view class="page" style="height: {{viewportHeight}}px; padding-bottom: {{tabbarHeight}}px;">
   <offline-bar />
   <!-- 头部：宠物 + 视角切换 -->
   <view class="header">
     <view wx:if="{{currentPet}}" class="pet-chip" bindtap="onSwitchPet">
-      <text class="pet-avatar">{{petAvatar}}</text>
+      <image class="pet-avatar" src="{{petAvatar}}" mode="aspectFit" />
       <text class="pet-name">{{currentPet.name}}</text>
       <t-icon name="chevron-down" size="30rpx" color="#2F6B4F" />
     </view>
@@ -16,11 +16,11 @@
   <scroll-view scroll-y class="body" enhanced show-scrollbar="{{false}}">
     <!-- 空状态 -->
     <view wx:if="{{!currentPet}}" class="empty">
-      <view class="empty-emoji">🐾</view>
+      <image class="empty-illustration" src="/assets/brand/app-icon.png" mode="aspectFit" />
       <view class="empty-text">先在「我的」添加一只宠物吧</view>
     </view>
     <view wx:elif="{{!records.length}}" class="empty">
-      <image class="empty-illu" src="/assets/illustrations/empty-album.webp" mode="aspectFit" />
+      <image class="empty-illustration" src="/assets/illustrations/empty-album.png" mode="aspectFit" />
       <view class="empty-text">还没有{{currentPet.name}}的日记</view>
       <view class="empty-sub">去「聊聊」记下第一件小事吧</view>
       <t-button theme="primary" size="medium" shape="round" bindtap="goChat">去聊聊</t-button>
@@ -46,8 +46,7 @@
               wx:key="*this"
               class="tl-photo"
               src="{{p}}"
-              mode="aspectFill"
-              lazy-load
+              mode="{{item.photos.length === 1 ? 'widthFix' : 'aspectFill'}}"
               data-urls="{{item.photos}}"
               data-current="{{p}}"
               catchtap="onPreviewPhoto"
@@ -63,7 +62,7 @@
     <!-- 画廊视角 -->
     <block wx:else>
       <view wx:if="{{!gallery.length}}" class="empty">
-        <image class="empty-illu" src="/assets/illustrations/empty-gallery.webp" mode="aspectFit" />
+        <image class="empty-illustration" src="/assets/illustrations/empty-gallery.png" mode="aspectFit" />
         <view class="empty-text">还没有照片，发张照片给{{currentPet.name}}记一条吧</view>
       </view>
       <view class="gallery">

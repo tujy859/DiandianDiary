@@ -37,6 +37,8 @@ jobs:
         run: node check-repository-security.cjs
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Check mini-program package and exported assets
+        run: npm run check:package
       - name: Install cloud function SDK for adapter contract tests
         run: npm ci --ignore-scripts --no-audit --no-fund
         working-directory: cloudfunctions/diaryApi

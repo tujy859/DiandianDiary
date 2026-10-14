@@ -3,18 +3,18 @@
     "id": "cat-cream-orange",
     "label": "奶油橘猫",
     "species": "猫",
-    "src": "/assets/pets/default-cat-v1.png"
+    "src": "/assets/pets/cat-cream-orange.png"
   },
   {
     "id": "cat-british-longhair-gray",
     "label": "灰毛英长",
     "species": "猫",
-    "src": "/assets/pets/british-longhair-gray-v1.png"
+    "src": "/assets/pets/cat-british-longhair-gray.png"
   },
   {
     "id": "dog-cream",
     "label": "奶油小狗",
     "species": "狗",
-    "src": "/assets/pets/default-dog-v1.png"
+    "src": "/assets/pets/dog-cream.png"
   }
 ]

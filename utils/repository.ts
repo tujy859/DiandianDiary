@@ -163,10 +163,12 @@ export async function savePet(input: Partial<Pet> & { name: string; species: str
     avatarId = input.avatar.indexOf('cloud://') === 0 ? input.avatar : (await uploadPhotos([input.avatar], s))[0];
     sameSession(s);
   }
-  const pet = await callCloud<Pet>('pet.save', { ...input, id: input.id || undefined, avatar: avatarId, familyId: s.familyId, version: old?.version, clientId: input.clientId || uid() });
+  const pet = await callCloud<Pet>('pet.save', { ...input, id: input.id || undefined, ...(input.avatar !== undefined ? { avatar: avatarId } : {}), familyId: s.familyId, version: old?.version, clientId: input.clientId || uid() });
   sameSession(s);
-  const urls = avatarId ? await mapUrls([avatarId], s) : {};
-  const cached: Pet = { ...pet, avatar: avatarId ? (urls[avatarId] || '') : '' };
+  const savedAvatar = pet.avatar || '';
+  const urls = savedAvatar ? await mapUrls([savedAvatar], s) : {};
+  sameSession(s);
+  const cached: Pet = { ...pet, avatar: savedAvatar ? (urls[savedAvatar] || '') : '' };
   cacheCloudData(local.getPets().filter((p) => p.id !== pet.id).concat(cached), local.getRecords());
   return cached;
 }

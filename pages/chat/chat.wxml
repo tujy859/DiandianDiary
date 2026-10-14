@@ -3,7 +3,7 @@
   <!-- 顶部：当前宠物，点击切换（catchtap 阻止冒泡到根节点的 onTapPageBlank，避免弹窗弹出时布局跳变） -->
   <view wx:if="{{currentPet}}" class="petbar">
     <view class="pet-chip" catchtap="onSwitchPet">
-      <text class="pet-avatar">{{petAvatar}}</text>
+      <image class="pet-avatar" src="{{petAvatar}}" mode="aspectFit" />
       <text class="pet-name">{{currentPet.name}}</text>
       <t-icon name="chevron-down" size="30rpx" color="#2F6B4F" />
     </view>
@@ -53,31 +53,30 @@
   >
     <!-- 无宠物 -->
     <view wx:if="{{!pets.length}}" class="empty">
-      <view class="empty-emoji">🐱📖</view>
+      <image class="empty-brand" src="/assets/brand/app-icon.png" mode="aspectFit" />
       <view class="empty-title">还没有小伙伴</view>
       <view class="empty-desc">先添加一只宠物，只要名字和物种，就可以开始记一下啦</view>
       <t-button theme="primary" size="medium" shape="round" bindtap="goAddPet">添加宠物</t-button>
     </view>
 
-    <!-- 欢迎态：现代 agent 首页 -->
+    <!-- 空对话 -->
     <view wx:elif="{{!messages.length || (messages.length === 1 && messages[0].kind === 'divider')}}" class="welcome">
-      <view class="welcome-orb">
-        <text class="welcome-orb-emoji">{{petAvatar}}</text>
-      </view>
-      <view class="welcome-greet">{{greeting}}</view>
-      <view class="welcome-title">想聊聊{{currentPet.name}}的什么呢？</view>
-      <view class="suggest-list">
-        <view
-          wx:for="{{suggestions}}"
-          wx:key="text"
-          class="suggest-card"
-          hover-class="none"
-          data-text="{{item.text}}"
-          catchtap="onSuggest"
-        >
-          <view class="suggest-icon"><text class="suggest-emoji">{{item.emoji}}</text></view>
-          <text class="suggest-text">{{item.text}}</text>
-          <t-icon name="chevron-right" size="28rpx" color="#C2CEC6" />
+      <image class="welcome-brand" src="/assets/brand/app-icon.png" mode="aspectFit" />
+      <view class="welcome-greeting">你好呀</view>
+      <view class="welcome-title"><view>今天的{{currentPet.name}}，</view><view>有什么值得记一下？</view></view>
+      <view class="welcome-desc">说一件小事，留住和它一起的日常。</view>
+      <view class="quick-grid">
+        <view class="quick-tile" data-mode="record" bindtap="onQuick" aria-role="button" aria-label="记件小事">
+          <image class="quick-art" src="/assets/icons/pencil.png" mode="aspectFit" /><text>记件小事</text><text class="quick-hint">让日常成为回忆</text>
+        </view>
+        <view class="quick-tile" data-mode="query" data-prompt="上次给{pet}洗澡是什么时候？" bindtap="onQuick" aria-role="button" aria-label="上次洗澡">
+          <image class="quick-art" src="/assets/icons/bath.png" mode="aspectFit" /><text>上次洗澡</text><text class="quick-hint">翻翻之前的记录</text>
+        </view>
+        <view class="quick-tile" data-mode="query" data-prompt="{pet}最近一次驱虫是什么时候？" bindtap="onQuick" aria-role="button" aria-label="驱虫记录">
+          <image class="quick-art" src="/assets/icons/pill.png" mode="aspectFit" /><text>驱虫记录</text><text class="quick-hint">照顾它的小细节</text>
+        </view>
+        <view class="quick-tile" data-mode="query" data-prompt="帮我回顾{pet}最近的状态" bindtap="onQuick" aria-role="button" aria-label="最近状态">
+          <image class="quick-art" src="/assets/icons/heart.png" mode="aspectFit" /><text>最近状态</text><text class="quick-hint">回顾它的每一天</text>
         </view>
       </view>
     </view>

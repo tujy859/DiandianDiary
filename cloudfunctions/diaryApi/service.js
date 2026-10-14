@@ -18,6 +18,12 @@ function array(value, name, max, itemMax) {
 }
 const publicUser = (u) => ({ id: u._id, nickname: u.nickname, createdAt: u.createdAt });
 const publicDoc = (d) => { const { _id, ...rest } = d; return { id: _id, ...rest }; };
+const AVATARS = { 'cat-cream-orange': '猫', 'cat-british-longhair-gray': '猫', 'dog-cream': '狗', 'other-paw': '其他' };
+function petAvatarId(value, species) {
+  if (value === undefined || value === '') return '';
+  if (typeof value !== 'string' || !Object.prototype.hasOwnProperty.call(AVATARS, value) || AVATARS[value] !== species) fail('INVALID', '请选择对应物种的头像');
+  return value;
+}
 
 function createService({ db, storage, now = Date.now, token = () => crypto.randomBytes(24).toString('hex') }) {
   async function family(reader, familyId, uid, owner = false) {
@@ -265,6 +271,8 @@ function createService({ db, storage, now = Date.now, token = () => crypto.rando
         }
         const pet = { _id: id, familyId: fid, name: string(p.name, '宠物名称', 40).trim(), species: string(p.species, '物种', 20),
           breed: string(p.breed || '', '品种', 60, true), birthday: date(p.birthday || '', true),
+          avatar: p.avatar === undefined ? (old && old.avatar || '') : (p.avatar ? (await photoIds(tx, [p.avatar], fid))[0] : ''),
+          avatarId: petAvatarId(p.avatarId === undefined && old && old.species === p.species ? old.avatarId : p.avatarId, p.species),
           createdBy: old ? old.createdBy : uid, createdAt: old ? old.createdAt : now(), updatedAt: now(), version: old ? old.version + 1 : 1, deletedAt: null };
         await tx.set('pets', id, pet);
         return publicDoc(pet);

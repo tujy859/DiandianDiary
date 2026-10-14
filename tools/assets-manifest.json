@@ -1,0 +1,74 @@
+[
+  {
+    "source": "resources/brand/jiyixiamiao-app-icon-original.png",
+    "target": "assets/brand/app-icon.png",
+    "width": 192,
+    "colors": 128
+  },
+  {
+    "source": "resources/pets/default-cat-v1.png",
+    "target": "assets/pets/cat-cream-orange.png",
+    "width": 128,
+    "colors": 128
+  },
+  {
+    "source": "resources/pets/british-longhair-gray-v1.png",
+    "target": "assets/pets/cat-british-longhair-gray.png",
+    "width": 128,
+    "colors": 128
+  },
+  {
+    "source": "resources/pets/default-dog-v1.png",
+    "target": "assets/pets/dog-cream.png",
+    "width": 128,
+    "colors": 128
+  },
+  {
+    "source": "resources/icons-src/paw.png",
+    "target": "assets/pets/other-paw.png",
+    "width": 96,
+    "colors": 64
+  },
+  {
+    "source": "resources/illustrations/empty-album.png",
+    "target": "assets/illustrations/empty-album.png",
+    "width": 320,
+    "colors": 128
+  },
+  {
+    "source": "resources/illustrations/empty-gallery.png",
+    "target": "assets/illustrations/empty-gallery.png",
+    "width": 320,
+    "colors": 128
+  },
+  {
+    "source": "resources/illustrations/missing-diary.png",
+    "target": "assets/illustrations/missing-diary.png",
+    "width": 320,
+    "colors": 128
+  },
+  {
+    "source": "resources/icons-src/pencil.png",
+    "target": "assets/icons/pencil.png",
+    "width": 96,
+    "colors": 64
+  },
+  {
+    "source": "resources/icons-src/bath.png",
+    "target": "assets/icons/bath.png",
+    "width": 96,
+    "colors": 64
+  },
+  {
+    "source": "resources/icons-src/pill.png",
+    "target": "assets/icons/pill.png",
+    "width": 96,
+    "colors": 64
+  },
+  {
+    "source": "resources/icons-src/heart.png",
+    "target": "assets/icons/heart.png",
+    "width": 96,
+    "colors": 64
+  }
+]

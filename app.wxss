@@ -1,13 +1,13 @@
 /* 记一下喵 全局主题：暖白底 / 翡翠森绿 / 薄荷绿辅助 / 暖阳杏橙，统一覆盖 TDesign 令牌 */
 page {
-  background: #faf7f0;
-  color: #26362e;
+  background: #faf8f3;
+  color: #253a30;
   font-size: 28rpx;
   line-height: 1.6;
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 
   /* 自定义 tabBar 内容高度（rpx），与 utils/layout.ts 的测量口径保持一致 */
-  --jd-tabbar-content: 104;
+  --jd-tabbar-content: 112;
 
   /* ---- 设计令牌：全app统一的字号/字色/圆角/线色，新增样式只允许从这里取值 ---- */
   /* 字号六级：标注 / 辅助 / 列表 / 正文 / 标题 / 大标题 */
@@ -43,7 +43,7 @@ page {
   --td-success-color: #52af87;
   --td-warning-color: #f2a65a;
   --td-error-color: #d54941;
-  --td-bg-color-page: #faf7f0;
+  --td-bg-color-page: #faf8f3;
   --td-bg-color-container: #ffffff;
   --td-text-color-primary: #26362e;
   --td-text-color-secondary: #687970;
@@ -67,10 +67,8 @@ scroll-view {
   align-items: center;
   gap: 12rpx;
   background: #ffffff;
-  border-radius: 999rpx;
-  padding: 12rpx 30rpx;
-  box-shadow: 0 6rpx 20rpx rgba(47, 107, 79, 0.08);
-  transition: transform 0.15s ease;
+  border-radius: 24rpx;
+  border: 1rpx solid #e9ece6;
 }
 
 .pet-chip:active {

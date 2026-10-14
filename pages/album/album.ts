@@ -1,5 +1,6 @@
+import { petAvatar } from '../../utils/pet-avatars';
 import {
-  getPets, getCurrentPet, setCurrentPet, getRecords, petEmoji, Pet, DiaryRecord, getCloudSession, getCloudCacheRevision,
+  getPets, getCurrentPet, setCurrentPet, getRecords, Pet, DiaryRecord, getCloudSession, getCloudCacheRevision,
 } from '../../utils/store';
 import { displayDate, relDay } from '../../utils/date';
 import { refreshCloudIfStale } from '../../utils/repository';
@@ -29,6 +30,7 @@ Page({
     records: [] as TimelineItem[],
     gallery: [] as GalleryItem[],
     tabbarHeight: 60,
+    viewportHeight: 667,
   },
 
   /** 缓存优先渲染；后台刷新后只有数据真的变化才重渲染 */
@@ -38,7 +40,8 @@ Page({
     this.setData({
       pets,
       currentPet,
-      petAvatar: currentPet ? petEmoji(currentPet.species) : '',
+      petAvatar: currentPet ? petAvatar(currentPet) : '',
+      ...getLayout(),
       tabbarHeight,
     });
     this.reload();
@@ -107,8 +110,9 @@ Page({
       return;
     }
     const pet = this.data.pets[index];
+    if (!pet) return;
     setCurrentPet(pet.id);
-    this.setData({ currentPet: pet, petAvatar: petEmoji(pet.species) });
+    this.setData({ currentPet: pet, petAvatar: petAvatar(pet) });
     this.reload();
   },
 

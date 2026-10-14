@@ -19,7 +19,7 @@ export interface LayoutMetrics {
 }
 
 /** tabBar 内容高度（rpx），与 custom-tab-bar/index.wxss 保持一致 */
-const TABBAR_CONTENT_RPX = 104;
+const TABBAR_CONTENT_RPX = 112;
 
 let cache: LayoutMetrics | null = null;
 
@@ -84,7 +84,7 @@ export function resetViewport(page?: { setData: (data: any) => void }) {
         wx.pageScrollTo({ scrollTop: 0, duration: 0, fail: () => { } });
         const layout = getLayout(true);
         if (page && layout.tabbarHeight !== undefined) {
-            page.setData({ tabbarHeight: layout.tabbarHeight });
+            page.setData({ tabbarHeight: layout.tabbarHeight, viewportHeight: layout.viewportHeight });
         }
     };
     try {

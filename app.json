@@ -11,11 +11,11 @@
   ],
   "window": {
     "navigationBarTitleText": "记一下喵",
-    "navigationBarBackgroundColor": "#FAF7F0",
+    "navigationBarBackgroundColor": "#FAF8F3",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#FAF7F0",
-    "backgroundColorTop": "#FAF7F0",
-    "backgroundColorBottom": "#FAF7F0"
+    "backgroundColor": "#FFFFFF",
+    "backgroundColorTop": "#FAF8F3",
+    "backgroundColorBottom": "#FFFFFF"
   },
   "tabBar": {
     "custom": true,
@@ -23,9 +23,18 @@
     "selectedColor": "#256145",
     "backgroundColor": "#FFFFFF",
     "list": [
-      { "pagePath": "pages/album/album", "text": "时光册" },
-      { "pagePath": "pages/chat/chat", "text": "聊聊" },
-      { "pagePath": "pages/mine/mine", "text": "我的" }
+      {
+        "pagePath": "pages/album/album",
+        "text": "时光册"
+      },
+      {
+        "pagePath": "pages/chat/chat",
+        "text": "聊聊"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的"
+      }
     ]
   },
   "usingComponents": {},

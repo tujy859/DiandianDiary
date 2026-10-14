@@ -153,3 +153,31 @@ test('云端版本冲突不覆盖本机已读取记录；刷新后可以重新�
   await repo.updateRecord(first.id, { text: '合并后的内容' });
   expect(local.getRecord(first.id)!.version).toBe(3);
 });
+
+test('云端头像跨刷新保留，旧客户端编辑不清空头像，拒绝跨物种或任意路径', async () => {
+  await repo.connectCloud();
+  const pet = await repo.savePet({ name: '点点', species: '猫', avatarId: 'cat-british-longhair-gray' });
+  await repo.refreshCloud();
+  expect(local.getPets()[0].avatarId).toBe('cat-british-longhair-gray');
+  await repo.savePet({ id: pet.id, name: '点点改名', species: '猫' });
+  expect(local.getPets()[0].avatarId).toBe('cat-british-longhair-gray');
+  await expect(repo.savePet({ id: pet.id, name: '点点', species: '猫', avatarId: 'dog-cream' })).rejects.toMatchObject({ code: 'INVALID' });
+  await expect(repo.savePet({ id: pet.id, name: '点点', species: '猫', avatarId: '/assets/anything.png' })).rejects.toMatchObject({ code: 'INVALID' });
+});
+
+test('上传头像在改名和刷新后保留，内置头像选择不破坏原照片', async () => {
+  const oldFs = wx.getFileSystemManager;
+  wx.getFileSystemManager = () => ({ readFile: ({ success }: any) => success({ data: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1]).toString('base64') }) });
+  try {
+    await repo.connectCloud();
+    const pet = await repo.savePet({ name: '点点', species: '猫', avatar: '/local/avatar.jpg' });
+    expect(pet.avatar).toMatch(/^https:\/\/signed/);
+    await repo.savePet({ id: pet.id, name: '点点改名', species: '猫' });
+    await repo.refreshCloud();
+    expect(local.getPets()[0].avatar).toBe(pet.avatar);
+    await repo.savePet({ id: pet.id, name: '点点', species: '猫', avatarId: 'cat-british-longhair-gray' });
+    expect(local.getPets()[0].avatarId).toBe('cat-british-longhair-gray');
+    expect(local.getPets()[0].avatar).toBe(pet.avatar);
+    expect(db.dump('media')).toHaveLength(1);
+  } finally { wx.getFileSystemManager = oldFs; }
+});

@@ -1,7 +1,8 @@
+import { petAvatar } from '../../utils/pet-avatars';
 import Dialog from 'tdesign-miniprogram/dialog/index';
 import Toast from 'tdesign-miniprogram/toast/index';
 import {
-  getRecord, getPets, persistPhotos, petEmoji, Pet, DiaryRecord, getCloudSession, getCloudCacheRevision,
+  getRecord, getPets, persistPhotos, Pet, DiaryRecord, getCloudSession, getCloudCacheRevision,
 } from '../../utils/store';
 import { displayDate, relDay } from '../../utils/date';
 import { extractTags } from '../../utils/intent';
@@ -54,7 +55,7 @@ Page({
         dateText: displayDate(rec.date),
         rel: relDay(rec.date),
         petName: pet ? pet.name : '未知宠物',
-        petAvatar: pet ? petEmoji(pet.species) : '🐾',
+        petAvatar: petAvatar(pet || { species: '其他' }),
       },
       loading: false,
     });

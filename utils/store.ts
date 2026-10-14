@@ -9,6 +9,7 @@ export interface Pet {
   birthday?: string;
   /** 可展示的头像：云端临时链接或本机持久路径；空则按物种用内置图标 */
   avatar?: string;
+  avatarId?: string; // 稳定的内置头像 ID，旧记录按物种显示默认头像
   createdAt: number;
   familyId?: string;
   version?: number;
@@ -139,6 +140,7 @@ export function savePet(pet: Partial<Pet> & { name: string; species: string }): 
     breed: pet.breed || '',
     birthday: pet.birthday || '',
     avatar: pet.avatar || '',
+    avatarId: pet.avatarId || '',
     createdAt: Date.now(),
   };
   pets.push(created);

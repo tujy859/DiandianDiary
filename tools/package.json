@@ -8,7 +8,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test:watch": "jest --watch",
     "coverage": "jest --coverage",
-    "eval:agent": "jest --runInBand --testMatch **/tests/agent-live.eval.ts"
+    "eval:agent": "jest --runInBand --testMatch **/tests/agent-live.eval.ts",
+    "assets:build": "python build-assets.py",
+    "check:package": "node check-package-size.cjs"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

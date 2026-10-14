@@ -1,8 +1,9 @@
+import { petAvatar } from '../../utils/pet-avatars';
 import ActionSheet from 'tdesign-miniprogram/action-sheet/index';
 import Dialog from 'tdesign-miniprogram/dialog/index';
 import Toast from 'tdesign-miniprogram/toast/index';
 import {
-  getPets, getCurrentPet, setCurrentPet, petEmoji,
+  getPets, getCurrentPet, setCurrentPet,
   persistPhotos, uid,
   getModelConfig, getRecords, getCloudSession, getCloudCacheRevision,
   Pet, ChatMessage,
@@ -182,7 +183,7 @@ Page({
     this.setData({
       pets,
       currentPet,
-      petAvatar: currentPet ? petEmoji(currentPet.species) : '',
+      petAvatar: currentPet ? petAvatar(currentPet) : '',
       messages: this._session ? this._session.messages : [],
       sessionId: this._session ? this._session.id : '',
       sessionVersion: this._session ? this._session.version : 0,
@@ -932,8 +933,9 @@ Page({
   },
 
   onQuick(e: WechatMiniprogram.TouchEvent) {
-    const { mode } = e.currentTarget.dataset;
+    const { mode, prompt } = e.currentTarget.dataset;
     this.setData({
+      ...(prompt ? { inputValue: String(prompt).replace('{pet}', this.data.currentPet?.name || '小家伙') } : {}),
       placeholder: mode === 'record' ? '说说发生的小事，比如：今天给咪咪洗了澡' : '比如：上次什么时候洗澡？',
       focusFlag: true,
     });
@@ -988,7 +990,7 @@ Page({
     this._session = loadLocalSession(pet.id);
     this.setData({
       currentPet: pet,
-      petAvatar: petEmoji(pet.species),
+      petAvatar: petAvatar(pet),
       messages: this._session ? this._session.messages : [],
       sessionId: this._session ? this._session.id : '',
       sessionVersion: this._session ? this._session.version : 0,

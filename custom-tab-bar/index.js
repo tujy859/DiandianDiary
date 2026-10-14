@@ -11,13 +11,13 @@ Component({
         /** 键盘弹起时由页面置为 true，把底部让给输入台 */
         hidden: false,
         tabbarHeight: 0,
-        /** 内联高度：测不到时留空，回落到 wxss 的 104rpx */
+        /** 内联高度：测不到时留空，回落到 wxss 的 112rpx */
         tabHeightStyle: '',
         /** 内联底部安全区：不再依赖 env()，安卓上它经常解析成 0 */
         safeBottom: 0,
         list: [
             { pagePath: '/pages/album/album', text: '时光册', icon: 'image' },
-            { pagePath: '/pages/chat/chat', text: '聊聊', icon: 'chat-message', isCenter: true },
+            { pagePath: '/pages/chat/chat', text: '聊聊', icon: 'chat' },
             { pagePath: '/pages/mine/mine', text: '我的', icon: 'user-circle' },
         ],
     },

@@ -1,60 +1,6 @@
-.tabbar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  /* 兜底高度，真实高度由 JS 实测后内联覆盖 */
-  height: 104rpx;
-  box-sizing: border-box;
-  background: #ffffff;
-  box-shadow: 0 -2rpx 16rpx rgba(47, 107, 79, 0.06);
-  z-index: 99;
-  overflow: hidden;
-}
-
-.tabbar-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 8rpx 0 6rpx;
-  transition: transform 0.15s ease, opacity 0.15s ease;
-}
-
-.tabbar-item:active {
-  transform: scale(0.95);
-  opacity: 0.8;
-}
-
-.tabbar-icon-box {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64rpx;
-  height: 52rpx;
-  border-radius: 26rpx;
-  transition: background 0.2s ease, transform 0.2s ease;
-}
-
-/* 中间「聊聊」微光胶囊高亮 */
-.tabbar-center-item.is-active .tabbar-icon-box {
-  background: rgba(47, 107, 79, 0.09);
-  width: 80rpx;
-}
-
-.tabbar-text {
-  margin-top: 2rpx;
-  font-size: 20rpx;
-  line-height: 24rpx;
-  color: #8a9991;
-  font-weight: 400;
-  letter-spacing: 0.5rpx;
-  transition: color 0.2s ease, font-weight 0.2s ease;
-}
-
-.tabbar-item.is-active .tabbar-text {
-  color: #256145;
-  font-weight: 600;
-}
+.tabbar { position:fixed; left:0; right:0; bottom:0; display:flex; height:112rpx; background:#ffffff; border-top:1rpx solid #e9ece6; z-index:99; box-sizing:border-box; }
+.tabbar-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8rpx 0; }
+.tabbar-icon { display:flex; align-items:center; justify-content:center; padding:4rpx 28rpx; border-radius:24rpx; }
+.tabbar-item.is-active .tabbar-icon { background:#edf3ee; }
+.tabbar-text { color:#78837b; font-size:22rpx; margin-top:2rpx; }
+.tabbar-item.is-active .tabbar-text { color:#32694f; font-weight:600; }
