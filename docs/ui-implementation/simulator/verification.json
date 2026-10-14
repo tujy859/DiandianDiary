@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "checks": [
+    "compile and launch",
+    "4 quick actions",
+    "question uses current pet name without auto-send",
+    "avatar picker and persistence",
+    "avatar refresh across tabs",
+    "pet switch with image icons",
+    "timeline nodes and line",
+    "single photo sizing",
+    "3 empty-state illustrations"
+  ],
+  "exceptions": 0,
+  "date": "2026-10-14",
+  "environment": {
+    "platform": "devtools",
+    "SDKVersion": "3.17.4",
+    "windowWidth": 390,
+    "windowHeight": 753
+  },
+  "previewPackageBytes": 548966,
+  "storageRestored": true,
+  "modelSettingsChanged": false,
+  "physicalDeviceVerified": false
+}

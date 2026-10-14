@@ -394,6 +394,10 @@
       {
         "type": "file",
         "value": "THIRD_PARTY_NOTICES.md"
+      },
+      {
+        "type": "file",
+        "value": "project.private.config.json"
       }
     ],
     "include": []
