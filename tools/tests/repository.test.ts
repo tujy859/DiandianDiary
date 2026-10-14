@@ -31,11 +31,9 @@ beforeEach(() => {
 const input = (petId: string) => ({ petId, date: '2026-10-12', text: '整理的洗澡记录', tags: ['洗澡'], photos: [],
   rawInput: { text: '今天早上给点点洗澡了，好乖', photos: [] }, clientId: 'draft-one', mode: 'tool' });
 
-test('本机模式仍可使用；连接云端后按账号和家庭隔离缓存', async () => {
-  const personal = await repo.savePet({ name: '本机猫', species: '猫' });
-  expect(local.getPets()[0].id).toBe(personal.id);
+test('未登录不能写入本机；连接云端后按账号和家庭隔离缓存', async () => {
+  await expect(repo.savePet({ name: '本机猫', species: '猫' })).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
   await repo.connectCloud();
-  expect(local.getPets()).toHaveLength(0);
   const pet = await repo.savePet({ name: '云端猫', species: '猫' });
   await repo.addRecord(input(pet.id));
   expect(local.getRecords()[0].rawInput!.text).toContain('今天早上');
@@ -44,8 +42,6 @@ test('本机模式仍可使用；连接云端后按账号和家庭隔离缓存',
   await repo.connectCloud(); await repo.refreshCloud();
   expect(local.getCloudSession()!.userId).not.toBe(a.userId);
   expect(local.getPets()).toHaveLength(0);
-  local.setCloudSession(null);
-  expect(local.getPets()[0].name).toBe('本机猫');
 });
 
 test('云端写失败不显示已保存，不回退为本地记录', async () => {
@@ -54,7 +50,6 @@ test('云端写失败不显示已保存，不回退为本地记录', async () =>
   failAction = 'diary.save';
   await expect(repo.addRecord(input(pet.id))).rejects.toMatchObject({ code: 'NETWORK' });
   expect(local.getRecords()).toHaveLength(0);
-  expect(local.getLocalData().records).toHaveLength(0);
 });
 
 test('服务端已提交但响应丢失，原草稿重试不会重复创建', async () => {
@@ -69,20 +64,6 @@ test('服务端已提交但响应丢失，原草稿重试不会重复创建', as
   await repo.addRecord(input(pet.id));
   expect(db.dump('diaries')).toHaveLength(1);
   expect(local.getRecords()).toHaveLength(1);
-});
-
-test('旧数据导入可重复和恢复；旧原文缺失明确标记，保留本机原件', async () => {
-  const p = local.savePet({ name: '旧猫', species: '猫' });
-  const rec = local.addRecord(input(p.id));
-  const legacy = { ...rec }; delete legacy.rawInput;
-  wx.setStorageSync('jd_records', [legacy]);
-  await repo.connectCloud();
-  expect(await repo.importLocalData()).toBe(1);
-  expect(await repo.importLocalData()).toBe(1);
-  expect(db.dump('diaries')).toHaveLength(1);
-  expect(db.dump('pets')).toHaveLength(1);
-  expect(local.getRecords()[0].rawInput!.provenance).toBe('legacy');
-  expect(local.getLocalData().records).toHaveLength(1);
 });
 
 test('切换家庭后迟到的刷新不能覆盖新家庭缓存', async () => {
@@ -133,7 +114,7 @@ test('微信身份变化或权限失效清空当前缓存，保留云端模式�
   expect(local.getPets()).toHaveLength(0);
   expect(local.getCloudSession()).not.toBeNull();
   await expect(repo.savePet({ name: '错误的猫', species: '猫' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
-  expect(local.getLocalData().pets).toHaveLength(0);
+  expect(local.getPets()).toHaveLength(0);
 });
 
 test('清除云端缓存保留服务端数据，刷新可恢复', async () => {

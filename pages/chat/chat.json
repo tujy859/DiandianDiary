@@ -3,9 +3,11 @@
   "usingComponents": {
     "t-icon": "tdesign-miniprogram/icon/icon",
     "t-button": "tdesign-miniprogram/button/button",
+    "t-dialog": "tdesign-miniprogram/dialog/dialog",
     "t-action-sheet": "tdesign-miniprogram/action-sheet/action-sheet",
     "t-toast": "tdesign-miniprogram/toast/toast",
     "pending-card": "../../components/pending-card/index",
-    "draft-editor": "../../components/draft-editor/index"
+    "draft-editor": "../../components/draft-editor/index",
+    "offline-bar": "../../components/offline-bar/index"
   }
 }

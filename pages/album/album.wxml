@@ -1,4 +1,5 @@
 <view class="page" style="padding-bottom: {{tabbarHeight}}px;">
+  <offline-bar />
   <!-- 头部：宠物 + 视角切换 -->
   <view class="header">
     <view wx:if="{{currentPet}}" class="pet-chip" bindtap="onSwitchPet">
@@ -19,7 +20,7 @@
       <view class="empty-text">先在「我的」添加一只宠物吧</view>
     </view>
     <view wx:elif="{{!records.length}}" class="empty">
-      <view class="empty-emoji">📖</view>
+      <image class="empty-illu" src="/assets/illustrations/empty-album.webp" mode="aspectFit" />
       <view class="empty-text">还没有{{currentPet.name}}的日记</view>
       <view class="empty-sub">去「聊聊」记下第一件小事吧</view>
       <t-button theme="primary" size="medium" shape="round" bindtap="goChat">去聊聊</t-button>
@@ -46,6 +47,7 @@
               class="tl-photo"
               src="{{p}}"
               mode="aspectFill"
+              lazy-load
               data-urls="{{item.photos}}"
               data-current="{{p}}"
               catchtap="onPreviewPhoto"
@@ -61,7 +63,7 @@
     <!-- 画廊视角 -->
     <block wx:else>
       <view wx:if="{{!gallery.length}}" class="empty">
-        <view class="empty-emoji">🖼️</view>
+        <image class="empty-illu" src="/assets/illustrations/empty-gallery.webp" mode="aspectFit" />
         <view class="empty-text">还没有照片，发张照片给{{currentPet.name}}记一条吧</view>
       </view>
       <view class="gallery">
@@ -70,6 +72,7 @@
             class="polaroid-img"
             src="{{item.src}}"
             mode="aspectFill"
+            lazy-load
             data-urls="{{item.urls}}"
             data-current="{{item.src}}"
             bindtap="onPreviewPhoto"

@@ -1,6 +1,5 @@
 import { queryRecords, resolveQueryOptions, timeRangeFromText } from '../../utils/query';
 import { addRecord, savePet, updateRecord, removeRecord, Pet } from '../../utils/store';
-import { respond } from '../../utils/intent';
 
 let pet: Pet;
 const add = (date: string, text: string, tags = ['医疗'], petId = pet.id) => addRecord({ date, text, tags, petId, photos: [] });
@@ -19,7 +18,7 @@ test('驱虫不能命中较新的疫苗，也不能从宽泛医疗标签推断',
   expect(result.totalMatched).toBe(1);
   expect(result.records[0].id).toBe(worm.id);
   expect(result.daysElapsed).toBe(11);
-  expect(respond({ text: '上次什么时候驱虫', petId: pet.id, petName: pet.name, photos: [] })[0].refs![0].recordId).toBe(worm.id);
+  expect(queryRecords({ ...resolveQueryOptions('上次什么时候驱虫'), petId: pet.id }).refs[0].recordId).toBe(worm.id);
 });
 test('没有做的事件、计划和问句不会当成已完成事件匹配', () => {
   add('2026-10-10', '今天没驱虫');
@@ -48,12 +47,12 @@ test('罐头不能扩大到所有喂食；具体清洁项目也保留关键词',
 test('本地月查询真正过滤月份，并随修改、删除重新读取', () => {
   const old = add('2026-09-30', '洗澡', ['洗澡']);
   const current = add('2026-10-01', '洗澡', ['洗澡']);
-  const query = () => respond({ text: '这个月洗了几次澡', petId: pet.id, petName: pet.name, photos: [] })[0];
-  expect(query().text).toContain('共 1 条');
+  const query = () => queryRecords({ ...resolveQueryOptions('这个月洗了几次澡'), petId: pet.id }).summary;
+  expect(query()).toContain('共 1 条');
   updateRecord(old.id, { date: '2026-10-02' });
-  expect(query().text).toContain('共 2 条');
+  expect(query()).toContain('共 2 条');
   removeRecord(current.id);
-  expect(query().text).toContain('共 1 条');
+  expect(query()).toContain('共 1 条');
 });
 test('用户明确事件和月份覆盖模型的错误解析', () => {
   const opts = resolveQueryOptions('这个月驱虫几次', { eventType: 'vaccination', keyword: '疫苗', startDate: '2020-01-01', mode: 'latest' });
@@ -93,4 +92,16 @@ test.each([{ limit: 0 }, { limit: -1 }, { limit: 100 }, { limit: 1.5 }, { limit:
 test('旧库中非法日期不参与查询', () => {
   (global as any).__wxStub.setStorageSync('jd_records', [{ id: 'bad', petId: pet.id, date: '2026-99-99', text: '驱虫', tags: ['医疗'] }]);
   expect(queryRecords({ petId: pet.id, eventType: 'deworming' }).totalMatched).toBe(0);
+});
+
+test('分页可读到第三条以后的记录，统计不受分页影响', () => {
+  for (let i = 1; i <= 7; i++) add(`2026-10-0${i}`, '驱虫');
+  const first = queryRecords({ petId: pet.id, eventType: 'deworming', limit: 3 });
+  const second = queryRecords({ petId: pet.id, eventType: 'deworming', limit: 3, offset: first.nextOffset! });
+  expect(first.totalMatched).toBe(7);
+  expect(second.totalMatched).toBe(7);
+  expect(second.records.map((r) => r.date)).toEqual(['2026-10-04', '2026-10-03', '2026-10-02']);
+  const last = queryRecords({ petId: pet.id, limit: 3, offset: second.nextOffset! });
+  expect(last.records).toHaveLength(1);
+  expect(last.nextOffset).toBeNull();
 });

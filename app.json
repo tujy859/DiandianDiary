@@ -6,20 +6,21 @@
     "pages/diary/diary",
     "pages/model/model",
     "pages/selftest/selftest",
-    "pages/family/family"
+    "pages/family/family",
+    "pages/onboard/onboard"
   ],
   "window": {
     "navigationBarTitleText": "记一下喵",
     "navigationBarBackgroundColor": "#FAF7F0",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#FFFFFF",
+    "backgroundColor": "#FAF7F0",
     "backgroundColorTop": "#FAF7F0",
-    "backgroundColorBottom": "#FFFFFF"
+    "backgroundColorBottom": "#FAF7F0"
   },
   "tabBar": {
     "custom": true,
-    "color": "#9BA5A0",
-    "selectedColor": "#2F6B4F",
+    "color": "#8A9991",
+    "selectedColor": "#256145",
     "backgroundColor": "#FFFFFF",
     "list": [
       { "pagePath": "pages/album/album", "text": "时光册" },

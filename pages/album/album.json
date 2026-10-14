@@ -1,9 +1,13 @@
 {
   "navigationBarTitleText": "时光册",
+  "backgroundColor": "#FAF7F0",
+  "backgroundColorTop": "#FAF7F0",
+  "backgroundColorBottom": "#FAF7F0",
   "usingComponents": {
     "t-icon": "tdesign-miniprogram/icon/icon",
     "t-tag": "tdesign-miniprogram/tag/tag",
     "t-button": "tdesign-miniprogram/button/button",
-    "t-action-sheet": "tdesign-miniprogram/action-sheet/action-sheet"
+    "t-action-sheet": "tdesign-miniprogram/action-sheet/action-sheet",
+    "offline-bar": "../../components/offline-bar/index"
   }
 }

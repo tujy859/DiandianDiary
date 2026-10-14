@@ -7,6 +7,8 @@ export interface Pet {
   species: string; // 猫 / 狗 / 其他
   breed?: string;
   birthday?: string;
+  /** 可展示的头像：云端临时链接或本机持久路径；空则按物种用内置图标 */
+  avatar?: string;
   createdAt: number;
   familyId?: string;
   version?: number;
@@ -41,6 +43,8 @@ export interface Draft {
   text: string;
   tags: string[];
   photos: string[];
+  /** 云端 fileId（会话同步后照片以此为准，photos 存的是可展示链接） */
+  photoIds?: string[];
   status: 'pending' | 'saved' | 'failed' | 'discarded';
   recordId?: string;
   rawInput?: RawInput;
@@ -55,16 +59,17 @@ export interface RefInfo {
 export interface ChatMessage {
   id: string;
   role: 'user' | 'ai';
-  kind: 'text' | 'draft' | 'query';
+  /** divider：话题分隔条，标记上下文边界（见 utils/context.ts），不参与 AI 对话历史 */
+  kind: 'text' | 'draft' | 'query' | 'divider';
   text?: string;
   photos?: string[];
+  photoIds?: string[];
   draft?: Draft;
   refs?: RefInfo[];
   action?: string; // 'draft-from'：手动“记一下”
   sourceText?: string;
   sourcePhotos?: string[]; // 重试使用原请求照片，不丢失图文上下文
-  demo?: boolean; // 本地演示规则生成
-  mode?: 'local' | 'model' | 'tool'; // 本条回复的产生方式
+  mode?: 'model' | 'tool' | 'manual'; // 本条回复的产生方式
   retry?: boolean; // 调用失败，可重试
   time: number;
 }
@@ -94,10 +99,6 @@ export function cacheCloudData(pets: Pet[], records: DiaryRecord[]): void {
   write('jd_cache_revision', getCloudCacheRevision() + 1);
 }
 export function getCloudCacheRevision(): number { return read<number>('jd_cache_revision', 0); }
-export function getLocalData(): { pets: Pet[]; records: DiaryRecord[] } {
-  return { pets: wx.getStorageSync(PETS_KEY) || [], records: wx.getStorageSync(RECORDS_KEY) || [] };
-}
-
 export function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
@@ -137,6 +138,7 @@ export function savePet(pet: Partial<Pet> & { name: string; species: string }): 
     species: pet.species,
     breed: pet.breed || '',
     birthday: pet.birthday || '',
+    avatar: pet.avatar || '',
     createdAt: Date.now(),
   };
   pets.push(created);
@@ -165,10 +167,13 @@ export function setCurrentPet(id: string): void {
   write(CUR_KEY, id);
 }
 
-export function petEmoji(species: string): string {
-  if (species === '猫') return '🐱';
-  if (species === '狗') return '🐶';
-  return '🐾';
+/** 宠物头像：自定义照片优先，否则按物种用内置品牌图标（assets/icons 由 tools/icons/build.js 生成） */
+export function petAvatar(pet: Pet | null | undefined): string {
+  if (pet && pet.avatar) return pet.avatar;
+  const species = pet ? pet.species : '';
+  if (species === '猫') return '/assets/icons/cat.png';
+  if (species === '狗') return '/assets/icons/dog.png';
+  return '/assets/icons/paw.png';
 }
 
 /* ---------------- 日记记录 ---------------- */
@@ -254,6 +259,11 @@ export function getModelConfig(): ModelConfig {
 
 export function saveModelConfig(cfg: ModelConfig): void {
   write(MODEL_KEY, cfg);
+}
+
+/** 单独清除模型配置（API Key 等敏感凭证），与"清除全部数据"互不影响 */
+export function clearModelConfig(): void {
+  wx.removeStorageSync(MODEL_KEY);
 }
 
 export function clearAll(): void {

@@ -1,16 +1,17 @@
 import Dialog from 'tdesign-miniprogram/dialog/index';
 import Toast from 'tdesign-miniprogram/toast/index';
 import {
-  getRecord, getPets, persistPhotos, petEmoji, Pet, DiaryRecord, getCloudSession,
+  getRecord, getPets, persistPhotos, petEmoji, Pet, DiaryRecord, getCloudSession, getCloudCacheRevision,
 } from '../../utils/store';
 import { displayDate, relDay } from '../../utils/date';
 import { extractTags } from '../../utils/intent';
-import { updateRecord, removeRecord, refreshCloud } from '../../utils/repository';
+import { updateRecord, removeRecord, refreshCloudIfStale } from '../../utils/repository';
 
 Page({
   data: {
     id: '',
     record: null as (DiaryRecord & { dateText?: string; rel?: string; petName?: string; petAvatar?: string }) | null,
+    loading: true,
     pets: [] as Pet[],
     editorVisible: false,
     editorValue: {} as any,
@@ -21,21 +22,29 @@ Page({
   },
 
   async onShow() {
-    if (getCloudSession()) {
-      this.setData({ record: null });
-      try { await refreshCloud(); } catch (err: any) {
-        Toast({ context: this, selector: '#t-toast', message: err.message || '云端读取失败', theme: 'error' });
-        return;
-      }
-    }
+    // 先用本地缓存渲染：文字立即可见，照片按 <image> 各自进度加载
     this.setData({ pets: getPets() });
     this.reload();
+    if (!getCloudSession()) return;
+    // 缓存里没有这条记录时先维持加载态，等云端确认后再判定「不存在」
+    if (!this.data.record) this.setData({ loading: true });
+    const revision = getCloudCacheRevision();
+    let changed = false;
+    try {
+      const refreshed = await refreshCloudIfStale();
+      changed = refreshed && getCloudCacheRevision() !== revision;
+    } catch (err: any) {
+      Toast({ context: this, selector: '#t-toast', message: err.message || '云端读取失败', theme: 'error' });
+    }
+    if (changed) this.setData({ pets: getPets() });
+    // 数据有更新、或刚才在等云端确认时，才重新渲染，避免无谓的闪烁
+    if (changed || this.data.loading) this.reload();
   },
 
   reload() {
     const rec = this.data.id ? getRecord(this.data.id) : null;
     if (!rec) {
-      this.setData({ record: null });
+      this.setData({ record: null, loading: false });
       return;
     }
     const pet = this.data.pets.find((p) => p.id === rec.petId);
@@ -47,6 +56,7 @@ Page({
         petName: pet ? pet.name : '未知宠物',
         petAvatar: pet ? petEmoji(pet.species) : '🐾',
       },
+      loading: false,
     });
   },
 

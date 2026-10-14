@@ -24,6 +24,7 @@ export interface RecordQueryOptions {
   endDateExclusive?: string;
   mode?: 'latest' | 'count' | 'list';
   limit?: number;
+  offset?: number;
   referenceDate?: string; // 请求时的本地日期，方便固定相对时间和测试
 }
 export interface RecordQueryResult {
@@ -33,6 +34,7 @@ export interface RecordQueryResult {
   daysElapsed: number | null;
   records: Array<Pick<DiaryRecord, 'id' | 'date' | 'text' | 'tags'>>;
   refs: RefInfo[];
+  nextOffset: number | null;
 }
 
 export function queryPart(text: string): string {
@@ -148,12 +150,15 @@ export function queryRecords(opts: RecordQueryOptions): RecordQueryResult {
   }
   if (opts.startDate && opts.endDateExclusive && opts.startDate >= opts.endDateExclusive) throw new Error('查询结束日期必须晚于开始日期');
   const limit = opts.limit === undefined ? 3 : opts.limit;
+  const offset = opts.offset === undefined ? 0 : opts.offset;
+  if (!Number.isInteger(offset) || offset < 0) throw new Error('分页偏移需为非负整数');
   if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new Error('返回条数需为 1 到 50 的整数');
   const matched = getRecords(opts.petId).filter((r) => isValidDate(r.date)
     && (!opts.startDate || r.date >= opts.startDate)
     && (!opts.endDateExclusive || r.date < opts.endDateExclusive) && matches(r, opts));
   const reference = opts.referenceDate || today();
-  const records = matched.slice(0, opts.mode === 'latest' ? 1 : limit).map(({ id, date, text, tags }) => ({ id, date, text, tags }));
+  const pageSize = opts.mode === 'latest' ? 1 : limit;
+  const records = matched.slice(offset, offset + pageSize).map(({ id, date, text, tags }) => ({ id, date, text, tags }));
   const latest = matched[0];
   const daysElapsed = latest ? diffDays(latest.date, reference) : null;
   const scope = opts.startDate || opts.endDateExclusive
@@ -164,9 +169,12 @@ export function queryRecords(opts: RecordQueryOptions): RecordQueryResult {
     ? `${scope}共 ${matched.length} 条「${label}」记录。最近一条是 ${latest.date}（${when}）。\n当时记的是：${latest.text || '（照片日记）'}`
     : `${scope}没有找到「${label}」记录。`;
   if (opts.mode === 'list' && records.length > 1) summary += '\n' + records.map((r) => `${r.date} ${r.text || '（照片日记）'}`).join('\n');
+  if (offset > 0 && opts.mode !== 'count') summary = `${scope}共 ${matched.length} 条「${label}」记录。本页从第 ${offset + 1} 条起，共 ${records.length} 条。\n`
+    + records.map((r) => `${r.date} ${r.text || '（照片日记）'}`).join('\n');
   if (opts.mode === 'count') summary += '\n按已保存的日记条数统计，一条日记可能包含多次事件。';
   return {
     summary, totalMatched: matched.length, latestDate: latest ? latest.date : null, daysElapsed, records,
+    nextOffset: offset + pageSize < matched.length ? offset + pageSize : null,
     refs: records.map((r) => ({ recordId: r.id, label: '查看原记录', sub: `${r.date} ${r.text.slice(0, 30) || '（照片日记）'}` })),
   };
 }

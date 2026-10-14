@@ -60,6 +60,55 @@ function createService({ db, storage, now = Date.now, token = () => crypto.rando
       provenance: value.provenance === 'legacy' ? 'legacy' : 'direct',
     };
   }
+  /** 会话消息：只接受结构化字段与已登记的照片 fileId，单会话上限 100 条 */
+  async function sessionMessages(reader, value, familyId) {
+    if (!Array.isArray(value) || value.length > 100) fail('INVALID', '会话消息无效');
+    const out = [];
+    for (const m of value) {
+      if (!m || typeof m !== 'object') fail('INVALID', '会话消息无效');
+      if (m.role !== 'user' && m.role !== 'ai') fail('INVALID', '消息角色无效');
+      if (!['text', 'draft', 'query', 'divider'].includes(m.kind)) fail('INVALID', '消息类型无效');
+      const item = {
+        id: string(m.id, '消息 ID', 64),
+        role: m.role,
+        kind: m.kind,
+        text: string(m.text || '', '消息内容', 12000, true),
+        photos: await photoIds(reader, Array.isArray(m.photos) ? m.photos : [], familyId),
+        time: Number.isFinite(m.time) ? m.time : now(),
+      };
+      if (m.mode && ['model', 'tool', 'manual'].includes(m.mode)) item.mode = m.mode;
+      if (m.draft && typeof m.draft === 'object') {
+        item.draft = {
+          key: string(m.draft.key || '', '草稿标识', 64, true),
+          date: m.draft.date ? date(m.draft.date) : '',
+          text: string(m.draft.text || '', '草稿内容', 12000, true),
+          tags: array(m.draft.tags || [], '标签', 20, 30),
+          photos: await photoIds(reader, Array.isArray(m.draft.photos) ? m.draft.photos : [], familyId),
+          status: ['pending', 'saved', 'failed', 'discarded'].includes(m.draft.status) ? m.draft.status : 'pending',
+          recordId: string(m.draft.recordId || '', '关联日记', 64, true),
+          rawInput: m.draft.rawInput ? await rawInput(reader, m.draft.rawInput, familyId) : null,
+        };
+      }
+      if (Array.isArray(m.refs)) {
+        item.refs = m.refs.slice(0, 20).map((r) => ({
+          recordId: string(r && r.recordId, '引用记录', 64),
+          label: string((r && r.label) || '', '引用标题', 120, true),
+          sub: string((r && r.sub) || '', '引用说明', 120, true),
+        }));
+      }
+      out.push(item);
+    }
+    return out;
+  }
+  let collectionsReady = false;
+  /** 冷启动时补建集合，避免「集合不存在」把整次请求打回去；已存在时静默跳过 */
+  async function ensureCollections() {
+    if (collectionsReady || typeof db.ensure !== 'function') return;
+    for (const name of ['chat_sessions']) {
+      try { await db.ensure(name); } catch (e) { /* 权限不足时忽略，写入时会给出明确错误 */ }
+    }
+    collectionsReady = true;
+  }
   async function scopedWrite(familyId, uid, owner, work) {
     return db.transaction(async (tx) => {
       const f = await family(tx, familyId, uid, owner);
@@ -83,6 +132,7 @@ function createService({ db, storage, now = Date.now, token = () => crypto.rando
     });
   }
   return async function handle(event, context) {
+    await ensureCollections();
     if (!context || !context.OPENID || !context.APPID) fail('UNAUTHENTICATED', '请从微信小程序登录');
     if (process.env.WECHAT_APP_ID && context.APPID !== process.env.WECHAT_APP_ID) fail('UNAUTHENTICATED', '小程序身份无效');
     const uid = `u_${hash(context.APPID, context.OPENID).slice(0, 40)}`;
@@ -104,7 +154,14 @@ function createService({ db, storage, now = Date.now, token = () => crypto.rando
       const families = [];
       for (const id of user.familyIds) {
         const f = await db.get('families', id);
-        if (f && f.members.some((m) => m.userId === uid)) families.push(publicDoc(f));
+        if (!f || !f.members.some((m) => m.userId === uid)) continue;
+        // 成员昵称只用于展示（不含 openid 等身份信息）
+        const members = [];
+        for (const m of f.members) {
+          const u = await db.get('users', m.userId);
+          members.push({ userId: m.userId, role: m.role, joinedAt: m.joinedAt, nickname: (u && u.nickname) || '' });
+        }
+        families.push({ ...publicDoc(f), members });
       }
       return families;
     }
@@ -240,6 +297,66 @@ function createService({ db, storage, now = Date.now, token = () => crypto.rando
           createdAt: old ? old.createdAt : now(), updatedAt: now(), version: old ? old.version + 1 : 1, deletedAt: null };
         await tx.set('diaries', id, d);
         return publicDoc(d);
+      });
+    }
+    /*
+     * 聊天会话：一话题一文档，按 (familyId, petId, userId) 隔离——
+     * 对话是「我」和 AI 的工作台（待确认卡、上下文都是个人状态），不随家庭共享；
+     * 最终产出（日记）才是家庭共享资产。
+     */
+    const sessionIndex = (s) => ({ id: s._id || s.id, title: s.title, summary: s.summary,
+      messageCount: s.messageCount, startedAt: s.startedAt, updatedAt: s.updatedAt, version: s.version });
+    async function sessionEntity(reader, id, familyId, petId, uid) {
+      const s = await reader.get('chat_sessions', string(id, '会话 ID'));
+      if (!s || s.familyId !== familyId || s.petId !== petId || s.userId !== uid || s.deletedAt !== null) fail('NOT_FOUND', '会话不存在');
+      return s;
+    }
+    if (action === 'session.list') {
+      await family(db, fid, uid);
+      await entity(db, 'pets', p.petId, fid);
+      const limit = p.limit === undefined ? 20 : p.limit;
+      if (!Number.isInteger(limit) || limit < 1 || limit > 20) fail('INVALID', '分页大小无效');
+      const after = p.after ? string(p.after, '分页游标') : '';
+      const rows = await db.list('chat_sessions', { familyId: fid, petId: p.petId, userId: uid, deletedAt: null }, after, limit);
+      return { items: rows.map(sessionIndex), next: rows.length === limit ? rows[rows.length - 1]._id : '' };
+    }
+    if (action === 'session.get') {
+      await family(db, fid, uid);
+      await entity(db, 'pets', p.petId, fid);
+      return publicDoc(await sessionEntity(db, p.id, fid, p.petId, uid));
+    }
+    if (action === 'session.save') {
+      await family(db, fid, uid);
+      await entity(db, 'pets', p.petId, fid);
+      return db.transaction(async (tx) => {
+        await family(tx, fid, uid);
+        const id = p.id ? string(p.id, '会话 ID') : `cs_${hash(uid, fid, p.petId, string(p.clientId, '请求 ID')).slice(0, 40)}`;
+        const old = p.id ? await sessionEntity(tx, id, fid, p.petId, uid) : await tx.get('chat_sessions', id);
+        if (!p.id && old) {
+          if (old.deletedAt !== null) fail('CONFLICT', '该请求对应的会话已删除');
+          return publicDoc(old);
+        }
+        if (old) version(old, p.version);
+        const messages = await sessionMessages(tx, p.messages, fid);
+        const doc = {
+          _id: id, familyId: fid, petId: p.petId, userId: uid,
+          title: string(p.title || '', '会话标题', 40, true),
+          summary: string(p.summary || '', '会话摘要', 120, true),
+          messages, messageCount: messages.length,
+          startedAt: old ? old.startedAt : now(), updatedAt: now(),
+          version: old ? old.version + 1 : 1, deletedAt: null,
+        };
+        await tx.set('chat_sessions', id, doc);
+        return publicDoc(doc);
+      });
+    }
+    if (action === 'session.delete') {
+      await family(db, fid, uid);
+      return db.transaction(async (tx) => {
+        await family(tx, fid, uid);
+        const s = await sessionEntity(tx, p.id, fid, p.petId, uid);
+        await tx.set('chat_sessions', s._id, { ...s, deletedAt: now(), version: s.version + 1, updatedAt: now() });
+        return { deleted: true };
       });
     }
     if (action === 'media.upload') {

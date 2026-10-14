@@ -1,28 +1,55 @@
-/* 记一下喵 全局主题：暖白底 / 深绿主色 / 薄荷绿辅助 / 杏橙点缀，并统一覆盖 TDesign 令牌 */
+/* 记一下喵 全局主题：暖白底 / 翡翠森绿 / 薄荷绿辅助 / 暖阳杏橙，统一覆盖 TDesign 令牌 */
 page {
   background: #faf7f0;
-  color: #2b3a33;
+  color: #26362e;
   font-size: 28rpx;
   line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+
+  /* 自定义 tabBar 内容高度（rpx），与 utils/layout.ts 的测量口径保持一致 */
+  --jd-tabbar-content: 104;
+
+  /* ---- 设计令牌：全app统一的字号/字色/圆角/线色，新增样式只允许从这里取值 ---- */
+  /* 字号六级：标注 / 辅助 / 列表 / 正文 / 标题 / 大标题 */
+  --jd-fs-xs: 22rpx;
+  --jd-fs-sm: 26rpx;
+  --jd-fs-md: 28rpx;
+  --jd-fs-lg: 30rpx;
+  --jd-fs-xl: 34rpx;
+  --jd-fs-xxl: 42rpx;
+  /* 文字三级：主 / 次 / 弱（暖底上要够黑够脆，避免发闷） */
+  --jd-text-1: #1f2b25;
+  --jd-text-2: #5d6d64;
+  --jd-text-3: #97a39c;
+  /* 全app唯一细线色 */
+  --jd-line: rgba(31, 43, 37, 0.08);
+  /* 品牌绿与淡绿辅助面 */
+  --jd-brand: #2f6b4f;
+  --jd-brand-deep: #245e41;
+  --jd-tint: #edf4ef;
+  /* 圆角三档 + 全圆 */
+  --jd-r-sm: 16rpx;
+  --jd-r-md: 24rpx;
+  --jd-r-lg: 32rpx;
 
   /* TDesign 主题令牌覆盖 */
-  --td-brand-color: #2f6b4f;
-  --td-brand-color-hover: #3d8264;
-  --td-brand-color-active: #275b44;
-  --td-brand-color-disabled: #b9cfc4;
-  --td-brand-color-focus: rgba(47, 107, 79, 0.12);
-  --td-brand-color-light: #e3efe8;
-  --td-brand-color-light-hover: #d2e6dc;
-  --td-success-color: #58b28c;
+  --td-brand-color: #256145;
+  --td-brand-color-hover: #337655;
+  --td-brand-color-active: #1e5039;
+  --td-brand-color-disabled: #b6ccbf;
+  --td-brand-color-focus: rgba(37, 97, 69, 0.12);
+  --td-brand-color-light: #e6f2eb;
+  --td-brand-color-light-hover: #d5e8dd;
+  --td-success-color: #52af87;
   --td-warning-color: #f2a65a;
   --td-error-color: #d54941;
   --td-bg-color-page: #faf7f0;
   --td-bg-color-container: #ffffff;
-  --td-text-color-primary: #2b3a33;
-  --td-text-color-secondary: #6b7a72;
-  --td-text-color-placeholder: #a7b3ac;
-  --td-radius-medium: 16rpx;
-  --td-radius-large: 24rpx;
+  --td-text-color-primary: #26362e;
+  --td-text-color-secondary: #687970;
+  --td-text-color-placeholder: #a1ada6;
+  --td-radius-medium: 18rpx;
+  --td-radius-large: 28rpx;
 }
 
 view,
@@ -34,14 +61,56 @@ scroll-view {
   box-sizing: border-box;
 }
 
-/* 通用卡片 */
-.jd-card {
+/* 宠物切换徽章：聊聊/时光册共用，固定视觉规格（位置由各页 .petbar/.header 决定） */
+.pet-chip {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
   background: #ffffff;
-  border-radius: 24rpx;
-  box-shadow: 0 4rpx 16rpx rgba(47, 107, 79, 0.06);
+  border-radius: 999rpx;
+  padding: 12rpx 30rpx;
+  box-shadow: 0 6rpx 20rpx rgba(47, 107, 79, 0.08);
+  transition: transform 0.15s ease;
 }
 
-/* 杏橙小圆点装饰 */
+.pet-chip:active {
+  transform: scale(0.97);
+}
+
+.pet-avatar {
+  font-size: var(--jd-fs-xl);
+}
+
+.pet-name {
+  font-size: var(--jd-fs-md);
+  font-weight: 600;
+  color: var(--jd-text-1);
+}
+
+/* 高级白玉质感通用卡片：双层弥散柔光与细边框 */
+.jd-card {
+  background: #ffffff;
+  border-radius: 28rpx;
+  border: 1rpx solid rgba(240, 236, 228, 0.85);
+  box-shadow: 0 6rpx 24rpx rgba(47, 107, 79, 0.05), 0 1rpx 4rpx rgba(0, 0, 0, 0.02);
+}
+
+/* 页面骨架：底部留白统一交给 tabBar 占位变量，避免各页各写一套 */
+.jd-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  background: #faf7f0;
+}
+
+/* 滚动区域收尾留白 */
+.jd-scroll-tail {
+  height: 40rpx;
+}
+
+/* 暖阳杏橙微小圆点装饰 */
 .jd-dot {
   display: inline-block;
   width: 12rpx;
@@ -49,3 +118,4 @@ scroll-view {
   border-radius: 50%;
   background: #f2a65a;
 }
+

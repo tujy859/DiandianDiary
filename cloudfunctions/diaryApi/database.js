@@ -19,6 +19,14 @@ function adapter(db, root = db) {
       if (after) query._id = root.command.gt(after);
       return (await db.collection(collection).where(query).orderBy('_id', 'asc').limit(limit).get()).data;
     },
+    /** 确保集合存在：云开发里写入不存在的集合会失败，这里在冷启动时补建一次 */
+    async ensure(collection) {
+      try {
+        await db.createCollection(collection);
+      } catch (error) {
+        if (!/-501001|already.*exist|已存在/i.test(`${error.errCode || ''} ${error.errMsg || error.message || ''}`)) throw error;
+      }
+    },
     async transaction(work) {
       // Explicit commits preserve business errors and return values, and limit retries
       // to platform transaction conflicts. Storage side effects stay outside this block.

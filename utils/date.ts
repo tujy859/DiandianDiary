@@ -44,11 +44,12 @@ export function weekday(s: string): string {
   return WEEK[parse(s).getDay()];
 }
 
-/** '2026-10-05' -> '10月5日 · 周日' */
+/** '2026-10-05' -> '10月5日 · 周日'；跨年时补上年份：'2025年10月5日 · 周日' */
 export function displayDate(s: string): string {
   if (!isValidDate(s)) return '日期待修正';
   const d = parse(s);
-  return `${d.getMonth() + 1}月${d.getDate()}日 · ${weekday(s)}`;
+  const year = d.getFullYear() === new Date().getFullYear() ? '' : `${d.getFullYear()}年`;
+  return `${year}${d.getMonth() + 1}月${d.getDate()}日 · ${weekday(s)}`;
 }
 
 /** 相对今天：今天 / 昨天 / 前天 / n天前 / n天后 */

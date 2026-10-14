@@ -1,16 +1,18 @@
-<view class="tabbar">
+<!-- 高度与安全区全部由 JS 实测给出：
+     安卓 WebView 上 env(safe-area-inset-bottom) 经常解析成 0 或离谱值，
+     而 backdrop-filter 在部分机型会退化成不透明白块，所以这里都不再使用。 -->
+<view wx:if="{{!hidden}}" class="tabbar" style="height: {{tabHeightStyle}}; padding-bottom: {{safeBottom}}px;">
   <view
     wx:for="{{list}}"
     wx:key="pagePath"
-    class="tabbar-item {{item.center ? 'tabbar-center' : ''}} {{selected === index ? 'is-active' : ''}}"
+    class="tabbar-item {{item.isCenter ? 'tabbar-center-item' : ''}} {{selected === index ? 'is-active' : ''}}"
     data-path="{{item.pagePath}}"
     data-index="{{index}}"
     bindtap="onSwitch"
   >
-    <view wx:if="{{item.center}}" class="center-btn">
-      <t-icon name="{{item.icon}}" size="56rpx" color="#FFFFFF" />
+    <view class="tabbar-icon-box {{item.isCenter ? 'is-center-box' : ''}}">
+      <t-icon name="{{item.icon}}" size="44rpx" color="{{selected === index ? '#256145' : '#8A9991'}}" />
     </view>
-    <t-icon wx:else name="{{item.icon}}" size="44rpx" color="{{selected === index ? '#2F6B4F' : '#9BA5A0'}}" />
     <text class="tabbar-text">{{item.text}}</text>
   </view>
 </view>

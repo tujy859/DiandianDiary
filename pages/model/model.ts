@@ -1,10 +1,10 @@
 import Toast from 'tdesign-miniprogram/toast/index';
 import Dialog from 'tdesign-miniprogram/dialog/index';
-import { getModelConfig, saveModelConfig } from '../../utils/store';
+import { getModelConfig, saveModelConfig, clearModelConfig } from '../../utils/store';
 import { testConnection, isModelReady } from '../../utils/llm';
 
 const PRESET: Record<string, { baseUrl: string; model: string }> = {
-  DeepSeek: { baseUrl: 'https://api.deepseek.com', model: 'deepseek-v4-flash' },
+  DeepSeek: { baseUrl: 'https://api.deepseek.com', model: 'deepseek-flash' },
   'OpenAI 兼容': { baseUrl: '', model: '' },
   自定义: { baseUrl: '', model: '' },
 };
@@ -64,6 +64,23 @@ Page({
   onSave() {
     saveModelConfig(this.data.form);
     Toast({ context: this, selector: '#t-toast', message: '已保存，聊聊页将优先调用模型', theme: 'success' });
+  },
+
+  /** 单独清除模型配置：API Key 属于敏感凭证，给一个明确的删除入口 */
+  onClear() {
+    Dialog.confirm({
+      context: this,
+      selector: '#t-dialog',
+      title: '清除模型配置？',
+      content: 'Base URL、API Key 和模型名都会被删除，之后需要重新配置才能继续聊天。',
+      confirmBtn: { content: '清除', theme: 'danger' },
+    }).then(() => {
+      clearModelConfig();
+      this.setData({
+        form: { provider: 'DeepSeek', baseUrl: PRESET.DeepSeek.baseUrl, apiKey: '', model: PRESET.DeepSeek.model },
+      });
+      Toast({ context: this, selector: '#t-toast', message: '模型配置已清除', theme: 'success' });
+    }).catch(() => {});
   },
 
   async onTest() {

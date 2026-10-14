@@ -1,124 +1,162 @@
 .pcard {
-  padding: 24rpx;
-  margin: 8rpx 0;
-  border-left: 8rpx solid #f2a65a;
+  padding: 28rpx;
+  margin: 16rpx 0;
+  background: #ffffff;
+  border-radius: 28rpx;
+  box-shadow: 0 8rpx 28rpx rgba(47, 107, 79, 0.05), 0 2rpx 6rpx rgba(0, 0, 0, 0.02);
+  border: 1rpx solid rgba(240, 236, 228, 0.85);
+  position: relative;
+  overflow: hidden;
 }
 
-.pcard.status-saved {
-  border-left-color: #2f6b4f;
-}
-
-.pcard.status-failed {
-  border-left-color: #d54941;
-}
-
-.pcard.status-discarded {
-  border-left-color: #c9cfcb;
-}
-
+/* 顶部状态条 */
 .pcard-head {
   display: flex;
   align-items: center;
-  margin-bottom: 16rpx;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
 }
 
 .pcard-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
   font-size: 22rpx;
-  padding: 4rpx 16rpx;
-  border-radius: 20rpx;
-  margin-right: 12rpx;
+  font-weight: 500;
+  padding: 6rpx 18rpx;
+  border-radius: 24rpx;
 }
 
 .pcard-badge.is-pending {
-  background: #fdf0dd;
-  color: #c07a1f;
+  background: linear-gradient(135deg, #fff7eb 0%, #ffeed4 100%);
+  color: #c4771e;
+  border: 1rpx solid rgba(242, 166, 90, 0.3);
+}
+
+.badge-sparkle {
+  font-size: 20rpx;
+  color: #f2a65a;
 }
 
 .pcard-badge.is-saved {
-  background: #e3efe8;
-  color: #2f6b4f;
-  margin-left: 8rpx;
+  background: #eaf4ee;
+  color: #256145;
+  border: 1rpx solid rgba(47, 107, 79, 0.2);
 }
 
 .pcard-badge.is-failed {
-  background: #fbe7e6;
+  background: #fdf0ef;
   color: #d54941;
-  margin-left: 8rpx;
+  border: 1rpx solid rgba(213, 73, 65, 0.2);
 }
 
 .pcard-badge.is-discarded {
-  background: #f0f1f0;
+  background: #f4f5f4;
   color: #8a948e;
 }
 
 .pcard-title {
   font-size: 22rpx;
-  color: #8a948e;
+  color: #8f9b94;
 }
 
 .pcard-link {
-  margin-left: auto;
-  font-size: 26rpx;
-  color: #2f6b4f;
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  font-size: 24rpx;
+  color: #256145;
   font-weight: 600;
 }
 
 .pcard-body.is-muted {
-  opacity: 0.45;
+  opacity: 0.5;
 }
 
-.pcard-row {
+/* 元信息卡片底板 */
+.pcard-meta-box {
+  background: #f9f7f2;
+  border-radius: 20rpx;
+  padding: 16rpx 20rpx;
+  margin-bottom: 16rpx;
+}
+
+.pcard-meta-row {
   display: flex;
   align-items: center;
   margin-bottom: 8rpx;
 }
 
-.pcard-label {
-  font-size: 24rpx;
-  color: #8a948e;
-  width: 88rpx;
+.pcard-meta-row:last-child {
+  margin-bottom: 0;
+}
+
+.meta-label {
+  font-size: 23rpx;
+  color: #84938b;
+  width: 120rpx;
   flex-shrink: 0;
 }
 
-.pcard-value {
-  font-size: 26rpx;
-  color: #2b3a33;
+.meta-value {
+  font-size: 25rpx;
+  color: #283730;
   font-weight: 500;
+}
+
+.meta-value.is-date {
+  color: #256145;
+  font-weight: 600;
 }
 
 .pcard-chips {
   display: flex;
   flex-wrap: wrap;
+  gap: 10rpx;
 }
 
 .pcard-chip {
-  font-size: 24rpx;
-  color: #2f6b4f;
-  background: #e3efe8;
-  border-radius: 24rpx;
-  padding: 6rpx 24rpx;
-  margin: 4rpx 12rpx 4rpx 0;
+  font-size: 22rpx;
+  color: #256145;
+  background: #ffffff;
+  border: 1rpx solid #cce2d6;
+  border-radius: 20rpx;
+  padding: 4rpx 18rpx;
 }
 
 .pcard-chip.is-more {
   background: transparent;
-  border: 1rpx solid #a8d5ba;
+  border-style: dashed;
+  color: #84938b;
 }
 
+/* 记录文本 */
 .pcard-text {
   font-size: 28rpx;
-  color: #2b3a33;
-  margin: 12rpx 0 4rpx;
+  line-height: 1.65;
+  color: #26362e;
+  margin: 14rpx 0 10rpx;
   word-break: break-all;
 }
 
+/* 标签药丸 */
 .pcard-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 12rpx;
-  margin-top: 12rpx;
+  margin-top: 14rpx;
 }
 
+.pcard-tag-pill {
+  font-size: 22rpx;
+  color: #2d6b4f;
+  background: #eaf4ee;
+  padding: 6rpx 20rpx;
+  border-radius: 24rpx;
+  font-weight: 500;
+}
+
+/* 照片网格 */
 .pcard-photos {
   display: flex;
   flex-wrap: wrap;
@@ -129,36 +167,53 @@
 .pcard-photo {
   width: 160rpx;
   height: 160rpx;
-  border-radius: 16rpx;
-  background: #f0ece4;
+  border-radius: 18rpx;
+  background: #f2eee6;
 }
 
+/* 底部操作按钮：高级胶囊组 */
 .pcard-actions {
   display: flex;
   align-items: center;
-  margin-top: 20rpx;
+  margin-top: 24rpx;
   padding-top: 20rpx;
-  border-top: 1rpx solid #f0ece4;
+  border-top: 1rpx solid rgba(240, 236, 228, 0.8);
+  gap: 16rpx;
 }
 
 .pcard-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 68rpx;
+  padding: 0 32rpx;
+  border-radius: 34rpx;
   font-size: 26rpx;
-  border-radius: 32rpx;
-  padding: 12rpx 32rpx;
-  margin-right: 16rpx;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.pcard-btn:active {
+  transform: scale(0.96);
+  opacity: 0.88;
 }
 
 .pcard-btn.is-primary {
-  background: #2f6b4f;
+  background: linear-gradient(135deg, #357a57 0%, #22593e 100%);
   color: #ffffff;
   font-weight: 600;
+  box-shadow: 0 6rpx 16rpx rgba(47, 107, 79, 0.25);
+  flex: 1.2;
 }
 
 .pcard-btn.is-outline {
-  border: 1rpx solid #2f6b4f;
-  color: #2f6b4f;
+  background: #eaf4ee;
+  color: #256145;
+  font-weight: 500;
+  flex: 1;
 }
 
 .pcard-btn.is-ghost {
-  color: #8a948e;
+  color: #8a968f;
+  padding: 0 20rpx;
+  font-size: 24rpx;
 }

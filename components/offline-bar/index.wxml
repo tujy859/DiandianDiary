@@ -1,0 +1,5 @@
+<view wx:if="{{offline && !dismissed}}" class="offline-bar" bindtap="onDismiss">
+  <t-icon name="error-circle" size="28rpx" color="#8A5A00" />
+  <text class="offline-text">当前离线，改动会先存本机，联网后自动同步</text>
+  <t-icon name="close" size="24rpx" color="#B08B4A" />
+</view>

@@ -1,55 +1,51 @@
 .page {
+  /*
+   * 必须用 height 而不是 min-height，并且禁止整页滚动：
+   * min-height 允许内容把页面撑高，那时「往上翻记录」滚的是整个页面，
+   * 输入台就会跟着滚走。锁死 100vh 后，只有消息列表内部滚动，输入台始终常驻。
+   * 键盘避让：安卓靠视口压缩，其他平台靠 .chat-dock 的 margin-bottom（见 chat.ts）。
+   */
   height: 100vh;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  overflow-x: hidden;
+  overflow: hidden;
+  background: #faf7f0;
+  /* 给浮动的宠物徽章当定位锚点 */
+  position: relative;
 }
 
-/* 顶部宠物 */
+/* 顶部宠物徽章：浮动在左上角，不占布局高度，消息从它下面滑过
+   （徽章本身样式在 app.wxss 全局共享，与时光册完全一致） */
 .petbar {
+  position: absolute;
+  top: 20rpx;
+  left: 28rpx;
+  z-index: 30;
   display: flex;
-  justify-content: center;
-  padding: 16rpx 0 8rpx;
-}
-
-.pet-chip {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  background: #ffffff;
-  border-radius: 40rpx;
-  padding: 10rpx 28rpx;
-  box-shadow: 0 2rpx 10rpx rgba(47, 107, 79, 0.08);
-}
-
-.pet-avatar {
-  font-size: 36rpx;
-}
-
-.pet-name {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #2b3a33;
 }
 
 /* 消息流 */
 .msgs {
+  /* height:0 + flex-grow 是让 scroll-view 在 flex 容器里正确撑满的标准写法 */
   flex: 1;
+  height: 0;
+  min-height: 0;
   width: 100%;
   box-sizing: border-box;
-  padding: 8rpx 24rpx 0;
+  /* 顶部留白给浮动的宠物徽章：首屏消息从徽章下方开始，上滑后从它下面穿过 */
+  padding: 108rpx 32rpx 28rpx;
   overflow-x: hidden;
 }
 
 .msgs-pad {
-  height: 24rpx;
+  height: 28rpx;
 }
 
 .msg-row {
   width: 100%;
   box-sizing: border-box;
-  margin: 16rpx 0;
+  margin: 20rpx 0;
 }
 
 .msg-row.is-user {
@@ -57,40 +53,39 @@
   justify-content: flex-end;
 }
 
+/* 用户气泡：纯色平涂（渐变已过时），只保留标志性的小尾巴角 */
 .bubble {
-  max-width: 78%;
-  border-radius: 24rpx;
-  padding: 20rpx 24rpx;
+  max-width: 82%;
+  border-radius: var(--jd-r-lg);
+  padding: 24rpx 30rpx;
 }
 
 .bubble.is-user {
-  background: #2f6b4f;
-  border-bottom-right-radius: 8rpx;
+  background: var(--jd-brand);
+  border-radius: var(--jd-r-lg) var(--jd-r-lg) 10rpx var(--jd-r-lg);
+  box-shadow: 0 4rpx 14rpx rgba(47, 107, 79, 0.16);
 }
 
 .bubble.is-user .bubble-text {
   color: #ffffff;
 }
 
-.bubble.is-ai {
-  background: #ffffff;
-  border-bottom-left-radius: 8rpx;
-  box-shadow: 0 2rpx 10rpx rgba(47, 107, 79, 0.06);
-}
-
 .bubble-text {
-  font-size: 28rpx;
-  line-height: 1.6;
-  color: #2b3a33;
-  word-break: break-all;
+  font-size: var(--jd-fs-lg);
+  line-height: 1.66;
+  color: var(--jd-text-1);
   white-space: pre-wrap;
+  /* 英文按词断行，不要 break-all 把单词从中间劈开 */
+  overflow-wrap: break-word;
+  word-break: normal;
+  letter-spacing: 0.3rpx;
 }
 
 .bubble-photos {
   display: flex;
   flex-wrap: wrap;
-  gap: 10rpx;
-  margin-top: 12rpx;
+  gap: 12rpx;
+  margin-top: 14rpx;
 }
 
 .bubble-photos:first-child {
@@ -100,24 +95,53 @@
 .bubble-photo {
   width: 180rpx;
   height: 180rpx;
-  border-radius: 12rpx;
+  border-radius: var(--jd-r-sm);
 }
 
+/* AI 回答：无气泡正文，通栏排版，更像现代 agent */
+.answer {
+  padding: 4rpx 4rpx 0;
+}
+
+.answer-text {
+  font-size: var(--jd-fs-lg);
+  line-height: 1.72;
+  color: var(--jd-text-1);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  letter-spacing: 0.3rpx;
+}
+
+/* 模型徽标：最低调的一级字 */
 .demo-tag {
-  font-size: 20rpx;
-  color: #b7a77a;
-  margin: 6rpx 0 0 8rpx;
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-3);
+  margin: 10rpx 0 0 8rpx;
 }
 
-/* 查询引用卡 */
+.demo-tag-icon {
+  font-size: 20rpx;
+  color: var(--jd-brand);
+}
+
+/* 查询引用卡：淡绿辅助面，无描边 */
 .ref-card {
   display: flex;
   align-items: center;
   gap: 16rpx;
-  margin-top: 16rpx;
-  background: #f2f7f4;
-  border-radius: 16rpx;
-  padding: 16rpx 20rpx;
+  margin-top: 20rpx;
+  background: var(--jd-tint);
+  border-radius: var(--jd-r-sm);
+  padding: 20rpx 24rpx;
+  transition: transform 0.15s ease;
+}
+
+.ref-card:active {
+  transform: scale(0.98);
 }
 
 .ref-info {
@@ -127,28 +151,133 @@
 }
 
 .ref-label {
-  font-size: 26rpx;
-  color: #2f6b4f;
+  font-size: var(--jd-fs-md);
+  color: var(--jd-brand-deep);
   font-weight: 600;
 }
 
 .ref-sub {
-  font-size: 22rpx;
-  color: #8a948e;
-  margin-top: 2rpx;
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-3);
+  margin-top: 4rpx;
 }
 
+/* 文字小按钮：淡绿底全圆胶囊，统一的次级操作样式 */
 .manual-btn {
   display: inline-flex;
   align-items: center;
   gap: 8rpx;
-  margin-top: 16rpx;
-  font-size: 26rpx;
-  color: #2f6b4f;
-  font-weight: 600;
-  background: #e3efe8;
-  padding: 10rpx 28rpx;
-  border-radius: 32rpx;
+  margin-top: 20rpx;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-brand-deep);
+  font-weight: 500;
+  background: var(--jd-tint);
+  padding: 14rpx 30rpx;
+  border-radius: 999rpx;
+}
+
+.retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  margin: 14rpx 0 0 8rpx;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-brand-deep);
+  font-weight: 500;
+  background: var(--jd-tint);
+  border-radius: 999rpx;
+  padding: 12rpx 28rpx;
+}
+
+/* ---------- 欢迎态：现代 agent 首页 ---------- */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 88rpx 16rpx 0;
+  text-align: center;
+}
+
+.welcome-orb {
+  position: relative;
+  width: 136rpx;
+  height: 136rpx;
+  border-radius: 46rpx;
+  background: linear-gradient(145deg, #f0f7f2 0%, #e2f0e7 100%);
+  box-shadow: 0 14rpx 36rpx rgba(47, 107, 79, 0.12), inset 0 1rpx 0 rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.welcome-orb-emoji {
+  font-size: 66rpx;
+  line-height: 1;
+}
+
+.welcome-greet {
+  margin-top: 28rpx;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-text-2);
+  letter-spacing: 0.4rpx;
+}
+
+.welcome-title {
+  margin-top: 12rpx;
+  font-size: var(--jd-fs-xxl);
+  line-height: 1.42;
+  font-weight: 700;
+  color: var(--jd-text-1);
+  letter-spacing: 0.2rpx;
+}
+
+.suggest-list {
+  width: 100%;
+  margin-top: 48rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.suggest-card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  text-align: left;
+  background: #ffffff;
+  border-radius: var(--jd-r-md);
+  padding: 24rpx 28rpx;
+  box-shadow: 0 6rpx 20rpx rgba(47, 107, 79, 0.06);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.suggest-card:active {
+  transform: scale(0.985);
+  box-shadow: 0 3rpx 12rpx rgba(47, 107, 79, 0.08);
+}
+
+/* emoji 统一收进淡绿圆片，变成"设计过的图标"而不是裸 emoji */
+.suggest-icon {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 50%;
+  background: var(--jd-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.suggest-emoji {
+  font-size: 32rpx;
+  line-height: 1;
+}
+
+.suggest-text {
+  flex: 1;
+  font-size: var(--jd-fs-md);
+  color: var(--jd-text-1);
+  font-weight: 500;
 }
 
 /* 空状态 */
@@ -156,7 +285,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 120rpx 48rpx 0;
+  padding: 140rpx 48rpx 0;
   text-align: center;
 }
 
@@ -166,48 +295,254 @@
 }
 
 .empty-title {
-  font-size: 32rpx;
+  font-size: var(--jd-fs-xl);
   font-weight: 600;
-  color: #2b3a33;
+  color: var(--jd-text-1);
 }
 
 .empty-desc {
-  font-size: 26rpx;
-  color: #8a948e;
-  margin: 16rpx 0 32rpx;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-text-2);
+  margin: 16rpx 0 36rpx;
 }
 
-/* 快捷入口 */
-.quick {
+/* ---------- 底部输入台 ----------
+   跟在页面流里：安卓靠视口压缩贴到键盘上沿，其他平台靠 margin-bottom（见 chat.ts）。
+   flex-shrink: 0 保证它不会被消息区挤扁。 */
+.chat-dock {
+  position: relative;
+  z-index: 20;
+  flex-shrink: 0;
+  background: transparent;
+}
+
+/* 历史话题入口：与宠物胶囊同一行，靠右侧 */
+.history-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-left: 16rpx;
+  font-size: var(--jd-fs-sm);
+  font-weight: 500;
+  color: var(--jd-brand);
+  line-height: 1;
+  background: #ffffff;
+  border-radius: 999rpx;
+  padding: 14rpx 26rpx;
+  box-shadow: 0 4rpx 14rpx rgba(47, 107, 79, 0.07);
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.history-chip:active {
+  transform: scale(0.96);
+  opacity: 0.85;
+}
+
+/* 会话目录浮层 */
+.session-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  background: rgba(23, 31, 26, 0.32);
   display: flex;
-  gap: 20rpx;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.session-panel {
+  width: 100%;
+  max-height: 70vh;
+  background: #ffffff;
+  border-radius: 0 0 var(--jd-r-lg) var(--jd-r-lg);
+  padding: 28rpx 28rpx calc(28rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.session-head {
+  display: flex;
+  align-items: baseline;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.session-title {
+  font-size: var(--jd-fs-lg);
+  font-weight: 600;
+  color: var(--jd-text-1);
+}
+
+.session-hint {
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-3);
+}
+
+.session-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.session-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 24rpx 20rpx;
+  border-radius: var(--jd-r-sm);
+  background: #faf7f0;
+  margin-bottom: 16rpx;
+}
+
+.session-row.is-current {
+  background: var(--jd-tint);
+}
+
+.session-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.session-name {
+  font-size: var(--jd-fs-md);
+  font-weight: 500;
+  color: var(--jd-text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-summary {
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-meta {
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-3);
+}
+
+.session-badge {
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-brand);
+  background: #ffffff;
+  border-radius: 999rpx;
+  padding: 6rpx 18rpx;
+  flex-shrink: 0;
+}
+
+.session-del {
+  flex-shrink: 0;
+  padding: 10rpx;
+}
+
+/* 单会话上限提示 */
+.cap-tip {
+  margin: 24rpx 28rpx 0;
+  padding: 24rpx;
+  border-radius: var(--jd-r-md);
+  background: var(--jd-tint);
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.cap-tip-text {
+  flex: 1;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-text-2);
+  line-height: 1.6;
+}
+
+.cap-tip-btn {
+  flex-shrink: 0;
+  font-size: var(--jd-fs-sm);
+  font-weight: 600;
+  color: var(--jd-brand);
+  background: #ffffff;
+  border-radius: 999rpx;
   padding: 12rpx 24rpx;
 }
 
-.quick-chip {
+/* 话题分隔条：上下文从这里断开，重进页面仍然可见 */
+.topic-divider {
   display: flex;
-  align-items: center;
-  gap: 8rpx;
-  font-size: 24rpx;
-  color: #2f6b4f;
-  background: #ffffff;
-  border: 1rpx solid #dcebe2;
-  border-radius: 32rpx;
-  padding: 10rpx 24rpx;
+  justify-content: center;
+  margin: 28rpx 0 8rpx;
 }
 
-/* 输入区 */
+.topic-divider-text {
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-3);
+  background: rgba(31, 43, 37, 0.05);
+  border-radius: 999rpx;
+  padding: 10rpx 28rpx;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* 快捷入口：白色胶囊一排（参考主流 AI 助手页），行上下留足呼吸感 */
+.quick {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  padding: 16rpx 28rpx 14rpx;
+}
+
+/* 当前带入模型的上下文条数：让用户对「AI 还记得多少」有感知 */
+.ctx-note {
+  margin-left: auto;
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-3);
+  line-height: 1.5;
+}
+
+/* 键盘弹起时收起快捷行，把高度让给输入本身 */
+.chat-dock.is-keyboard-up .quick {
+  display: none;
+}
+
+.quick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: var(--jd-fs-sm);
+  font-weight: 500;
+  color: var(--jd-brand);
+  line-height: 1;
+  background: #ffffff;
+  border-radius: 999rpx;
+  padding: 16rpx 28rpx;
+  box-shadow: 0 4rpx 14rpx rgba(47, 107, 79, 0.07);
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.quick-chip:active {
+  transform: scale(0.96);
+  opacity: 0.85;
+}
+
+/* 输入控制台：上下都留足呼吸感，输入条不贴 tabBar 也不贴快捷行 */
 .composer {
   background: #ffffff;
-  border-top: 1rpx solid #eee6da;
-  padding: 16rpx 24rpx;
+  border-top: 1rpx solid var(--jd-line);
+  padding: 20rpx 28rpx 28rpx;
 }
 
 .attach-row {
   display: flex;
   flex-wrap: wrap;
   gap: 16rpx;
-  margin-bottom: 16rpx;
+  margin-bottom: 12rpx;
 }
 
 .attach-wrap {
@@ -217,7 +552,7 @@
 .attach-photo {
   width: 120rpx;
   height: 120rpx;
-  border-radius: 12rpx;
+  border-radius: var(--jd-r-sm);
 }
 
 .attach-del {
@@ -227,94 +562,135 @@
   width: 36rpx;
   height: 36rpx;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.input-row {
+/* 输入条：全圆胶囊（对齐参考页的大圆角输入条），握感更圆润 */
+.input-capsule {
   display: flex;
-  align-items: flex-end;
-  gap: 16rpx;
+  align-items: center;
+  gap: 4rpx;
+  background: #f4f2ec;
+  border-radius: 999rpx;
+  padding: 10rpx;
 }
 
-.icon-btn {
-  width: 72rpx;
-  height: 72rpx;
+.capsule-btn {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.capsule-btn:active {
+  transform: scale(0.9);
+  background: rgba(47, 107, 79, 0.08);
 }
 
 .input {
   flex: 1;
   min-width: 0;
-  background: #f4f1ea;
-  border-radius: 32rpx;
-  padding: 18rpx 28rpx;
-  font-size: 28rpx;
+  background: transparent;
+  padding: 16rpx 10rpx;
+  font-size: var(--jd-fs-lg);
   max-height: 180rpx;
-  min-height: 40rpx;
+  min-height: 48rpx;
+  line-height: 1.45;
+  color: var(--jd-text-1);
 }
 
 .input-placeholder {
-  color: #a7b3ac;
+  color: var(--jd-text-3);
 }
 
 .send-btn {
-  width: 72rpx;
-  height: 72rpx;
+  width: 68rpx;
+  height: 68rpx;
   border-radius: 50%;
-  background: #2f6b4f;
+  background: var(--jd-brand);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(47, 107, 79, 0.22);
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.send-btn:active {
+  transform: scale(0.9);
 }
 
 .send-btn.is-disabled {
-  background: #b9cfc4;
+  background: #d8e2db;
+  box-shadow: none;
 }
 
 .composer-tail {
-  background: #ffffff;
+  background: transparent;
+  transition: height 0.2s ease;
 }
 
-/* 停止 / 重试 */
-.stop-btn {
-  margin: 12rpx 0 0 8rpx;
-  font-size: 22rpx;
-  color: #8a948e;
-  border: 1rpx solid #dce4df;
-  border-radius: 24rpx;
-  padding: 6rpx 24rpx;
+/* 键盘弹起时底部空隙再大一点，输入台不贴键盘 */
+.chat-dock.is-keyboard-up .composer {
+  padding-bottom: 28rpx;
 }
 
-.retry-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8rpx;
-  margin: 12rpx 0 0 8rpx;
-  font-size: 24rpx;
-  color: #2f6b4f;
-  background: #e3efe8;
-  border-radius: 24rpx;
-  padding: 8rpx 24rpx;
-}
-
-/* 思考中 */
-.typing {
+/* 思考中：气泡和停止钮同一行、垂直居中（原来是两行堆叠，视觉散） */
+.typing-row {
   display: flex;
   align-items: center;
+  gap: 16rpx;
+}
+
+/* 停止：小圆钮 + 红色方块停符，通用认知，不需要文字 */
+.stop-btn {
+  flex: none;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1rpx solid var(--jd-line);
+  box-shadow: 0 4rpx 16rpx rgba(47, 107, 79, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.stop-btn:active {
+  transform: scale(0.9);
+}
+
+.stop-glyph {
+  width: 18rpx;
+  height: 18rpx;
+  border-radius: 4rpx;
+  background: var(--td-error-color);
+}
+
+/* 思考中动效 */
+.typing {
+  display: inline-flex;
+  align-items: center;
   gap: 10rpx;
-  padding: 24rpx 28rpx;
+  background: #ffffff;
+  border-radius: var(--jd-r-md);
+  padding: 24rpx 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(47, 107, 79, 0.06);
 }
 
 .typing-dot {
   width: 12rpx;
   height: 12rpx;
   border-radius: 50%;
-  background: #a8d5ba;
+  background: #7dbc94;
   animation: typing-blink 1.2s infinite ease-in-out;
 }
 

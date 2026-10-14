@@ -1,0 +1,13 @@
+{
+  "navigationBarTitleText": "开始使用",
+  "backgroundColor": "#FAF7F0",
+  "backgroundColorTop": "#FAF7F0",
+  "backgroundColorBottom": "#FAF7F0",
+  "usingComponents": {
+    "t-icon": "tdesign-miniprogram/icon/icon",
+    "t-button": "tdesign-miniprogram/button/button",
+    "t-input": "tdesign-miniprogram/input/input",
+    "t-toast": "tdesign-miniprogram/toast/toast",
+    "offline-bar": "../../components/offline-bar/index"
+  }
+}

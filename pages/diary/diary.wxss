@@ -1,3 +1,4 @@
+/* 日记详情页：字号/字色/圆角/线色全部走 app.wxss 设计令牌 */
 .page {
   min-height: 100vh;
   padding: 24rpx;
@@ -13,13 +14,13 @@
   align-items: center;
   justify-content: space-between;
   padding-bottom: 20rpx;
-  border-bottom: 1rpx solid #f0ece4;
+  border-bottom: 1rpx solid var(--jd-line);
 }
 
 .pet {
-  font-size: 30rpx;
+  font-size: var(--jd-fs-lg);
   font-weight: 600;
-  color: #2b3a33;
+  color: var(--jd-text-1);
 }
 
 .date-wrap {
@@ -29,23 +30,25 @@
 }
 
 .date {
-  font-size: 26rpx;
-  color: #2f6b4f;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-brand);
   font-weight: 600;
 }
 
 .rel {
-  font-size: 22rpx;
-  color: #b7a77a;
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-3);
   margin-top: 4rpx;
 }
 
 .text {
-  font-size: 30rpx;
+  font-size: var(--jd-fs-lg);
   line-height: 1.7;
-  color: #2b3a33;
+  color: var(--jd-text-1);
   margin-top: 24rpx;
-  word-break: break-all;
+  /* 英文按词断行，不要 break-all 把单词从中间劈开 */
+  overflow-wrap: break-word;
+  word-break: normal;
   white-space: pre-wrap;
 }
 
@@ -59,8 +62,8 @@
 .photo {
   width: 206rpx;
   height: 206rpx;
-  border-radius: 16rpx;
-  background: #f0ece4;
+  border-radius: var(--jd-r-sm);
+  background: var(--jd-tint);
 }
 
 .photo:only-child {
@@ -79,7 +82,7 @@
   margin-top: 48rpx;
 }
 
-.original { margin-top: 32rpx; padding-top: 24rpx; border-top: 1rpx solid #E6EBE5; font-size: 26rpx; color: #67766C; white-space: pre-wrap; }
+.original { margin-top: 32rpx; padding-top: 24rpx; border-top: 1rpx solid var(--jd-line); font-size: var(--jd-fs-sm); color: var(--jd-text-2); white-space: pre-wrap; }
 .original-title { margin-bottom: 12rpx; font-weight: 600; }
 
 .delete-btn {
@@ -88,8 +91,8 @@
   justify-content: center;
   gap: 8rpx;
   margin-top: 32rpx;
-  font-size: 26rpx;
-  color: #d54941;
+  font-size: var(--jd-fs-sm);
+  color: var(--td-error-color);
   padding: 16rpx;
 }
 
@@ -104,8 +107,14 @@
   font-size: 88rpx;
 }
 
+.missing-illu {
+  width: 320rpx;
+  height: 296rpx;
+  border-radius: 24rpx;
+}
+
 .missing-text {
   margin-top: 24rpx;
-  font-size: 28rpx;
-  color: #8a948e;
+  font-size: var(--jd-fs-md);
+  color: var(--jd-text-3);
 }

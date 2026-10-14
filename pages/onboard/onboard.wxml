@@ -1,0 +1,88 @@
+<view class="page">
+  <offline-bar />
+  <view class="steps">
+    <view class="step {{step === 'login' ? 'is-active' : 'is-done'}}">
+      <view class="step-dot">1</view>
+      <text class="step-text">连接云端</text>
+    </view>
+    <view class="step-line" />
+    <view class="step {{step === 'model' ? 'is-active' : ''}}">
+      <view class="step-dot">2</view>
+      <text class="step-text">接入模型</text>
+    </view>
+  </view>
+
+  <!-- 第一步：微信身份登录（静默，无授权弹窗） -->
+  <block wx:if="{{step === 'login'}}">
+    <view class="hero">
+      <view class="hero-icon">
+        <t-icon name="cat" size="72rpx" color="#2F6B4F" />
+      </view>
+      <view class="hero-title">记一下喵</view>
+      <view class="hero-sub">用聊天的方式，记下和小家伙的每一天</view>
+    </view>
+
+    <view class="jd-card panel">
+      <view class="feature">
+        <t-icon name="cloud" size="36rpx" color="#2F6B4F" />
+        <text class="feature-text">日记保存在你的家庭空间，换设备也能看</text>
+      </view>
+      <view class="feature">
+        <t-icon name="chat" size="36rpx" color="#2F6B4F" />
+        <text class="feature-text">用微信身份登录，不需要注册账号</text>
+      </view>
+      <view class="feature">
+        <t-icon name="chart-bubble" size="36rpx" color="#2F6B4F" />
+        <text class="feature-text">需要联网使用，第一次还要接入一个大模型</text>
+      </view>
+    </view>
+
+    <view wx:if="{{error}}" class="error">
+      <t-icon name="error-circle" size="32rpx" color="#D54941" />
+      <text class="error-text">{{error}}</text>
+    </view>
+
+    <view class="actions">
+      <t-button theme="primary" size="large" block shape="round" loading="{{busy}}" disabled="{{busy}}" bind:tap="onStart">连接云端并开始</t-button>
+    </view>
+  </block>
+
+  <!-- 第二步：接入模型（API Key 只保存在本机，不同步） -->
+  <block wx:else>
+    <view class="hero">
+      <view class="hero-title">接入一个大模型</view>
+      <view class="hero-sub">聊聊需要模型来理解你的话。API Key 只会保存在这台手机上，不会上传到云端。</view>
+    </view>
+
+    <view class="label">服务商</view>
+    <view class="provider-row">
+      <view
+        wx:for="{{providers}}"
+        wx:key="*this"
+        class="provider-chip {{form.provider === item ? 'is-active' : ''}}"
+        data-value="{{item}}"
+        bindtap="onSelectProvider"
+      >{{item}}</view>
+    </view>
+
+    <view class="jd-card panel">
+      <t-input label="Base URL" placeholder="例如：https://api.deepseek.com" value="{{form.baseUrl}}" bind:change="onBaseUrl" />
+      <t-input label="API Key" type="password" placeholder="只保存在本机" value="{{form.apiKey}}" bind:change="onApiKey" />
+      <t-input label="模型" placeholder="例如：deepseek-flash" value="{{form.model}}" bind:change="onModel" />
+    </view>
+
+    <view class="default-link" bindtap="onUseDefault">使用推荐默认值（deepseek-flash）</view>
+
+    <view wx:if="{{error}}" class="error">
+      <t-icon name="error-circle" size="32rpx" color="#D54941" />
+      <text class="error-text">{{error}}</text>
+    </view>
+
+    <view class="actions">
+      <t-button theme="primary" size="large" block shape="round" loading="{{busy}}" disabled="{{busy}}" bind:tap="onSaveModel">保存并开始使用</t-button>
+      <t-button wx:if="{{testFailed}}" theme="default" size="large" block shape="round" variant="outline" bind:tap="onSkip">先用这个配置进入</t-button>
+    </view>
+  </block>
+
+  <t-toast id="t-toast" />
+</view>

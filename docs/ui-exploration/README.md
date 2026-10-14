@@ -4,9 +4,9 @@
 
 ## 本阶段交付
 
-- 保存用户提供的品牌 icon 原图：`assets/brand/jiyixiamiao-app-icon-original.png`。
+- 保存用户提供的品牌 icon 原图：`resources/brand/jiyixiamiao-app-icon-original.png`。
 - 保留已认可的奶油橘猫默认头像，并生成参考用户自家英国长毛猫的灰毛英长头像、同画风奶油小狗头像。
-- `assets/pets/avatar-options.json` 记录三种可选资源的稳定 ID、名称、物种和小程序资源路径。
+- `resources/pets/avatar-options.json` 记录三种可选资源的稳定 ID、名称、物种和小程序资源路径。
 - `preview.fragment.html` 保存聊天中最后一版三页讨论预览的源内容；它依赖聊天预览运行时，不是小程序页面或可直接部署的网站。
 - `album-preview.png`、`mine-preview.png` 保存恢复竖线时间轴、替换默认猫头像后的页面示意。
 
@@ -42,6 +42,6 @@
 
 ## 资源与验证
 
-原始 PNG 及完整生成提示词保存在 `assets/brand/` 和 `assets/pets/`。真实猫照片仅作为生成参考，没有进入项目。
+原始 PNG 及完整生成提示词保存在 `resources/brand/` 和 `resources/pets/`。真实猫照片仅作为生成参考，没有进入项目。
 
 已检查三张头像的 RGBA 透明背景和资源清单路径，并确认奶油橘猫原图未被覆盖。讨论预览已检查三页切换、快捷入口、时间轴圆点与竖线、画廊切换以及 320px 宽度布局。这些验证不代表小程序页面已经实现或经过真机验收。

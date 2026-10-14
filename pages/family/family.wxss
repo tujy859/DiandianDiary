@@ -1,11 +1,277 @@
-.page { padding: 32rpx; background: #FAF7F0; min-height: 100vh; box-sizing: border-box; }
-.intro { font-size: 40rpx; font-weight: 600; color: #2F6B4F; margin: 16rpx 0; }
-.note { font-size: 25rpx; color: #67766C; line-height: 1.7; margin: 16rpx 0; }
-.card { background: white; border-radius: 24rpx; padding: 28rpx; margin: 28rpx 0; }
-.title { font-size: 30rpx; font-weight: 600; margin: 18rpx 0; }
-input { background: #F4F6F3; padding: 20rpx; border-radius: 12rpx; margin: 18rpx 0; }
-button { margin: 18rpx 0; font-size: 27rpx; }
-.error { color: #A93228; background: #FFF0EE; padding: 20rpx; border-radius: 12rpx; word-break: break-all; margin: 20rpx 0; }
-.invite { word-break: break-all; background: #EDF5EF; padding: 20rpx; border-radius: 12rpx; }
-.member { display: flex; align-items: center; justify-content: space-between; font-size: 25rpx; min-height: 70rpx; }
-.member button { margin: 0; }
+.page {
+  min-height: 100vh;
+  padding: 32rpx 28rpx calc(48rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: #faf7f0;
+}
+
+/* 顶部说明 */
+.hero {
+  padding: 8rpx 8rpx 0;
+}
+
+.hero-title {
+  font-size: var(--jd-fs-xxl);
+  font-weight: 700;
+  color: var(--jd-text-1);
+}
+
+.hero-sub {
+  margin-top: 12rpx;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-text-2);
+  line-height: 1.7;
+}
+
+/* 错误提示 */
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+  margin-top: 24rpx;
+  padding: 20rpx 24rpx;
+  background: #fff0ee;
+  border-radius: var(--jd-r-sm);
+}
+
+.error-text {
+  flex: 1;
+  font-size: var(--jd-fs-sm);
+  color: #a93228;
+  line-height: 1.6;
+  word-break: break-all;
+}
+
+/* 分组标题与卡片（与「我的」页一致） */
+.section-title {
+  font-size: var(--jd-fs-sm);
+  font-weight: 600;
+  color: var(--jd-text-2);
+  margin: 40rpx 8rpx 16rpx;
+}
+
+.panel {
+  padding: 28rpx 24rpx;
+}
+
+.panel .t-input {
+  margin-top: 16rpx;
+  border-radius: var(--jd-r-sm);
+}
+
+.panel .t-button {
+  margin-top: 24rpx;
+}
+
+/* 未连接引导卡 */
+.connect {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 32rpx;
+  padding: 56rpx 40rpx;
+}
+
+.connect-icon {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 50%;
+  background: var(--jd-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.connect-title {
+  margin-top: 20rpx;
+  font-size: var(--jd-fs-lg);
+  font-weight: 600;
+  color: var(--jd-text-1);
+}
+
+.connect-sub {
+  margin-top: 10rpx;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-text-2);
+  line-height: 1.7;
+}
+
+.connect .t-button {
+  margin-top: 32rpx;
+}
+
+/* 家庭列表 */
+.fam-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid var(--jd-line);
+}
+
+.fam-name {
+  flex: 1;
+  font-size: var(--jd-fs-md);
+  font-weight: 500;
+  color: var(--jd-text-1);
+}
+
+.fam-row.is-active .fam-name {
+  color: var(--jd-brand);
+  font-weight: 600;
+}
+
+.fam-tag {
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-brand);
+  background: var(--jd-tint);
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+}
+
+.note-line {
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-3);
+  line-height: 1.6;
+  margin: 20rpx 0 4rpx;
+}
+
+/* 成员列表 */
+.member {
+  display: flex;
+  align-items: center;
+  padding: 18rpx 0;
+}
+
+.member-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: var(--jd-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.member-info {
+  flex: 1;
+  margin-left: 16rpx;
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+  min-width: 0;
+}
+
+.member-name {
+  font-size: var(--jd-fs-md);
+  color: var(--jd-text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-role {
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-3);
+  flex-shrink: 0;
+}
+
+.member-del {
+  padding: 12rpx;
+}
+
+/* 邀请码 */
+.invite {
+  margin-top: 24rpx;
+  background: var(--jd-tint);
+  border-radius: var(--jd-r-sm);
+  padding: 24rpx;
+}
+
+.invite-label {
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-2);
+}
+
+.invite-code {
+  display: block;
+  margin-top: 10rpx;
+  font-size: var(--jd-fs-md);
+  font-weight: 600;
+  color: var(--jd-brand);
+  line-height: 1.6;
+  word-break: break-all;
+}
+
+.invite-actions {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 16rpx;
+}
+
+.invite-actions .t-button {
+  margin: 0;
+}
+
+/* 卡片底部操作按钮 */
+.card-actions {
+  margin-top: 8rpx;
+}
+
+.card-actions .t-button {
+  margin-top: 20rpx;
+}
+
+/* 加入或创建 */
+.field-label {
+  font-size: var(--jd-fs-sm);
+  font-weight: 600;
+  color: var(--jd-text-1);
+  margin-top: 8rpx;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin: 36rpx 0 28rpx;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1rpx;
+  background: var(--jd-line);
+}
+
+.divider-text {
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-3);
+}
+
+/* 底部操作与说明 */
+.footer-actions {
+  margin-top: 32rpx;
+}
+
+.footer-actions .t-button {
+  margin-top: 20rpx;
+}
+
+.busy-note {
+  margin-top: 24rpx;
+  text-align: center;
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-3);
+}
+
+.foot-note {
+  margin-top: 32rpx;
+  padding: 0 24rpx;
+  text-align: center;
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-3);
+  line-height: 1.7;
+}

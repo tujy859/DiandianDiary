@@ -1,47 +1,69 @@
 <view class="pcard jd-card status-{{draft.status}}">
-  <!-- 头部状态：不只靠颜色区分 -->
+  <!-- 头部状态：精致微光徽章 -->
   <view class="pcard-head">
     <block wx:if="{{draft.status === 'pending'}}">
-      <text class="pcard-badge is-pending">待保存</text>
-      <text class="pcard-title">帮你整理好了，确认后才会记入时光册</text>
+      <view class="pcard-badge is-pending">
+        <text class="badge-sparkle">✦</text>
+        <text>待确认日记</text>
+      </view>
+      <text class="pcard-title">确认后自动记入时光册</text>
     </block>
     <block wx:elif="{{draft.status === 'saved'}}">
-      <t-icon name="check-circle-filled" size="32rpx" color="#2F6B4F" />
-      <text class="pcard-badge is-saved">已记录</text>
-      <text class="pcard-link" bindtap="onView">查看日记</text>
+      <view class="pcard-badge is-saved">
+        <t-icon name="check" size="26rpx" color="#256145" />
+        <text>已记入时光册</text>
+      </view>
+      <view class="pcard-link" bindtap="onView">
+        <text>查看日记</text>
+        <t-icon name="chevron-right" size="26rpx" color="#256145" />
+      </view>
     </block>
     <block wx:elif="{{draft.status === 'failed'}}">
-      <t-icon name="error-circle-filled" size="32rpx" color="#D54941" />
-      <text class="pcard-badge is-failed">保存失败，请重试</text>
+      <view class="pcard-badge is-failed">
+        <t-icon name="close" size="26rpx" color="#D54941" />
+        <text>保存失败</text>
+      </view>
+      <text class="pcard-title">网络异常，请重试</text>
     </block>
     <block wx:else>
-      <text class="pcard-badge is-discarded">这条没有记录</text>
+      <view class="pcard-badge is-discarded">
+        <text>已取消记录</text>
+      </view>
     </block>
   </view>
 
   <view class="pcard-body {{draft.status === 'discarded' ? 'is-muted' : ''}}">
-    <view class="pcard-row">
-      <text class="pcard-label">宠物</text>
-      <text class="pcard-value">{{petName}}</text>
-    </view>
-    <view class="pcard-row">
-      <text class="pcard-label">日期</text>
-      <text wx:if="{{draft.date}}" class="pcard-value">{{dateText}}</text>
-      <view wx:else class="pcard-chips">
-        <text
-          wx:for="{{chips}}"
-          wx:key="value"
-          class="pcard-chip"
-          data-value="{{item.value}}"
-          catchtap="onChip"
-        >{{item.label}}</text>
-        <text class="pcard-chip is-more" catchtap="onEdit">其他日期</text>
+    <!-- 元信息轻盈条目 -->
+    <view class="pcard-meta-box">
+      <view class="pcard-meta-row">
+        <text class="meta-label">🐾 宠物</text>
+        <text class="meta-value">{{petName}}</text>
+      </view>
+      <view class="pcard-meta-row">
+        <text class="meta-label">📅 日期</text>
+        <text wx:if="{{draft.date}}" class="meta-value is-date">{{dateText}}</text>
+        <view wx:else class="pcard-chips">
+          <text
+            wx:for="{{chips}}"
+            wx:key="value"
+            class="pcard-chip"
+            data-value="{{item.value}}"
+            catchtap="onChip"
+          >{{item.label}}</text>
+          <text class="pcard-chip is-more" catchtap="onEdit">选择日期</text>
+        </view>
       </view>
     </view>
+
+    <!-- 记录正文 -->
     <view wx:if="{{draft.text}}" class="pcard-text">{{draft.text}}</view>
+
+    <!-- 标签 -->
     <view wx:if="{{draft.tags.length}}" class="pcard-tags">
-      <t-tag wx:for="{{draft.tags}}" wx:key="*this" size="small" theme="primary" variant="light">{{item}}</t-tag>
+      <view wx:for="{{draft.tags}}" wx:key="*this" class="pcard-tag-pill"># {{item}}</view>
     </view>
+
+    <!-- 照片 -->
     <view wx:if="{{draft.photos.length}}" class="pcard-photos">
       <image
         wx:for="{{draft.photos}}"
@@ -55,13 +77,21 @@
     </view>
   </view>
 
+  <!-- 底部操作按钮 -->
   <view wx:if="{{draft.status === 'pending'}}" class="pcard-actions">
-    <view class="pcard-btn is-primary" bindtap="onSave">保存这条</view>
-    <view class="pcard-btn is-outline" bindtap="onEdit">修改</view>
-    <view class="pcard-btn is-ghost" bindtap="onDiscard">不记录</view>
+    <view class="pcard-btn is-primary" bindtap="onSave">
+      <text>保存这篇</text>
+    </view>
+    <view class="pcard-btn is-outline" bindtap="onEdit">
+      <text>修改</text>
+    </view>
+    <view class="pcard-btn is-ghost" bindtap="onDiscard">
+      <text>不记录</text>
+    </view>
   </view>
   <view wx:elif="{{draft.status === 'failed'}}" class="pcard-actions">
     <view class="pcard-btn is-primary" bindtap="onSave">重试保存</view>
     <view class="pcard-btn is-ghost" bindtap="onDiscard">不记录</view>
   </view>
 </view>
+

@@ -1,9 +1,11 @@
-import ActionSheet from 'tdesign-miniprogram/action-sheet/index';
 import {
-  getPets, getCurrentPet, setCurrentPet, getRecords, petEmoji, Pet, DiaryRecord, getCloudSession,
+  getPets, getCurrentPet, setCurrentPet, getRecords, petEmoji, Pet, DiaryRecord, getCloudSession, getCloudCacheRevision,
 } from '../../utils/store';
 import { displayDate, relDay } from '../../utils/date';
-import { refreshCloud } from '../../utils/repository';
+import { refreshCloudIfStale } from '../../utils/repository';
+import { getLayout, resetViewport } from '../../utils/layout';
+import { showPetPicker } from '../../utils/pet-picker';
+import { guardReady } from '../../utils/onboard';
 
 interface TimelineItem extends DiaryRecord {
   dateText: string;
@@ -29,26 +31,34 @@ Page({
     tabbarHeight: 60,
   },
 
-  async onShow() {
-    if (getCloudSession()) {
-      this.setData({ pets: [], currentPet: null, records: [], gallery: [] });
-      try { await refreshCloud(); } catch (err: any) {
-        wx.showToast({ title: err.message || '云端读取失败', icon: 'none' });
-        return;
-      }
-    }
+  /** 缓存优先渲染；后台刷新后只有数据真的变化才重渲染 */
+  renderFromStore(tabbarHeight: number) {
     const pets = getPets();
     const currentPet = getCurrentPet();
-    const app: any = getApp();
     this.setData({
       pets,
       currentPet,
       petAvatar: currentPet ? petEmoji(currentPet.species) : '',
-      tabbarHeight: (app && app.globalData && app.globalData.tabbarHeight) || 60,
+      tabbarHeight,
     });
     this.reload();
+  },
+
+  async onShow() {
+    // 收起键盘并重新测量布局
+    resetViewport(this);
+    if (!guardReady()) return;
+    const revision = getCloudCacheRevision();
+    this.renderFromStore(getLayout(true).tabbarHeight);
     const tabbar = this.getTabBar && this.getTabBar();
     if (tabbar) tabbar.setData({ selected: 0 });
+    if (!getCloudSession()) return;
+    try {
+      const refreshed = await refreshCloudIfStale();
+      if (refreshed && getCloudCacheRevision() !== revision) this.renderFromStore(this.data.tabbarHeight);
+    } catch (err: any) {
+      wx.showToast({ title: err.message || '云端读取失败', icon: 'none' });
+    }
   },
 
   reload() {
@@ -86,13 +96,8 @@ Page({
   },
 
   onSwitchPet() {
-    if (!this.data.pets.length) return;
-    ActionSheet.show({
-      theme: 'list',
-      selector: '#t-action-sheet',
-      context: this,
-      items: this.data.pets.map((p) => ({ label: `${petEmoji(p.species)} ${p.name}` })).concat([{ label: '＋ 添加宠物' }]),
-    });
+    // 与聊聊页共用同一个弹窗实现，避免两页参数/行为漂移
+    showPetPicker(this, this.data.pets);
   },
 
   onPetSelected(e: WechatMiniprogram.CustomEvent) {

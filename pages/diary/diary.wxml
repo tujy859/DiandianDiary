@@ -17,6 +17,7 @@
         class="photo"
         src="{{item}}"
         mode="aspectFill"
+        lazy-load
         data-current="{{item}}"
         bindtap="onPreview"
       />
@@ -50,8 +51,12 @@
   />
 </view>
 
+<view wx:elif="{{loading}}" class="missing">
+  <view class="missing-text">加载中…</view>
+</view>
+
 <view wx:else class="missing">
-  <view class="missing-emoji">🍃</view>
+  <image class="missing-illu" src="/assets/illustrations/missing-diary.webp" mode="aspectFit" />
   <view class="missing-text">这条日记不存在或已被删除</view>
 </view>
 

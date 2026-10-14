@@ -1,0 +1,16 @@
+.offline-bar {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 28rpx;
+  background: #fff6e5;
+  border-bottom: 1rpx solid #f0e0bd;
+}
+
+.offline-text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--jd-fs-sm);
+  color: #8a5a00;
+  line-height: 1.5;
+}

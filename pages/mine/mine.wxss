@@ -1,7 +1,8 @@
 .page {
   min-height: 100vh;
-  padding: 32rpx 24rpx 0;
+  padding: 32rpx 28rpx 0;
   box-sizing: border-box;
+  background: #faf7f0;
 }
 
 .brand {
@@ -15,7 +16,7 @@
   width: 144rpx;
   height: 144rpx;
   border-radius: 50%;
-  background: #e3efe8;
+  background: var(--jd-tint);
   border: 4rpx solid #ffffff;
   display: flex;
   align-items: center;
@@ -25,22 +26,22 @@
 
 .brand-name {
   margin-top: 16rpx;
-  font-size: 34rpx;
+  font-size: var(--jd-fs-xl);
   font-weight: 700;
-  color: #2b3a33;
+  color: var(--jd-text-1);
 }
 
 .brand-slogan {
   margin-top: 6rpx;
-  font-size: 24rpx;
-  color: #8a948e;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-text-2);
 }
 
 .section-title {
-  font-size: 26rpx;
+  font-size: var(--jd-fs-sm);
   font-weight: 600;
-  color: #6b7a72;
-  margin: 36rpx 8rpx 16rpx;
+  color: var(--jd-text-2);
+  margin: 40rpx 8rpx 16rpx;
 }
 
 .panel {
@@ -50,22 +51,22 @@
 .panel-empty {
   padding: 40rpx 0;
   text-align: center;
-  font-size: 26rpx;
-  color: #8a948e;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-text-2);
 }
 
 .pet-row {
   display: flex;
   align-items: center;
   padding: 24rpx 0;
-  border-bottom: 1rpx solid #f4f1ea;
+  border-bottom: 1rpx solid var(--jd-line);
 }
 
 .pet-avatar {
   width: 88rpx;
   height: 88rpx;
   border-radius: 50%;
-  background: #f2f7f4;
+  background: var(--jd-tint);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -81,14 +82,14 @@
 }
 
 .pet-name {
-  font-size: 30rpx;
+  font-size: var(--jd-fs-lg);
   font-weight: 600;
-  color: #2b3a33;
+  color: var(--jd-text-1);
 }
 
 .pet-sub {
-  font-size: 24rpx;
-  color: #8a948e;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-text-2);
   margin-top: 4rpx;
 }
 
@@ -102,8 +103,8 @@
   justify-content: center;
   gap: 8rpx;
   padding: 28rpx 0;
-  font-size: 28rpx;
-  color: #2f6b4f;
+  font-size: var(--jd-fs-md);
+  color: var(--jd-brand);
   font-weight: 600;
 }
 
@@ -112,7 +113,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 28rpx 0;
-  border-bottom: 1rpx solid #f4f1ea;
+  border-bottom: 1rpx solid var(--jd-line);
 }
 
 .cell:last-child {
@@ -126,8 +127,8 @@
 }
 
 .cell-text {
-  font-size: 28rpx;
-  color: #2b3a33;
+  font-size: var(--jd-fs-md);
+  color: var(--jd-text-1);
 }
 
 .cell-text.is-danger {
@@ -141,14 +142,14 @@
 }
 
 .cell-note {
-  font-size: 24rpx;
-  color: #b7a77a;
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-3);
 }
 
 /* 表单弹层 */
 .form {
   background: #faf7f0;
-  border-radius: 32rpx 32rpx 0 0;
+  border-radius: var(--jd-r-lg) var(--jd-r-lg) 0 0;
   padding: 32rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
 }
 
@@ -160,13 +161,14 @@
 }
 
 .form-title {
-  font-size: 32rpx;
+  font-size: var(--jd-fs-xl);
   font-weight: 600;
+  color: var(--jd-text-1);
 }
 
 .form-label {
-  font-size: 24rpx;
-  color: #8a948e;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-text-2);
   margin: 24rpx 0 12rpx;
 }
 
@@ -176,18 +178,18 @@
 }
 
 .species-chip {
-  font-size: 26rpx;
-  padding: 10rpx 36rpx;
-  border-radius: 32rpx;
+  font-size: var(--jd-fs-sm);
+  padding: 12rpx 36rpx;
+  border-radius: 999rpx;
   background: #ffffff;
-  border: 1rpx solid #e6e0d5;
-  color: #2b3a33;
+  border: 1rpx solid var(--jd-line);
+  color: var(--jd-text-1);
 }
 
 .species-chip.is-active {
-  background: #2f6b4f;
+  background: var(--jd-brand);
   color: #ffffff;
-  border-color: #2f6b4f;
+  border-color: var(--jd-brand);
   font-weight: 600;
 }
 
@@ -196,25 +198,25 @@
   align-items: center;
   gap: 16rpx;
   background: #ffffff;
-  border-radius: 16rpx;
+  border-radius: var(--jd-r-sm);
   padding: 20rpx 24rpx;
 }
 
 .birthday-value {
   flex: 1;
-  font-size: 28rpx;
-  color: #2b3a33;
+  font-size: var(--jd-fs-md);
+  color: var(--jd-text-1);
 }
 
 .birthday-placeholder {
   flex: 1;
-  font-size: 28rpx;
-  color: #a7b3ac;
+  font-size: var(--jd-fs-md);
+  color: var(--jd-text-3);
 }
 
 .form-error {
   color: #d54941;
-  font-size: 24rpx;
+  font-size: var(--jd-fs-sm);
   margin-top: 20rpx;
 }
 
@@ -223,6 +225,6 @@
 }
 
 .form .t-input {
-  border-radius: 16rpx;
+  border-radius: var(--jd-r-sm);
   margin-top: 12rpx;
 }

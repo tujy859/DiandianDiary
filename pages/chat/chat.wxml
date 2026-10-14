@@ -1,14 +1,56 @@
-<view class="page" style="padding-bottom: {{keyboardHeight}}px;">
-  <!-- 顶部：当前宠物，点击切换 -->
-  <view wx:if="{{currentPet}}" class="petbar" bindtap="onSwitchPet">
-    <view class="pet-chip">
+<view class="page" bindtap="onTapPageBlank">
+  <offline-bar />
+  <!-- 顶部：当前宠物，点击切换（catchtap 阻止冒泡到根节点的 onTapPageBlank，避免弹窗弹出时布局跳变） -->
+  <view wx:if="{{currentPet}}" class="petbar">
+    <view class="pet-chip" catchtap="onSwitchPet">
       <text class="pet-avatar">{{petAvatar}}</text>
       <text class="pet-name">{{currentPet.name}}</text>
-      <t-icon name="chevron-down" size="32rpx" color="#2F6B4F" />
+      <t-icon name="chevron-down" size="30rpx" color="#2F6B4F" />
+    </view>
+    <!-- 历史会话目录：点开可回到任意话题继续聊 -->
+    <view wx:if="{{sessions.length}}" class="history-chip" catchtap="onToggleSessionList">
+      <t-icon name="time" size="28rpx" color="#2F6B4F" />
+      <text>话题</text>
     </view>
   </view>
 
-  <scroll-view scroll-y class="msgs" scroll-into-view="{{scrollTo}}" scroll-with-animation enhanced show-scrollbar="{{false}}">
+  <!-- 会话目录浮层 -->
+  <view wx:if="{{sessionListVisible}}" class="session-mask" catchtap="onToggleSessionList">
+    <view class="session-panel" catchtap="preventBubble">
+      <view class="session-head">
+        <text class="session-title">历史话题</text>
+        <text class="session-hint">点一个可以继续聊</text>
+      </view>
+      <scroll-view scroll-y class="session-list">
+        <view
+          wx:for="{{sessions}}"
+          wx:key="id"
+          class="session-row {{item.id === sessionId ? 'is-current' : ''}}"
+          data-id="{{item.id}}"
+          catchtap="onOpenSession"
+        >
+          <view class="session-main">
+            <text class="session-name">{{item.title || '未命名话题'}}</text>
+            <text wx:if="{{item.summary}}" class="session-summary">{{item.summary}}</text>
+            <text class="session-meta">{{item.messageCount}} 条</text>
+          </view>
+          <view wx:if="{{item.id === sessionId}}" class="session-badge">当前</view>
+          <view wx:else class="session-del" data-id="{{item.id}}" catchtap="onDeleteSession">
+            <t-icon name="delete" size="32rpx" color="#C9CFCC" />
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <scroll-view
+    scroll-y
+    class="msgs"
+    scroll-into-view="{{scrollTo}}"
+    scroll-with-animation
+    enhanced
+    show-scrollbar="{{false}}"
+  >
     <!-- 无宠物 -->
     <view wx:if="{{!pets.length}}" class="empty">
       <view class="empty-emoji">🐱📖</view>
@@ -17,16 +59,33 @@
       <t-button theme="primary" size="medium" shape="round" bindtap="goAddPet">添加宠物</t-button>
     </view>
 
-    <!-- 空对话 -->
-    <view wx:elif="{{!messages.length}}" class="empty">
-      <view class="empty-emoji">{{petAvatar}}</view>
-      <view class="empty-title">今天的{{currentPet.name}}，有什么值得记一下？</view>
-      <view class="empty-desc">说说发生的事，或者发张照片，我帮你整理成日记</view>
+    <!-- 欢迎态：现代 agent 首页 -->
+    <view wx:elif="{{!messages.length || (messages.length === 1 && messages[0].kind === 'divider')}}" class="welcome">
+      <view class="welcome-orb">
+        <text class="welcome-orb-emoji">{{petAvatar}}</text>
+      </view>
+      <view class="welcome-greet">{{greeting}}</view>
+      <view class="welcome-title">想聊聊{{currentPet.name}}的什么呢？</view>
+      <view class="suggest-list">
+        <view
+          wx:for="{{suggestions}}"
+          wx:key="text"
+          class="suggest-card"
+          hover-class="none"
+          data-text="{{item.text}}"
+          catchtap="onSuggest"
+        >
+          <view class="suggest-icon"><text class="suggest-emoji">{{item.emoji}}</text></view>
+          <text class="suggest-text">{{item.text}}</text>
+          <t-icon name="chevron-right" size="28rpx" color="#C2CEC6" />
+        </view>
+      </view>
     </view>
 
     <!-- 消息流 -->
     <block wx:for="{{messages}}" wx:key="id">
-      <view id="m-{{item.id}}" class="msg-row {{item.role === 'user' ? 'is-user' : 'is-ai'}}">
+      <!-- 话题分隔条仅作为 AI 上下文边界（之后的消息才会带入 AI），不在界面上展示 -->
+      <view wx:if="{{item.kind !== 'divider'}}" id="m-{{item.id}}" class="msg-row {{item.role === 'user' ? 'is-user' : 'is-ai'}}">
         <!-- 用户消息 -->
         <block wx:if="{{item.role === 'user'}}">
           <view class="bubble is-user">
@@ -39,6 +98,7 @@
                 class="bubble-photo"
                 src="{{p}}"
                 mode="aspectFill"
+                lazy-load
                 data-urls="{{item.photos}}"
                 data-current="{{p}}"
                 bindtap="onPreviewPhoto"
@@ -59,10 +119,10 @@
           bind:viewrecord="onCardViewRecord"
         />
 
-        <!-- AI 文本 / 查询回答 -->
+        <!-- AI 文本 / 查询回答：像主流 agent 一样用正文而非气泡 -->
         <block wx:else>
-          <view class="bubble is-ai">
-            <view class="bubble-text">{{item.text}}</view>
+          <view class="answer">
+            <view class="answer-text">{{item.text}}</view>
             <view
               wx:for="{{item.refs}}"
               wx:for-item="ref"
@@ -71,12 +131,12 @@
               data-id="{{ref.recordId}}"
               bindtap="onOpenRef"
             >
-              <t-icon name="bookmark" size="28rpx" color="#2F6B4F" />
+              <t-icon name="bookmark" size="28rpx" color="#256145" />
               <view class="ref-info">
                 <text class="ref-label">{{ref.label}}</text>
                 <text class="ref-sub">{{ref.sub}}</text>
               </view>
-              <t-icon name="chevron-right" size="28rpx" color="#A8D5BA" />
+              <t-icon name="chevron-right" size="28rpx" color="#97A39C" />
             </view>
             <view
               wx:if="{{item.action === 'draft-from'}}"
@@ -84,77 +144,101 @@
               data-text="{{item.sourceText}}"
               bindtap="onManualDraft"
             >
-              <t-icon name="edit-1" size="28rpx" color="#2F6B4F" />
+              <t-icon name="edit-1" size="28rpx" color="#256145" />
               <text>记一下</text>
             </view>
           </view>
           <view wx:if="{{item.retry}}" class="retry-btn" data-id="{{item.id}}" data-text="{{item.sourceText}}" bindtap="onRetry">
-            <t-icon name="refresh" size="26rpx" color="#2F6B4F" />
+            <t-icon name="refresh" size="26rpx" color="#256145" />
             <text>重试</text>
           </view>
-          <view wx:if="{{item.demo}}" class="demo-tag">本地演示 · 未接入真实模型</view>
-          <view wx:elif="{{item.mode === 'tool'}}" class="demo-tag">模型 · 工具调用</view>
-          <view wx:elif="{{item.mode === 'model'}}" class="demo-tag">模型回复</view>
         </block>
       </view>
     </block>
-    <!-- 模型思考中 -->
-    <view wx:if="{{aiThinking}}" id="ai-thinking" class="msg-row is-ai">
-      <view class="bubble is-ai typing">
+
+    <!-- 模型思考中：点气泡右侧的停止圆钮即可中断 -->
+    <view wx:if="{{aiThinking}}" id="ai-thinking" class="msg-row is-ai typing-row">
+      <view class="typing">
         <view class="typing-dot"></view>
         <view class="typing-dot"></view>
         <view class="typing-dot"></view>
       </view>
-      <view class="stop-btn" bindtap="onStop">停止</view>
+      <view class="stop-btn" bindtap="onStop" hover-class="none">
+        <view class="stop-glyph"></view>
+      </view>
+    </view>
+    <!-- 单会话 100 条上限：建议开启新话题（不阻断继续聊） -->
+    <view wx:if="{{messageCapped}}" class="cap-tip">
+      <text class="cap-tip-text">这个话题已经聊满 {{messageCapped ? '100' : ''}} 条啦，开启新话题可以让 AI 更专注。</text>
+      <view class="cap-tip-btn" catchtap="onNewTopic">开启新话题</view>
     </view>
     <view class="msgs-pad"></view>
   </scroll-view>
 
-  <!-- 快捷入口 -->
-  <view wx:if="{{currentPet}}" class="quick">
-    <view class="quick-chip" data-mode="record" bindtap="onQuick">
-      <t-icon name="edit-1" size="26rpx" color="#2F6B4F" />
-      <text>记一件小事</text>
+  <!-- 输入台跟在页面流里：安卓/鸿蒙上视口被键盘压缩、100vh 随之变小，它自然贴到键盘上沿；
+       iOS 视口不压缩，用 keyboardOffset 的 margin-bottom 手动把它顶到键盘上沿（flex 布局下消息区自动收缩）；
+       页面锁死不可整页滚动，所以翻记录时它不会跟着跑 -->
+  <view
+    wx:if="{{currentPet}}"
+    class="chat-dock {{keyboardUp ? 'is-keyboard-up' : ''}}"
+    style="margin-bottom: {{keyboardOffset}}px;"
+    catchtap="preventBubble"
+  >
+    <!-- 快捷入口：轻量胶囊；欢迎态已有建议卡，这里不再重复占位 -->
+    <view wx:if="{{messages.length && !(messages.length === 1 && messages[0].kind === 'divider')}}" class="quick">
+      <view class="quick-chip" data-mode="record" bindtap="onQuick">
+        <t-icon name="edit-1" size="24rpx" color="#2F6B4F" />
+        <text>记一件小事</text>
+      </view>
+      <view class="quick-chip" data-mode="query" bindtap="onQuick">
+        <t-icon name="search" size="24rpx" color="#2F6B4F" />
+        <text>查查上次</text>
+      </view>
+      <view class="quick-chip" bindtap="onNewTopic">
+        <t-icon name="refresh" size="24rpx" color="#2F6B4F" />
+        <text>新话题</text>
+      </view>
     </view>
-    <view class="quick-chip" data-mode="query" bindtap="onQuick">
-      <t-icon name="search" size="26rpx" color="#2F6B4F" />
-      <text>查查上次</text>
-    </view>
-  </view>
 
-  <!-- 输入区 -->
-  <view wx:if="{{currentPet}}" class="composer">
-    <view wx:if="{{attachments.length}}" class="attach-row">
-      <view wx:for="{{attachments}}" wx:key="*this" class="attach-wrap">
-        <image class="attach-photo" src="{{item}}" mode="aspectFill" />
-        <view class="attach-del" data-index="{{index}}" catchtap="onRemoveAttachment">
-          <t-icon name="close" size="22rpx" color="#FFFFFF" />
+    <!-- 输入区：一体化胶囊 -->
+    <view class="composer">
+      <view wx:if="{{attachments.length}}" class="attach-row">
+        <view wx:for="{{attachments}}" wx:key="*this" class="attach-wrap">
+          <image class="attach-photo" src="{{item}}" mode="aspectFill" />
+          <view class="attach-del" data-index="{{index}}" catchtap="onRemoveAttachment">
+            <t-icon name="close" size="22rpx" color="#FFFFFF" />
+          </view>
         </view>
       </view>
-    </view>
-    <view class="input-row">
-      <view class="icon-btn" bindtap="onChoosePhoto">
-        <t-icon name="image" size="44rpx" color="#2F6B4F" />
+
+      <view class="input-capsule">
+        <view class="capsule-btn" bindtap="onChoosePhoto">
+          <t-icon name="image" size="40rpx" color="#5D6D64" />
+        </view>
+        <textarea
+          class="input"
+          value="{{inputValue}}"
+          placeholder="{{placeholder}}"
+          placeholder-class="input-placeholder"
+          auto-height
+          maxlength="500"
+          focus="{{focusFlag}}"
+          adjust-position="{{adjustPosition}}"
+          show-confirm-bar="{{false}}"
+          cursor-spacing="20"
+          bindinput="onInput"
+          bindfocus="onFocus"
+          bindblur="onBlur"
+          bindkeyboardheightchange="onKeyboardHeight"
+        />
+        <view class="send-btn {{!inputValue && !attachments.length ? 'is-disabled' : ''}}" bindtap="onSend">
+          <t-icon name="send" size="32rpx" color="#FFFFFF" />
+        </view>
       </view>
-      <textarea
-        class="input"
-        value="{{inputValue}}"
-        placeholder="{{placeholder}}"
-        placeholder-class="input-placeholder"
-        auto-height
-        maxlength="500"
-        focus="{{focusFlag}}"
-        adjust-position="{{false}}"
-        cursor-spacing="16"
-        bindinput="onInput"
-        bindkeyboardheightchange="onKeyboardHeight"
-      />
-      <view class="send-btn {{!inputValue && !attachments.length ? 'is-disabled' : ''}}" bindtap="onSend">
-        <t-icon name="send" size="36rpx" color="#FFFFFF" />
-      </view>
+
+      <!-- 与 tabBar 同高的白色延伸块：键盘收起时给 fixed 的 tabBar 让位，键盘弹起时 tabBar 已隐藏 -->
+      <view class="composer-tail" style="height: {{keyboardUp ? 0 : tabbarHeight}}px;"></view>
     </view>
-    <!-- 与 tabBar 同高的白色延伸块，消除输入区与导航栏之间的空隙 -->
-    <view class="composer-tail" style="height: {{tabbarHeight}}px;"></view>
   </view>
 
   <draft-editor
@@ -166,6 +250,7 @@
     bind:close="onEditorClose"
   />
 
-  <t-action-sheet id="t-action-sheet" bind:selected="onPetSelected" />
+  <t-action-sheet id="t-action-sheet" bind:selected="onPetSelected" catchtap="preventBubble" />
+  <t-dialog id="t-dialog" />
   <t-toast id="t-toast" />
 </view>

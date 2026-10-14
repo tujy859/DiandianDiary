@@ -1,4 +1,5 @@
 <view class="page" style="padding-bottom: {{tabbarHeight}}px;">
+  <offline-bar />
   <!-- 品牌区：矢量头像占位，后续可替换为「猫咪抱日记本」插画 -->
   <view class="brand">
     <view class="brand-avatar">

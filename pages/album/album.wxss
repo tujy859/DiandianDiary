@@ -3,58 +3,43 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  background: #faf7f0;
 }
 
+/* 头部：宠物徽章（样式在 app.wxss 全局共享，与聊聊完全一致）+ 视角切换 */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20rpx 24rpx 12rpx;
+  /* 与聊聊页浮动徽章的 top/left 完全同位 */
+  padding: 20rpx 28rpx 12rpx;
 }
 
-.pet-chip {
-  display: flex;
-  align-items: center;
-  gap: 10rpx;
-  background: #ffffff;
-  border-radius: 40rpx;
-  padding: 8rpx 24rpx;
-  box-shadow: 0 2rpx 10rpx rgba(47, 107, 79, 0.08);
-}
-
-.pet-avatar {
-  font-size: 32rpx;
-}
-
-.pet-name {
-  font-size: 26rpx;
-  font-weight: 600;
-  color: #2b3a33;
-}
-
+/* 视角切换：中性轨道 + 品牌绿选中块 */
 .seg {
   display: flex;
-  background: #efe9df;
-  border-radius: 36rpx;
+  background: rgba(31, 43, 37, 0.06);
+  border-radius: 999rpx;
   padding: 6rpx;
 }
 
 .seg-item {
-  font-size: 26rpx;
-  color: #8a948e;
-  padding: 8rpx 32rpx;
-  border-radius: 30rpx;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-text-2);
+  padding: 10rpx 30rpx;
+  border-radius: 999rpx;
+  transition: all 0.2s ease;
 }
 
 .seg-item.is-active {
-  background: #2f6b4f;
+  background: var(--jd-brand);
   color: #ffffff;
   font-weight: 600;
 }
 
 .body {
   flex: 1;
-  padding: 8rpx 24rpx 0;
+  padding: 12rpx 28rpx 0;
 }
 
 .body-pad {
@@ -80,21 +65,21 @@
   width: 16rpx;
   height: 16rpx;
   border-radius: 50%;
-  background: #a8d5ba;
-  border: 4rpx solid #e3efe8;
+  background: var(--jd-brand);
+  border: 4rpx solid var(--jd-tint);
   flex-shrink: 0;
 }
 
 .tl-line {
   flex: 1;
   width: 2rpx;
-  background: #e3efe8;
+  background: var(--jd-tint);
   margin-top: 8rpx;
 }
 
 .tl-card {
   flex: 1;
-  padding: 24rpx;
+  padding: 26rpx;
   margin-bottom: 4rpx;
 }
 
@@ -105,21 +90,23 @@
 }
 
 .tl-date {
-  font-size: 28rpx;
+  font-size: var(--jd-fs-md);
   font-weight: 600;
-  color: #2f6b4f;
+  color: var(--jd-brand);
 }
 
 .tl-rel {
-  font-size: 22rpx;
-  color: #b7a77a;
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-3);
 }
 
 .tl-text {
-  font-size: 28rpx;
-  color: #2b3a33;
+  font-size: var(--jd-fs-lg);
+  line-height: 1.66;
+  color: var(--jd-text-1);
   margin-top: 12rpx;
-  word-break: break-all;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .tl-photos {
@@ -132,7 +119,7 @@
 .tl-photo {
   width: 200rpx;
   height: 200rpx;
-  border-radius: 16rpx;
+  border-radius: var(--jd-r-sm);
   background: #f0ece4;
 }
 
@@ -164,8 +151,8 @@
 .polaroid {
   width: 340rpx;
   background: #ffffff;
-  border-radius: 12rpx;
-  padding: 16rpx 16rpx 12rpx;
+  border-radius: var(--jd-r-sm);
+  padding: 16rpx 16rpx 14rpx;
   margin-top: 24rpx;
   box-shadow: 0 4rpx 14rpx rgba(47, 107, 79, 0.08);
 }
@@ -173,7 +160,7 @@
 .polaroid-img {
   width: 308rpx;
   height: 308rpx;
-  border-radius: 8rpx;
+  border-radius: 12rpx;
   background: #f0ece4;
 }
 
@@ -185,13 +172,13 @@
 }
 
 .polaroid-date {
-  font-size: 22rpx;
-  color: #8a948e;
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-3);
 }
 
 .polaroid-link {
-  font-size: 22rpx;
-  color: #2f6b4f;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-brand);
   font-weight: 600;
   padding: 4rpx 12rpx;
 }
@@ -210,14 +197,21 @@
   margin-bottom: 24rpx;
 }
 
+.empty-illu {
+  width: 320rpx;
+  height: 296rpx;
+  margin-bottom: 24rpx;
+  border-radius: 24rpx;
+}
+
 .empty-text {
-  font-size: 28rpx;
-  color: #2b3a33;
+  font-size: var(--jd-fs-md);
+  color: var(--jd-text-1);
   font-weight: 500;
 }
 
 .empty-sub {
-  font-size: 24rpx;
-  color: #8a948e;
-  margin: 12rpx 0 32rpx;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-text-2);
+  margin: 12rpx 0 36rpx;
 }

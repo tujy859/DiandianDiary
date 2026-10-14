@@ -1,12 +1,12 @@
 import Dialog from 'tdesign-miniprogram/dialog/index';
-import { getCloudSession, setCloudSession, clearAll } from '../../utils/store';
-import { connectCloud, selectFamily, importLocalData, refreshCloud, Family } from '../../utils/repository';
+import { getCloudSession } from '../../utils/store';
+import { connectCloud, selectFamily, refreshCloud, Family } from '../../utils/repository';
 import { callCloud } from '../../utils/cloud';
 
 Page({
   data: {
     connected: false, busy: false, error: '', userId: '', nickname: '', familyId: '',
-    families: [] as Family[], members: [] as Array<{ userId: string; role: string; label: string }>,
+    families: [] as Family[], members: [] as Array<{ userId: string; role: string; label: string; nickname?: string }>,
     owner: false, familyName: '', inviteInput: '', inviteToken: '', inviteExpiry: '',
   },
   async onShow() {
@@ -25,7 +25,13 @@ Page({
     const selected = families.find((f) => f.id === s.familyId)!;
     this.setData({ connected: true, userId: user.id, nickname: user.nickname, families,
       familyId: selected.id, owner: selected.members.some((m) => m.userId === user.id && m.role === 'owner'),
-      members: selected.members.map((m, i) => ({ ...m, label: m.userId === user.id ? '我' : `成员 ${i + 1} · ${m.userId.slice(-6)}` })),
+      // 昵称是展示用的首选；没设置昵称才退回「成员 N · 尾号」
+    members: selected.members.map((m, i) => ({
+      ...m,
+      label: m.userId === user.id
+        ? (user.nickname ? `我（${user.nickname}）` : '我')
+        : (m.nickname || `成员 ${i + 1} · ${m.userId.slice(-6)}`),
+    })),
     });
     await refreshCloud();
   },
@@ -45,7 +51,9 @@ Page({
     });
   },
   onSwitch(e: WechatMiniprogram.TouchEvent) {
-    return this.run(async () => { await selectFamily(e.currentTarget.dataset.id); this.setData({ inviteToken: '' }); await this.load(); });
+    const id = e.currentTarget.dataset.id;
+    if (!id || id === this.data.familyId) return;
+    return this.run(async () => { await selectFamily(id); this.setData({ inviteToken: '' }); await this.load(); });
   },
   onInvite() {
     return this.run(async () => {
@@ -77,23 +85,8 @@ Page({
     Dialog.confirm({ context: this, selector: '#t-dialog', title: '退出这个家庭？', content: '退出后将无法继续查看家庭日记，你曾保存的日记会保留在家庭中。' })
       .then(() => this.run(async () => {
         await callCloud('family.leave', { familyId: this.data.familyId });
-        clearAll();
-        setCloudSession(null);
+        // 退出后仍保持登录：connectCloud 会落到剩余的家庭空间
         await this.load();
       })).catch(() => {});
-  },
-  onImport() {
-    const selected = this.data.families.find((f) => f.id === this.data.familyId);
-    Dialog.confirm({ context: this, selector: '#t-dialog', title: '导入本机记录？',
-      content: `本机宠物和日记将上传到「${selected?.name || ''}」，家庭成员都能看到。保留本机原数据，重复导入不会重复创建记录。聊天和模型密钥不会上传。` })
-      .then(() => this.run(async () => {
-        const count = await importLocalData();
-        wx.showToast({ title: `已导入 ${count} 条日记`, icon: 'none' });
-      })).catch(() => {});
-  },
-  onLocal() {
-    if (this.data.busy) return;
-    setCloudSession(null);
-    this.setData({ connected: false, families: [], members: [], userId: '', familyId: '', inviteToken: '', error: '' });
   },
 });

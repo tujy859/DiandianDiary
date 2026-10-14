@@ -5,7 +5,7 @@ import { callCloud, CloudError } from './cloud';
 
 export interface Family {
   id: string; name: string;
-  members: Array<{ userId: string; role: 'owner' | 'member'; joinedAt: number }>;
+  members: Array<{ userId: string; role: 'owner' | 'member'; joinedAt: number; nickname?: string }>;
 }
 interface CloudDiary {
   id: string; familyId: string; petId: string; rawInput: RawInput;
@@ -44,13 +44,19 @@ async function uploadPhotos(paths: string[], s: local.CloudSession): Promise<str
     const known = mediaMap(s)[path];
     if (known) { ids.push(known); continue; }
     if (path.indexOf('cloud://') === 0) { ids.push(path); continue; } // Server validates family ownership.
-    if (/^https?:/.test(path)) throw new Error('照片链接已失效，请刷新后重试');
-    const compressed: string = await new Promise((resolve) => wx.compressImage({ src: path, quality: 50,
-      success: (r) => resolve(r.tempFilePath), fail: () => resolve(path) }));
-    const base64: string = await new Promise((resolve, reject) => (wx.getFileSystemManager() as any).readFile({
-      filePath: compressed, encoding: 'base64', success: (r: any) => resolve(r.data), fail: reject,
+    // 只拒绝云存储的签名展示链接；部分机型的本机持久路径以 http:// 开头（USER_DATA_PATH），必须照常上传
+    if (/^https:/.test(path)) throw new Error('照片链接已失效，请刷新后重试');
+    const compress = (quality: number, width?: number) => new Promise<string>((resolve) => wx.compressImage({
+      src: path, quality, ...(width ? { compressedWidth: width } : {}),
+      success: (r) => resolve(r.tempFilePath), fail: () => resolve(path),
     }));
-    if (base64.length > 1398104) throw new Error('照片压缩后仍超过 1MB，请选择较小的 JPG 或 PNG 照片');
+    const readBase64 = (file: string) => new Promise<string>((resolve, reject) => (wx.getFileSystemManager() as any).readFile({
+      filePath: file, encoding: 'base64', success: (r: any) => resolve(r.data), fail: reject,
+    }));
+    // 先压质量再限宽度：手机原图动辄 4000px，只压质量很难压进限制
+    let base64 = await readBase64(await compress(50, 1600));
+    if (base64.length > 1398104) base64 = await readBase64(await compress(40, 1080));
+    if (base64.length > 1398104) throw new Error('照片压缩后仍超过 1MB，请换一张照片试试');
     const result = await callCloud<{ fileId: string }>('media.upload', { familyId: s.familyId, base64 });
     sameSession(s);
     wx.setStorageSync(mediaKey(s), { ...mediaMap(s), [path]: result.fileId, [result.fileId]: result.fileId });
@@ -80,11 +86,14 @@ export async function refreshCloud(): Promise<void> {
   try {
     const identity = await callCloud<{ id: string }>('auth.login');
     if (identity.id !== s.userId) throw new CloudError('UNAUTHENTICATED', '微信账号已变更，请重新连接云端');
-    const pets = await allPages<Pet>('pet.list', { familyId: s.familyId });
+    const cloudPets = await allPages<Pet>('pet.list', { familyId: s.familyId });
     const diaries: CloudDiary[] = [];
-    for (const pet of pets) diaries.push(...await allPages<CloudDiary>('diary.list', { familyId: s.familyId, petId: pet.id }));
-    const urls = await mapUrls(diaries.flatMap((d) => d.formatted.photos), s);
+    for (const pet of cloudPets) diaries.push(...await allPages<CloudDiary>('diary.list', { familyId: s.familyId, petId: pet.id }));
+    const avatarIds = cloudPets.map((p) => p.avatar || '').filter(Boolean);
+    const urls = await mapUrls(diaries.flatMap((d) => d.formatted.photos).concat(avatarIds), s);
     sameSession(s);
+    // 宠物头像在云端存 fileId，缓存里统一换成可展示的临时链接（与日记照片同一生命周期）
+    const pets = cloudPets.map((p) => ({ ...p, avatar: p.avatar ? (urls[p.avatar] || '') : '' }));
     if (local.getCloudCacheRevision() === revision) cacheCloudData(pets, diaries.map((d) => hydrate(d, urls)));
   } catch (error) {
     if (error instanceof CloudError && ['FORBIDDEN', 'UNAUTHENTICATED'].includes(error.code)) {
@@ -93,6 +102,38 @@ export async function refreshCloud(): Promise<void> {
     }
     throw error;
   }
+}
+
+/**
+ * 已上传过的本机路径 / 临时链接 → 云端 fileId；没传过的返回空串。
+ * 只做查询，绝不触发上传——照片是否在云端由「有没有保存进日记」决定。
+ */
+export function cloudFileIds(paths: string[]): string[] {
+  if (!paths.length) return [];
+  const map = mediaMap(session());
+  return paths.map((p) => map[p] || '');
+}
+
+/** 云端 fileId → 可展示的临时链接 */
+export async function resolvePhotoUrls(ids: string[]): Promise<Record<string, string>> {
+  if (!ids.length) return {};
+  return mapUrls(ids, session());
+}
+
+let lastRefreshAt = 0;
+let inflightRefresh: Promise<void> | null = null;
+/**
+ * 节流 + 去重的云端刷新：tab 页 onShow 高频触发时，间隔内直接跳过、并发请求合并为一次。
+ * 返回是否真的发起了刷新（false = 命中节流被跳过）。
+ */
+export function refreshCloudIfStale(maxAgeMs = 30000): Promise<boolean> {
+  if (!getCloudSession()) return Promise.resolve(false);
+  if (inflightRefresh) return inflightRefresh.then(() => true);
+  if (Date.now() - lastRefreshAt < maxAgeMs) return Promise.resolve(false);
+  inflightRefresh = refreshCloud()
+    .then(() => { lastRefreshAt = Date.now(); })
+    .finally(() => { inflightRefresh = null; });
+  return inflightRefresh.then(() => true);
 }
 export async function connectCloud(): Promise<{ user: { id: string; nickname: string }; families: Family[] }> {
   const user = await callCloud<{ id: string; nickname: string }>('auth.login');
@@ -114,16 +155,22 @@ export async function selectFamily(familyId: string): Promise<void> {
   }
 }
 export async function savePet(input: Partial<Pet> & { name: string; species: string; clientId?: string }): Promise<Pet> {
-  if (!getCloudSession()) return local.savePet(input);
   const s = session();
   const old = input.id ? local.getPets().find((p) => p.id === input.id) : null;
-  const pet = await callCloud<Pet>('pet.save', { ...input, id: input.id || undefined, familyId: s.familyId, version: old?.version, clientId: input.clientId || uid() });
+  // 头像：本机路径先上传为云端 fileId；已上传过的临时链接走 mediaMap 反查，不会重复传
+  let avatarId = '';
+  if (input.avatar) {
+    avatarId = input.avatar.indexOf('cloud://') === 0 ? input.avatar : (await uploadPhotos([input.avatar], s))[0];
+    sameSession(s);
+  }
+  const pet = await callCloud<Pet>('pet.save', { ...input, id: input.id || undefined, avatar: avatarId, familyId: s.familyId, version: old?.version, clientId: input.clientId || uid() });
   sameSession(s);
-  cacheCloudData(local.getPets().filter((p) => p.id !== pet.id).concat(pet), local.getRecords());
-  return pet;
+  const urls = avatarId ? await mapUrls([avatarId], s) : {};
+  const cached: Pet = { ...pet, avatar: avatarId ? (urls[avatarId] || '') : '' };
+  cacheCloudData(local.getPets().filter((p) => p.id !== pet.id).concat(cached), local.getRecords());
+  return cached;
 }
 export async function removePet(id: string): Promise<void> {
-  if (!getCloudSession()) return local.removePet(id);
   const s = session();
   const pet = local.getPets().find((p) => p.id === id);
   await callCloud('pet.delete', { id, familyId: s.familyId, version: pet?.version });
@@ -131,7 +178,6 @@ export async function removePet(id: string): Promise<void> {
   cacheCloudData(local.getPets().filter((p) => p.id !== id), local.getRecords().filter((r) => r.petId !== id));
 }
 export async function addRecord(input: { petId: string; date: string; text: string; tags: string[]; photos: string[]; rawInput?: RawInput; mode?: string; clientId?: string }): Promise<DiaryRecord> {
-  if (!getCloudSession()) return local.addRecord(input);
   const s = session();
   const raw = input.rawInput || { text: input.text, photos: input.photos, provenance: 'direct' };
   const photos = await uploadPhotos(input.photos, s);
@@ -145,7 +191,6 @@ export async function addRecord(input: { petId: string; date: string; text: stri
   return rec;
 }
 export async function updateRecord(id: string, patch: Partial<DiaryRecord>): Promise<DiaryRecord | null> {
-  if (!getCloudSession()) return local.updateRecord(id, patch);
   const old = local.getRecord(id);
   if (!old) throw new Error('记录不存在，请刷新');
   const s = session();
@@ -160,29 +205,10 @@ export async function updateRecord(id: string, patch: Partial<DiaryRecord>): Pro
   return rec;
 }
 export async function removeRecord(id: string): Promise<void> {
-  if (!getCloudSession()) return local.removeRecord(id);
   const s = session();
   const old = local.getRecord(id);
   await callCloud('diary.delete', { familyId: s.familyId, id, version: old?.version });
   sameSession(s);
   cacheCloudData(local.getPets(), local.getRecords().filter((r) => r.id !== id));
 }
-/** Explicit, restartable migration. Local originals are retained; deterministic IDs avoid duplicates. */
-export async function importLocalData(): Promise<number> {
-  const s = session();
-  const snapshot = local.getLocalData();
-  let count = 0;
-  for (const pet of snapshot.pets) {
-    sameSession(s);
-    const created = await callCloud<Pet>('pet.save', { familyId: s.familyId, clientId: `legacy-pet-${pet.id}`,
-      name: pet.name, species: pet.species, breed: pet.breed, birthday: pet.birthday });
-    for (const rec of snapshot.records.filter((r) => r.petId === pet.id)) {
-      sameSession(s);
-      await addRecord({ ...rec, petId: created.id, clientId: `legacy-diary-${rec.id}`, mode: rec.formatting?.mode || 'legacy',
-        rawInput: rec.rawInput || { text: rec.text, photos: rec.photos, provenance: 'legacy' } });
-      count++;
-    }
-  }
-  await refreshCloud();
-  return count;
-}
+

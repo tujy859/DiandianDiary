@@ -1,9 +1,11 @@
 import Dialog from 'tdesign-miniprogram/dialog/index';
 import Toast from 'tdesign-miniprogram/toast/index';
-import { getPets, clearAll, petEmoji, getModelConfig, Pet, getCloudSession, uid } from '../../utils/store';
-import { savePet, removePet, refreshCloud } from '../../utils/repository';
+import { getPets, clearAll, petEmoji, getModelConfig, Pet, getCloudSession, getCloudCacheRevision, uid } from '../../utils/store';
+import { savePet, removePet, refreshCloudIfStale } from '../../utils/repository';
 import { isModelReady } from '../../utils/llm';
 import { displayDate, fmt } from '../../utils/date';
+import { getLayout, resetViewport } from '../../utils/layout';
+import { guardReady } from '../../utils/onboard';
 
 const SPECIES = ['猫', '狗', '其他'];
 
@@ -25,20 +27,23 @@ Page({
   },
 
   async onShow() {
-    this.setData({ cloudOn: !!getCloudSession() });
-    if (getCloudSession()) {
-      this.setData({ pets: [] });
-      try { await refreshCloud(); } catch (err: any) {
-        Toast({ context: this, selector: '#t-toast', message: err.message || '云端读取失败', theme: 'error' });
-        return;
-      }
-    }
-    const app: any = getApp();
-    this.setData({ tabbarHeight: (app && app.globalData && app.globalData.tabbarHeight) || 60 });
+    // 收起键盘并重新测量布局，保留原有视口修复。
+    resetViewport(this);
+    if (!guardReady()) return;
+    // 缓存优先渲染；后台节流刷新，只有数据真的变化才重渲染
+    const revision = getCloudCacheRevision();
+    this.setData({ cloudOn: !!getCloudSession(), tabbarHeight: getLayout(true).tabbarHeight });
     this.reload();
     this.setData({ modelNote: isModelReady(getModelConfig()) ? '已接入' : '未接入' });
     const tabbar = this.getTabBar && this.getTabBar();
     if (tabbar) tabbar.setData({ selected: 2 });
+    if (!getCloudSession()) return;
+    try {
+      const refreshed = await refreshCloudIfStale();
+      if (refreshed && getCloudCacheRevision() !== revision) this.reload();
+    } catch (err: any) {
+      Toast({ context: this, selector: '#t-toast', message: err.message || '云端读取失败', theme: 'error' });
+    }
   },
 
   reload() {
@@ -168,7 +173,7 @@ Page({
       context: this,
       selector: '#t-dialog',
       title: '记一下喵',
-      content: '用聊天的方式，记下和小家伙的每一天。\n在「账号与家庭空间」连接云端后，已确认的日记保存到家庭空间；本地模式的数据仍在本机。',
+      content: '用聊天的方式，记下和小家伙的每一天。\n已确认的日记保存在你的家庭空间，换设备登录后仍可查看。',
       confirmBtn: '知道啦',
     });
   },

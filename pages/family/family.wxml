@@ -1,40 +1,99 @@
 <view class="page">
-  <view class="intro">与家人一起记录宠物生活</view>
-  <view class="note">连接后，已确认的日记会保存到云端；加入同一家庭即可查看共同宠物和日记。</view>
-  <view wx:if="{{error}}" class="error">{{error}}</view>
-  <button wx:if="{{!connected}}" type="primary" loading="{{busy}}" disabled="{{busy}}" bindtap="onConnect">使用微信身份连接云端</button>
+  <offline-bar />
+  <!-- 顶部说明 -->
+  <view class="hero">
+    <view class="hero-title">与家人一起记录宠物生活</view>
+    <view class="hero-sub">连接后，已确认的日记会保存到云端；加入同一家庭即可查看共同宠物和日记。</view>
+  </view>
+
+  <view wx:if="{{error}}" class="error">
+    <t-icon name="error-circle" size="32rpx" color="#D54941" />
+    <text class="error-text">{{error}}</text>
+  </view>
+
+  <!-- 未连接：本机模式 -->
+  <view wx:if="{{!connected}}" class="jd-card panel connect">
+    <view class="connect-icon">
+      <t-icon name="usergroup" size="56rpx" color="#2F6B4F" />
+    </view>
+    <view class="connect-title">云端连接已断开</view>
+    <view class="connect-sub">日记和宠物都在云端，需要先重新连接才能查看和管理家庭空间。</view>
+    <t-button class="connect-btn" theme="primary" size="large" block shape="round" loading="{{busy}}" disabled="{{busy}}" bind:tap="onConnect">重新连接云端</t-button>
+  </view>
+
   <block wx:if="{{connected}}">
-    <view class="card">
-      <view class="title">我的账号</view>
-      <view class="note">微信身份已连接。昵称仅供展示，留空也可使用。</view>
-      <input type="nickname" placeholder="填写昵称" maxlength="40" value="{{nickname}}" bindinput="onNickname" />
-      <button size="mini" disabled="{{busy}}" bindtap="onSaveProfile">保存昵称</button>
+    <!-- 我的账号 -->
+    <view class="section-title">我的账号</view>
+    <view class="jd-card panel">
+      <t-input label="昵称" type="nickname" placeholder="选填，仅用于展示" maxlength="40" value="{{nickname}}" bind:change="onNickname" />
+      <t-button class="save-btn" theme="primary" block shape="round" disabled="{{busy}}" bind:tap="onSaveProfile">保存昵称</t-button>
     </view>
-    <view class="card">
-      <view class="title">家庭空间</view>
-      <button wx:for="{{families}}" wx:key="id" data-id="{{item.id}}" disabled="{{busy}}" bindtap="onSwitch">{{item.id === familyId ? '✓ ' : ''}}{{item.name}}</button>
-      <view class="note">{{owner ? '你是家庭创建者，可以管理宠物和成员。' : '你可以记录日记，编辑自己的日记。'}}</view>
-      <view wx:for="{{members}}" wx:key="userId" class="member">
-        <text>{{item.label}} · {{item.role === 'owner' ? '创建者' : '成员'}}</text>
-        <button wx:if="{{owner && item.role !== 'owner'}}" size="mini" data-id="{{item.userId}}" disabled="{{busy}}" bindtap="onRemove">移除</button>
+
+    <!-- 家庭空间 -->
+    <view class="section-title">家庭空间</view>
+    <view class="jd-card panel">
+      <view wx:for="{{families}}" wx:key="id" class="fam-row {{item.id === familyId ? 'is-active' : ''}}" data-id="{{item.id}}" bindtap="onSwitch">
+        <t-icon name="{{item.id === familyId ? 'check-circle-filled' : 'circle'}}" size="40rpx" color="{{item.id === familyId ? '#2F6B4F' : '#C9CFCC'}}" />
+        <text class="fam-name">{{item.name}}</text>
+        <text wx:if="{{item.id === familyId}}" class="fam-tag">当前</text>
       </view>
-      <button wx:if="{{owner}}" disabled="{{busy}}" bindtap="onInvite">生成一次性邀请码</button>
-      <view wx:if="{{inviteToken}}" class="invite"><text selectable>{{inviteToken}}</text><view class="note">{{inviteExpiry}}</view><button size="mini" bindtap="onCopy">复制邀请码</button><button size="mini" disabled="{{busy}}" bindtap="onRevoke">撤销邀请</button></view>
-      <button wx:if="{{!owner}}" disabled="{{busy}}" bindtap="onLeave">退出此家庭</button>
-      <button wx:if="{{owner}}" disabled="{{busy}}" bindtap="onImport">导入本机宠物和日记到当前家庭</button>
+
+      <view class="note-line">{{owner ? '你是家庭创建者，可以管理宠物和成员。' : '你可以记录日记，编辑自己的日记。'}}</view>
+
+      <view class="member" wx:for="{{members}}" wx:key="userId">
+        <view class="member-avatar">
+          <t-icon name="user" size="36rpx" color="#2F6B4F" />
+        </view>
+        <view class="member-info">
+          <text class="member-name">{{item.label}}</text>
+          <text class="member-role">{{item.role === 'owner' ? '创建者' : '成员'}}</text>
+        </view>
+        <view wx:if="{{owner && item.role !== 'owner'}}" class="member-del" data-id="{{item.userId}}" catchtap="onRemove">
+          <t-icon name="delete" size="36rpx" color="#C9CFCC" />
+        </view>
+      </view>
+
+      <view wx:if="{{inviteToken}}" class="invite">
+        <view class="invite-label">邀请码（{{inviteExpiry}}）</view>
+        <text class="invite-code" selectable user-select>{{inviteToken}}</text>
+        <view class="invite-actions">
+          <t-button size="small" theme="primary" shape="round" bind:tap="onCopy">复制邀请码</t-button>
+          <t-button size="small" theme="danger" variant="text" disabled="{{busy}}" bind:tap="onRevoke">撤销</t-button>
+        </view>
+      </view>
+
+      <view class="card-actions">
+        <t-button wx:if="{{owner}}" block theme="primary" variant="outline" shape="round" disabled="{{busy}}" bind:tap="onInvite">生成一次性邀请码</t-button>
+        <t-button wx:if="{{!owner}}" block theme="danger" variant="outline" shape="round" disabled="{{busy}}" bind:tap="onLeave">退出此家庭</t-button>
+      </view>
     </view>
-    <view class="card">
-      <view class="title">加入家人的空间</view>
-      <input placeholder="粘贴家人提供的邀请码" maxlength="48" value="{{inviteInput}}" bindinput="onInviteInput" />
-      <button disabled="{{busy || !inviteInput}}" bindtap="onJoin">加入家庭</button>
-      <view class="title">创建新家庭</view>
-      <input placeholder="家庭名称" maxlength="40" value="{{familyName}}" bindinput="onFamilyName" />
-      <button disabled="{{busy || !familyName}}" bindtap="onCreate">创建家庭空间</button>
+
+    <!-- 加入或创建 -->
+    <view class="section-title">加入或创建</view>
+    <view class="jd-card panel">
+      <view class="field-label">加入家人的空间</view>
+      <t-input placeholder="粘贴家人提供的邀请码" maxlength="48" value="{{inviteInput}}" bind:change="onInviteInput" />
+      <t-button class="action-btn" theme="primary" block shape="round" disabled="{{busy || !inviteInput}}" bind:tap="onJoin">加入家庭</t-button>
+
+      <view class="divider">
+        <view class="divider-line" />
+        <text class="divider-text">或</text>
+        <view class="divider-line" />
+      </view>
+
+      <view class="field-label">创建新家庭</view>
+      <t-input placeholder="给家庭起个名字" maxlength="40" value="{{familyName}}" bind:change="onFamilyName" />
+      <t-button class="action-btn" theme="primary" block shape="round" disabled="{{busy || !familyName}}" bind:tap="onCreate">创建家庭空间</t-button>
     </view>
-    <button disabled="{{busy}}" bindtap="onConnect">刷新云端数据</button>
-    <button disabled="{{busy}}" bindtap="onLocal">返回本机模式</button>
+
+    <!-- 其他操作 -->
+    <view class="footer-actions">
+      <t-button block theme="default" variant="outline" shape="round" disabled="{{busy}}" bind:tap="onConnect">刷新云端数据</t-button>
+    </view>
   </block>
-  <view wx:if="{{busy}}" class="note">正在连接或保存，请稍候…</view>
-  <view class="note">本机模式的数据独立保存。导入前请确认当前微信账号和目标家庭。</view>
+
+  <view wx:if="{{busy}}" class="busy-note">正在连接或保存，请稍候…</view>
+  <view class="foot-note">家庭空间的日记保存在云端，换设备登录后仍可查看。</view>
+
   <t-dialog id="t-dialog" />
 </view>

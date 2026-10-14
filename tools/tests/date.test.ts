@@ -50,7 +50,9 @@ describe('日期工具（确定性计算）', () => {
   });
 
   test('展示格式', () => {
-    expect(displayDate('2026-10-12')).toMatch(/^10月12日 · 周[一二三四五六日]$/);
+    const y = new Date().getFullYear();
+    expect(displayDate(`${y}-10-12`)).toMatch(/^10月12日 · 周[一二三四五六日]$/);
+    expect(displayDate(`${y - 1}-10-12`)).toMatch(new RegExp(`^${y - 1}年10月12日 · 周[一二三四五六日]$`));
     expect(weekday('2026-10-12')).toBe('周一');
     expect(displayDate('2026-99-99')).toBe('日期待修正');
     expect(relDay('2026-99-99')).toBe('');

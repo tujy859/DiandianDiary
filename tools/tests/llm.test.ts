@@ -12,6 +12,8 @@ test('JSON 模式具有独立提示和 response_format，不依赖普通文字�
   expect((await chatWithModel(cfg, '你好', context)).reply).toBe('你好');
   expect(request.data.response_format).toEqual({ type: 'json_object' });
   expect(request.data.messages[0].content).toContain('只输出一个 JSON');
+  expect(request.data.messages[0].content).toContain('"startDate":"2026-10-01"');
+  expect(request.data.messages[0].content).toContain('"endDateExclusive":"2026-11-01"');
   expect(request.url).toBe('https://example.test/v1/chat/completions');
 });
 test.each([
@@ -23,6 +25,11 @@ test.each([
 ])('结构不符合约定必须显式失败：%s', (content) => expect(() => extractJson(content)).toThrow());
 test('接受完整 JSON 代码块，保持模糊草稿日期为 null', () => {
   expect(extractJson('```json\n{"reply":"待确认","draft":{"date":null,"text":"洗澡","tags":["洗澡"]},"query":null}\n```').draft!.date).toBeNull();
+});
+test('JSON 降级支持原文证据及分页参数，供共用执行器验证', () => {
+  const out = extractJson(JSON.stringify({ reply: '', draft: { text: '洗澡了', sourceText: '昨天洗澡了', date: null, tags: [] }, query: { offset: 3, limit: 2 } }));
+  expect(out.draft!.sourceText).toBe('昨天洗澡了');
+  expect(out.query!.offset).toBe(3);
 });
 test('工具参数 JSON 损坏触发降级，不当作空参数执行全量查询', async () => {
   (global as any).__wxStub.request = (opts: any) => opts.success({ statusCode: 200, data: { choices: [{ message: { tool_calls: [{ id: 'a', function: { name: 'query_records', arguments: '{broken' } }] } }] } });

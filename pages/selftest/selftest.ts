@@ -1,9 +1,12 @@
 /** 开发自检：在真实运行环境里验证确定性逻辑与数据层，不依赖网络 */
 import {
   getPets, savePet, removePet, getRecords, addRecord, updateRecord, removeRecord,
-  getMessages, saveMessages, uid, Pet,
+  getMessages, saveMessages, uid, Pet, ChatMessage,
 } from '../../utils/store';
-import { respond } from '../../utils/intent';
+import { sourceForDraft, extractTags } from '../../utils/intent';
+import { validateDraft } from '../../utils/draft';
+import { queryRecords, resolveQueryOptions } from '../../utils/query';
+import { buildHistory, currentSessionMessages, unclaimedPhotos } from '../../utils/context';
 import { today, addDays, diffDays, parseDateWords, relDay } from '../../utils/date';
 
 interface Case {
@@ -53,44 +56,59 @@ Page({
     check('日期 · 天数差计算', diffDays(addDays(t, -6), t) === 6, String(diffDays(addDays(t, -6), t)));
     check('日期 · 相对描述', relDay(t) === '今天' && relDay(addDays(t, -1)) === '昨天', relDay(addDays(t, -3)));
 
-    /* ---------- 2. 意图区分 ---------- */
+    /* ---------- 2. 事实分句与标签（确定性，不依赖模型） ---------- */
     const pet = { id: 'fake', name: '咪咪' };
-    const hasDraft = (outs: any[]) => outs.some((o) => o.kind === 'draft');
-    const kinds = (outs: any[]) => outs.map((o) => o.kind).join('/');
 
-    const fact = respond({ text: '今天给咪咪洗澡了，洗完一直躲在床底', photos: [], petId: pet.id, petName: pet.name });
-    check('意图 · 已发生的事实 → 出待保存卡', hasDraft(fact), kinds(fact));
-    const factDraft: any = fact.find((o) => o.kind === 'draft');
-    check('意图 · 事实卡片日期为今天且含「洗澡」标签',
-      !!factDraft && factDraft.draft.date === t && factDraft.draft.tags.indexOf('洗澡') >= 0,
-      JSON.stringify(factDraft && factDraft.draft));
+    const factSource = sourceForDraft('今天给咪咪洗澡了，洗完一直躲在床底') || '';
+    check('事实 · 已发生的陈述能取出事实分句', factSource.indexOf('洗澡') >= 0, factSource);
+    check('事实 · 咨询不是事实', sourceForDraft('今天该洗澡吗？') === null, String(sourceForDraft('今天该洗澡吗？')));
+    check('事实 · 计划不是事实', sourceForDraft('明天想给它洗澡') === null, String(sourceForDraft('明天想给它洗澡')));
+    check('事实 · 否定不是事实', sourceForDraft('今天没有洗澡') === null, String(sourceForDraft('今天没有洗澡')));
+    check('事实 · 查询不是事实', sourceForDraft('上次什么时候洗澡？') === null, String(sourceForDraft('上次什么时候洗澡？')));
+    const mixedSource = sourceForDraft('今天给咪咪洗澡了，上次是什么时候洗的？') || '';
+    check('事实 · 事实+问题只留事实', mixedSource.indexOf('洗澡') >= 0 && mixedSource.indexOf('上次') < 0, mixedSource);
+    check('标签 · 按词表抽取', extractTags('今天给咪咪洗澡了').indexOf('洗澡') >= 0, extractTags('今天给咪咪洗澡了').join());
 
-    const consult = respond({ text: '今天该洗澡吗？', photos: [], petId: pet.id, petName: pet.name });
-    check('意图 · 咨询 → 不出卡', !hasDraft(consult), kinds(consult));
+    /* ---------- 2.5 草稿校验：事实只能来自当前会话内的用户原话 ---------- */
+    const throws = (work: () => unknown) => {
+      try { work(); return false; } catch (e) { return true; }
+    };
+    // 是否值得记录由模型判断；校验器只保证日期来自用户原话、正文可用模型整理的结果
+    const tidyDraft = validateDraft({ text: '给咪咪洗了澡，洗完躲进床底', tags: [] },
+      { text: '昨天给咪咪洗澡了，洗完躲床底了', petId: pet.id, photos: [] }, t);
+    check('校验 · 正文用模型整理的说法、日期只从用户原话取',
+      tidyDraft.date === addDays(t, -1) && tidyDraft.text === '给咪咪洗了澡，洗完躲进床底', JSON.stringify(tidyDraft));
+    check('校验 · 正文为空时拒绝出卡',
+      throws(() => validateDraft({ text: '   ', tags: [] }, { text: '记一下', petId: pet.id, photos: [] }, t)), '');
+    check('校验 · 未来的日期不能记成已发生事实',
+      throws(() => validateDraft({ text: '给咪咪洗澡了', tags: [] }, { text: `${addDays(t, 1)} 给咪咪洗澡了`, petId: pet.id, photos: [] }, t)), '');
 
-    const plan = respond({ text: '明天想给它洗澡', photos: [], petId: pet.id, petName: pet.name });
-    check('意图 · 计划 → 不出卡', !hasDraft(plan), kinds(plan));
+    /* ---------- 2.6 话题会话与上下文管理 ---------- */
+    const sessionMsgs: ChatMessage[] = [
+      { id: 's1', role: 'user', kind: 'text', text: '旧话题内容', time: 1 },
+      { id: 's2', role: 'ai', kind: 'divider', text: '新话题开始', time: 2 },
+      { id: 's3', role: 'user', kind: 'text', text: '新话题内容', time: 3 },
+    ];
+    check('会话 · 分隔条之后才是当前上下文',
+      currentSessionMessages(sessionMsgs).length === 1 && buildHistory(sessionMsgs)[0].content === '新话题内容',
+      JSON.stringify(buildHistory(sessionMsgs)));
+    check('会话 · 无分隔条时整段历史为同一会话（兼容旧数据）',
+      currentSessionMessages([sessionMsgs[0], sessionMsgs[2]]).length === 2, '');
 
-    const neg = respond({ text: '今天没有洗澡', photos: [], petId: pet.id, petName: pet.name });
-    check('意图 · 否定 → 不出卡', !hasDraft(neg), kinds(neg));
-
-    const query = respond({ text: '上次什么时候洗澡？', photos: [], petId: pet.id, petName: pet.name });
-    check('意图 · 查询 → 不出卡，只给答案或说明', !hasDraft(query), kinds(query));
-
-    const chat = respond({ text: '咪咪今天好萌', photos: [], petId: pet.id, petName: pet.name });
-    check('意图 · 感叹 → 不出卡但保留手动入口',
-      !hasDraft(chat) && chat.some((o) => o.action === 'draft-from'), kinds(chat));
-
-    const photoOnly = respond({ text: '', photos: ['tmp://a.jpg'], petId: pet.id, petName: pet.name });
-    const photoDraft: any = photoOnly.find((o) => o.kind === 'draft');
-    check('意图 · 只发照片 → 照片日记且日期待确认',
-      !!photoDraft && photoDraft.draft.tags.indexOf('照片') >= 0 && photoDraft.draft.date === null,
-      JSON.stringify(photoDraft && photoDraft.draft));
-
-    const mixed = respond({ text: '今天给咪咪洗澡了，上次是什么时候洗的？', photos: [], petId: pet.id, petName: pet.name });
-    check('意图 · 事实+问题 → 分别处理（卡 + 查询）',
-      hasDraft(mixed) && mixed.some((o) => o.kind === 'query' || o.kind === 'text'),
-      kinds(mixed));
+    const photoMsgs: ChatMessage[] = [
+      { id: 'p1', role: 'user', kind: 'text', text: '看这张', photos: ['u/p1.jpg'], time: 1 },
+    ];
+    check('照片 · 未被草稿使用时进入待认领池', unclaimedPhotos(photoMsgs).join() === 'u/p1.jpg', unclaimedPhotos(photoMsgs).join());
+    const claimedMsgs = photoMsgs.concat([{
+      id: 'p2', role: 'ai', kind: 'draft', time: 2,
+      draft: { key: 'p2', petId: 'x', date: null, text: 't', tags: [], photos: ['u/p1.jpg'], status: 'pending' },
+    } as ChatMessage]);
+    check('照片 · 待确认草稿已认领则不重复贴图', unclaimedPhotos(claimedMsgs).length === 0, unclaimedPhotos(claimedMsgs).join());
+    claimedMsgs[1].draft!.status = 'discarded';
+    check('照片 · 草稿丢弃后照片释放回池', unclaimedPhotos(claimedMsgs).length === 1, unclaimedPhotos(claimedMsgs).join());
+    const divider: ChatMessage = { id: 'd1', role: 'ai', kind: 'divider', text: '新话题开始', time: 2 };
+    check('照片 · 分隔条之前的照片不进新会话的池',
+      unclaimedPhotos([photoMsgs[0], divider, { id: 'p4', role: 'user', kind: 'text', text: '新话题', time: 3 }]).length === 0, '');
 
     /* ---------- 3. 数据层 CRUD 与查询确定性 ---------- */
     const testPet: Pet = savePet({ name: '__selftest__', species: '其他' });
@@ -100,25 +118,23 @@ Page({
       const list = getRecords(testPet.id);
       check('数据 · 按日期倒序', list[0].id === r2.id && list[1].id === r1.id, list.map((r) => r.date).join(','));
 
-      const q = respond({ text: '上次什么时候洗澡？', photos: [], petId: testPet.id, petName: testPet.name });
-      const qText = (q[0] && q[0].text) || '';
-      check('查询 · 命中真实记录并给出天数', qText.indexOf('3天前') >= 0 && !!q[0].refs, qText.replace(/\n/g, ' '));
+      const ask = (text: string) => queryRecords({ ...resolveQueryOptions(text), petId: testPet.id });
 
-      const qCount = respond({ text: '洗了几次澡？', photos: [], petId: testPet.id, petName: testPet.name });
-      check('查询 · 次数为确定性统计', ((qCount[0] && qCount[0].text) || '').indexOf('2 条') >= 0, ((qCount[0] && qCount[0].text) || '').replace(/\n/g, ' '));
+      const q = ask('上次什么时候洗澡？');
+      check('查询 · 命中真实记录并给出天数', q.summary.indexOf('3天前') >= 0 && !!q.refs.length, q.summary.replace(/\n/g, ' '));
+
+      check('查询 · 次数为确定性统计', ask('洗了几次澡？').summary.indexOf('2 条') >= 0, ask('洗了几次澡？').summary.replace(/\n/g, ' '));
 
       updateRecord(r1.id, { text: '第一次洗澡（已改）' });
       check('数据 · 编辑生效', (getRecords(testPet.id).find((r) => r.id === r1.id) || ({} as any)).text === '第一次洗澡（已改）', '');
-
-      const qAfterEdit = respond({ text: '上次什么时候洗澡？', photos: [], petId: testPet.id, petName: testPet.name });
-      check('查询 · 反映编辑后的记录', !!qAfterEdit[0] && !!qAfterEdit[0].refs, '');
+      check('查询 · 反映编辑后的记录', ask('上次什么时候洗澡？').refs.length > 0, '');
 
       removeRecord(r2.id);
-      const qAfterDel = respond({ text: '上次什么时候洗澡？', photos: [], petId: testPet.id, petName: testPet.name });
-      check('查询 · 删除后反映变化', ((qAfterDel[0] && qAfterDel[0].text) || '').indexOf('10天前') >= 0, (qAfterDel[0] && qAfterDel[0].text) || '');
+      const qAfterDel = ask('上次什么时候洗澡？');
+      check('查询 · 删除后反映变化', qAfterDel.summary.indexOf('10天前') >= 0, qAfterDel.summary);
 
-      const qNone = respond({ text: '上次什么时候驱虫？', photos: [], petId: testPet.id, petName: testPet.name });
-      check('查询 · 无记录时明确说没有', ((qNone[0] && qNone[0].text) || '').indexOf('没有找到') >= 0, (qNone[0] && qNone[0].text) || '');
+      const qNone = ask('上次什么时候驱虫？');
+      check('查询 · 无记录时明确说没有', qNone.summary.indexOf('没有找到') >= 0, qNone.summary);
     } finally {
       removePet(testPet.id);
     }

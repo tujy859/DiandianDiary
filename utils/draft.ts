@@ -1,16 +1,35 @@
-import { isValidDate, parseDateWords, today } from './date';
-import { extractTags, sourceForDraft } from './intent';
+import { parseDateWords, today } from './date';
+import { extractTags } from './intent';
 
-/** 工具和 JSON 共用：模型不能创造事实、日期、宠物归属或自动保存。 */
-export function validateDraft(args: Record<string, any>, input: { text: string; petId: string; photos: string[] }, referenceDate = today()) {
+/** 工具与 JSON 共用的写作分工，避免把事实出处误当成正文必须照抄的限制。 */
+export const DRAFT_WRITING_GUIDE = `sourceText 是事实出处，必须逐字摘取用户原话；text 是展示给用户的日记正文，允许自然整理、补足语法和去除口头赘词，不必照抄 sourceText。原话已经自然完整时可保留，不为改写而改写。
+日期已有独立字段，正文通常省略「今天/昨天」等相对日期，保留「上午/晚上」等具体时段和用户表达的重要细节，方便以后回看。例如用户说「昨晚和点点玩逗猫棒」，sourceText 保留原话，text 可写「晚上和点点玩了逗猫棒」。不能添加未说过的心情、反应、时长或次数，如「玩得很开心」「追逐了一小时」。
+tags 使用简短自然的中文展示标签，例如「玩耍」「逗猫棒」，不要把 play、feeding 等工具事件标识直接当作中文日记标签。`;
+
+/**
+ * 工具和 JSON 共用：语义由模型判断，这里验证可检查的原文、归属与日期边界。
+ * 具体分工：
+ * - 是否记录、记录什么 → 由模型调用 create_draft_record 决定（内容含糊时它应该直接追问用户）
+ * - 正文 → 用模型整理的结果，原文另存 rawInput，日记详情始终可对照
+ * - 日期 → 不用模型给的，从选中的用户事实分句解析；解析不出就待用户点选
+ * - 否定/计划等语义 → 模型判断；原文出处、归属、保存时机 → 代码控制
+ */
+export function validateDraft(args: Record<string, any>, input: { text: string; petId: string; photos: string[];
+  userHistory?: Array<{ content: string; referenceDate?: string }> }, referenceDate = today()) {
   if (!args || typeof args.text !== 'string' || !args.text.trim()) throw new Error('草稿正文不能为空');
-  if (args.date !== undefined && args.date !== null && args.date !== '' && !isValidDate(args.date)) throw new Error('草稿日期无效');
   if (args.tags !== undefined && (!Array.isArray(args.tags) || args.tags.some((tag: unknown) => typeof tag !== 'string'))) throw new Error('草稿标签无效');
-  const source = sourceForDraft(input.text);
-  if (!source) throw new Error('这条消息没有可确认的已发生事实，不生成记录卡');
-  const date = parseDateWords(source, referenceDate);
+  // 模型选原文证据，代码只验证确实由用户说过；不把助手建议当成用户事实。
+  const evidence = args.sourceText === undefined ? input.text : args.sourceText;
+  const sources = [{ content: input.text, referenceDate }, ...(input.userHistory || []).slice().reverse()];
+  const source = typeof evidence === 'string' && sources.find((row) => row.content.includes(evidence));
+  if (!source || !evidence.trim()) {
+    throw new Error('请从当前话题的用户原话中选择事实依据，不能使用助手建议或编造原文');
+  }
+  const dates = Array.from(new Set(evidence.split(/[，,。；;！？!?\n]/)
+    .map((part: string) => parseDateWords(part, source.referenceDate || referenceDate)).filter(Boolean)));
+  const date = dates.length === 1 ? dates[0] as string : null;
   if (date && date > referenceDate) throw new Error('未来的计划不能记录为已发生事实');
-  if (args.date && date && args.date !== date) throw new Error('草稿日期与用户原话不一致');
-  // 日期模糊时保持待确认；原文优先，避免模型改写药名、剂量或其他事实。
-  return { petId: input.petId, date, text: source, tags: extractTags(source), photos: input.photos.slice() };
+  const tags = Array.isArray(args.tags) && args.tags.length ? (args.tags as string[]) : extractTags(evidence);
+  return { petId: input.petId, date, text: args.text.trim(), tags, photos: input.photos.slice(),
+    rawInput: { text: source.content, photos: input.photos.slice(), provenance: 'direct' as const } };
 }

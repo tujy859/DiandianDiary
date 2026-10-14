@@ -1,103 +1,62 @@
-import { respond } from '../../utils/intent';
-import { savePet, addRecord, removePet, removeRecord, Pet } from '../../utils/store';
-import { today, addDays } from '../../utils/date';
+import { sourceForDraft, extractTags } from '../../utils/intent';
 
-const PET = { id: 'pet-test', name: '咪咪' };
-const outs = (text: string, photos: string[] = [], petId = PET.id, petName = PET.name) =>
-  respond({ text, photos, petId, petName });
-const hasDraft = (res: any[]) => res.some((o) => o.kind === 'draft');
-const draftOf = (res: any[]) => res.find((o) => o.kind === 'draft');
-
-describe('用户意图区分（聊天 ≠ 正式记录）', () => {
-  test('明确发生的事实 → 出待保存卡，日期与标签正确', () => {
-    const res = outs('今天给咪咪洗澡了，洗完一直躲在床底');
-    expect(hasDraft(res)).toBe(true);
-    const d = draftOf(res).draft;
-    expect(d.date).toBe(today());
-    expect(d.tags).toContain('洗澡');
-    expect(d.text).toContain('洗澡');
+describe('事实分句：只有用户原话中已发生的部分能进日记', () => {
+  test('陈述事实 → 取出事实分句', () => {
+    expect(sourceForDraft('今天给咪咪洗澡了，洗完一直躲在床底')).toContain('洗澡');
   });
 
-  test('咨询：今天该洗澡吗 → 不出卡', () => {
-    expect(hasDraft(outs('今天该洗澡吗？'))).toBe(false);
+  test('咨询不是事实', () => {
+    expect(sourceForDraft('今天该洗澡吗？')).toBeNull();
   });
 
-  test('计划：明天想给它洗澡 → 不出卡', () => {
-    expect(hasDraft(outs('明天想给它洗澡'))).toBe(false);
+  test('计划不是事实', () => {
+    expect(sourceForDraft('明天想给它洗澡')).toBeNull();
   });
 
-  test('否定：今天没有洗澡 → 不出卡', () => {
-    expect(hasDraft(outs('今天没有洗澡'))).toBe(false);
+  test.each(['下个月给咪咪驱虫', '今天尚未驱虫', '明年打疫苗'])('%s 不是事实', (text) => {
+    expect(sourceForDraft(text)).toBeNull();
   });
 
-  test('查询：上次什么时候洗澡 → 不出卡', () => {
-    expect(hasDraft(outs('上次什么时候洗澡？'))).toBe(false);
+  test('否定不是事实', () => {
+    expect(sourceForDraft('今天没有洗澡')).toBeNull();
   });
 
-  test('感叹：咪咪今天好萌 → 不出卡，但保留手动入口', () => {
-    const res = outs('咪咪今天好萌');
-    expect(hasDraft(res)).toBe(false);
-    expect(res.some((o) => o.action === 'draft-from')).toBe(true);
+  test('查询不是事实', () => {
+    expect(sourceForDraft('上次什么时候洗澡？')).toBeNull();
   });
 
-  test('只发照片 → 照片日记，日期待确认且不带文字', () => {
-    const res = outs('', ['tmp://a.jpg']);
-    const d = draftOf(res).draft;
-    expect(d.tags).toContain('照片');
-    expect(d.date).toBeNull();
-    expect(d.photos.length).toBe(1);
+  test('一句话同时含事实与问题 → 只留事实', () => {
+    const source = sourceForDraft('今天给咪咪洗澡了，上次是什么时候洗的？')!;
+    expect(source).toContain('洗澡');
+    expect(source).not.toContain('上次');
   });
 
-  test('一句话同时含事实与问题 → 分别处理', () => {
-    const res = outs('今天给咪咪洗澡了，上次是什么时候洗的？');
-    expect(hasDraft(res)).toBe(true);
-    expect(res.some((o) => o.kind === 'query' || o.kind === 'text')).toBe(true);
-    expect(draftOf(res).draft.text).not.toContain('上次');
+  test('感叹没有可确认的事实', () => {
+    expect(sourceForDraft('咪咪今天好萌')).toBeNull();
   });
 
-  test('最近发生过的事实仍生成日期待确认卡，不误当查询', () => {
-    const draft = draftOf(outs('最近给咪咪驱虫了'));
-    expect(draft.draft.date).toBeNull();
+  test('「带…去了这里」这类动作句是事实（配图场景）', () => {
+    expect(sourceForDraft('记一下，我10月5号带点点去了这里')).toBe('我10月5号带点点去了这里');
   });
-  test.each(['下个月给咪咪驱虫', '今天尚未驱虫', '明年打疫苗'])('计划和未发生事实 %s 不出卡', (text) => {
-    expect(hasDraft(outs(text))).toBe(false);
+
+  test('「买了/换了」这类日常动作是事实', () => {
+    expect(sourceForDraft('记一下，今天给它买了新玩具')).toContain('买了新玩具');
+    expect(sourceForDraft('给它换了新猫粮')).toContain('换了新猫粮');
+  });
+
+  test('「记一下」指令本身不进正文', () => {
+    const source = sourceForDraft('记一下，今天给咪咪洗澡了')!;
+    expect(source).not.toContain('记一下');
   });
 });
 
-describe('查询基于真实记录，结果确定', () => {
-  let pet: Pet;
-  let r1: any;
-  let r2: any;
-
-  beforeEach(() => {
-    pet = savePet({ name: '__intent_test__', species: '猫' });
-    r1 = addRecord({ petId: pet.id, date: addDays(today(), -10), text: '第一次洗澡', tags: ['洗澡'], photos: [] });
-    r2 = addRecord({ petId: pet.id, date: addDays(today(), -3), text: '第二次洗澡', tags: ['洗澡'], photos: [] });
+describe('标签抽取', () => {
+  test('命中词表', () => {
+    expect(extractTags('今天给咪咪洗澡了')).toContain('洗澡');
+    expect(extractTags('喂了罐头')).toContain('喂食');
   });
 
-  afterEach(() => {
-    removePet(pet.id);
-  });
-
-  test('命中真实记录并给出天数与引用', () => {
-    const res = outs('上次什么时候洗澡？', [], pet.id, pet.name);
-    expect(res[0].text).toContain('3天前');
-    expect(res[0].refs && res[0].refs[0].recordId).toBe(r2.id);
-  });
-
-  test('关键词被问法隔开时仍能命中（洗了几次澡）', () => {
-    const res = outs('洗了几次澡？', [], pet.id, pet.name);
-    expect(res[0].text).toContain('2 条');
-  });
-
-  test('删除后查询反映变化', () => {
-    removeRecord(r2.id);
-    const res = outs('上次什么时候洗澡？', [], pet.id, pet.name);
-    expect(res[0].text).toContain('10天前');
-  });
-
-  test('没查到时明确说没有', () => {
-    const res = outs('上次什么时候驱虫？', [], pet.id, pet.name);
-    expect(res[0].text).toContain('没有找到');
+  test('不相关文本不出标签', () => {
+    expect(extractTags('今天天气不错')).toEqual([]);
   });
 });
