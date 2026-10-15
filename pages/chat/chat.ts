@@ -218,6 +218,10 @@ Page({
       // 后台拉取会话目录与当前会话最新内容（换设备后也能接着聊）
       await this.syncSessions();
     } catch (err: any) {
+      if (!getCloudSession()?.familyId) {
+        this.renderFromStore(layout);
+        guardReady();
+      }
       Toast({ context: this, selector: '#t-toast', message: err.message || '云端读取失败，请重新进入页面', theme: 'error' });
     }
   },

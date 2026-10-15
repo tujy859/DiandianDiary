@@ -17,10 +17,11 @@ export function pendingStep(): OnboardStep | null {
 let navigateAt = 0;
 /** tab 页入口守卫：未就绪就跳引导页，返回 true 表示可以继续渲染当前页 */
 export function guardReady(): boolean {
-  if (!pendingStep()) return true;
+  const noFamily = !!getCloudSession() && !getCloudSession()!.familyId;
+  if (!noFamily && !pendingStep()) return true;
   // onShow 会高频触发（切 tab、引导页返回），短时间内不重复跳转
   if (Date.now() - navigateAt < 1500) return false;
   navigateAt = Date.now();
-  wx.navigateTo({ url: '/pages/onboard/onboard' });
+  wx.navigateTo({ url: noFamily ? '/pages/family/family' : '/pages/onboard/onboard' });
   return false;
 }

@@ -29,6 +29,7 @@ function createService({ db, storage, now = Date.now, token = () => crypto.rando
   async function family(reader, familyId, uid, owner = false) {
     string(familyId, '家庭 ID');
     const f = await reader.get('families', familyId);
+    if (f && f.dissolvedAt != null) fail('FORBIDDEN', '这个家庭空间已解散，请选择其他家庭');
     const member = f && f.members.find((m) => m.userId === uid);
     if (!member) fail('FORBIDDEN', '你已不在这个家庭空间中');
     if (owner && member.role !== 'owner') fail('FORBIDDEN', '仅家庭创建者可执行此操作');
@@ -160,7 +161,7 @@ function createService({ db, storage, now = Date.now, token = () => crypto.rando
       const families = [];
       for (const id of user.familyIds) {
         const f = await db.get('families', id);
-        if (!f || !f.members.some((m) => m.userId === uid)) continue;
+        if (!f || f.dissolvedAt != null || !f.members.some((m) => m.userId === uid)) continue;
         // 成员昵称只用于展示（不含 openid 等身份信息）
         const members = [];
         for (const m of f.members) {
@@ -193,7 +194,7 @@ function createService({ db, storage, now = Date.now, token = () => crypto.rando
         if (!invite || invite.revoked || invite.expiresAt <= now()) fail('INVALID_INVITE', '邀请码无效或已过期');
         const f = await tx.get('families', invite.familyId);
         const u = await tx.get('users', uid);
-        if (!f || !f.members.some((m) => m.userId === invite.createdBy && m.role === 'owner')) fail('INVALID_INVITE', '邀请已失效');
+        if (!f || f.dissolvedAt != null || !f.members.some((m) => m.userId === invite.createdBy && m.role === 'owner')) fail('INVALID_INVITE', '邀请已失效');
         if (invite.usedBy) {
           if (invite.usedBy === uid && f.members.some((m) => m.userId === uid)) return publicDoc(f);
           fail('INVALID_INVITE', '邀请码已被使用');
@@ -208,6 +209,44 @@ function createService({ db, storage, now = Date.now, token = () => crypto.rando
       });
     }
     const fid = p.familyId;
+    if (action === 'family.summary') {
+      const f = await family(db, fid, uid, true);
+      const petIds = [];
+      async function count(collection, extra = {}) {
+        let after = '', total = 0;
+        do {
+          const rows = await db.list(collection, { familyId: fid, deletedAt: null, ...extra }, after, 50);
+          total += rows.length;
+          if (collection === 'pets') petIds.push(...rows.map((row) => row._id));
+          after = rows.length === 50 ? rows[rows.length - 1]._id : '';
+        } while (after);
+        return total;
+      }
+      const pets = await count('pets');
+      let diaries = 0;
+      // 沿用宠物日记分页索引，不为确认弹窗另建全家庭日记索引。
+      for (const petId of petIds) diaries += await count('diaries', { petId });
+      const latest = await family(db, fid, uid, true);
+      if (latest.revision !== f.revision) fail('CONFLICT', '家庭数据已变化，请重新确认解散范围');
+      return { id: f._id, name: f.name, revision: f.revision, members: f.members.length, pets, diaries };
+    }
+    if (action === 'family.dissolve') {
+      string(fid, '家庭 ID');
+      return db.transaction(async (tx) => {
+        const f = await tx.get('families', fid);
+        // 响应丢失后仅允许原解散者重试，不恢复家庭或重复修改成员索引。
+        if (f && f.dissolvedAt != null && f.dissolvedBy === uid) return { dissolved: true };
+        await family(tx, fid, uid, true);
+        if (!Number.isInteger(p.revision) || p.revision !== f.revision) fail('CONFLICT', '家庭数据或成员已变化，请重新确认解散范围');
+        for (const member of f.members) {
+          const u = await tx.get('users', member.userId);
+          if (u) await tx.set('users', u._id, { ...u, familyIds: u.familyIds.filter((id) => id !== fid) });
+        }
+        const t = now();
+        await tx.set('families', fid, { ...f, dissolvedAt: t, dissolvedBy: uid, revision: f.revision + 1, updatedAt: t });
+        return { dissolved: true };
+      });
+    }
     if (action === 'invite.create') {
       const secret = token();
       return scopedWrite(fid, uid, true, async (tx) => {
@@ -253,6 +292,7 @@ function createService({ db, storage, now = Date.now, token = () => crypto.rando
       await family(db, fid, uid);
       const d = await entity(db, 'diaries', p.id, fid);
       await entity(db, 'pets', d.petId, fid);
+      await family(db, fid, uid);
       return publicDoc(d);
     }
     if (action === 'pet.save' || action === 'pet.delete') {
@@ -326,18 +366,20 @@ function createService({ db, storage, now = Date.now, token = () => crypto.rando
       if (!Number.isInteger(limit) || limit < 1 || limit > 20) fail('INVALID', '分页大小无效');
       const after = p.after ? string(p.after, '分页游标') : '';
       const rows = await db.list('chat_sessions', { familyId: fid, petId: p.petId, userId: uid, deletedAt: null }, after, limit);
+      await family(db, fid, uid);
       return { items: rows.map(sessionIndex), next: rows.length === limit ? rows[rows.length - 1]._id : '' };
     }
     if (action === 'session.get') {
       await family(db, fid, uid);
       await entity(db, 'pets', p.petId, fid);
-      return publicDoc(await sessionEntity(db, p.id, fid, p.petId, uid));
+      const doc = await sessionEntity(db, p.id, fid, p.petId, uid);
+      await family(db, fid, uid);
+      return publicDoc(doc);
     }
     if (action === 'session.save') {
       await family(db, fid, uid);
       await entity(db, 'pets', p.petId, fid);
-      return db.transaction(async (tx) => {
-        await family(tx, fid, uid);
+      return scopedWrite(fid, uid, false, async (tx) => {
         const id = p.id ? string(p.id, '会话 ID') : `cs_${hash(uid, fid, p.petId, string(p.clientId, '请求 ID')).slice(0, 40)}`;
         const old = p.id ? await sessionEntity(tx, id, fid, p.petId, uid) : await tx.get('chat_sessions', id);
         if (!p.id && old) {
@@ -360,8 +402,7 @@ function createService({ db, storage, now = Date.now, token = () => crypto.rando
     }
     if (action === 'session.delete') {
       await family(db, fid, uid);
-      return db.transaction(async (tx) => {
-        await family(tx, fid, uid);
+      return scopedWrite(fid, uid, false, async (tx) => {
         const s = await sessionEntity(tx, p.id, fid, p.petId, uid);
         await tx.set('chat_sessions', s._id, { ...s, deletedAt: now(), version: s.version + 1, updatedAt: now() });
         return { deleted: true };

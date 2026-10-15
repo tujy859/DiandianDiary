@@ -32,14 +32,19 @@
 
     <!-- 家庭空间 -->
     <view class="section-title">家庭空间</view>
-    <view class="jd-card panel">
+    <view wx:if="{{!families.length}}" class="jd-card panel empty-family">
+      <t-icon name="usergroup" size="56rpx" color="#78837B" />
+      <view class="connect-title">还没有家庭空间</view>
+      <view class="note-line">你仍处于登录状态。创建一个新家庭，或用邀请码加入家人的空间，就能继续记录。</view>
+    </view>
+    <view wx:if="{{families.length}}" class="jd-card panel">
       <view wx:for="{{families}}" wx:key="id" class="fam-row {{item.id === familyId ? 'is-active' : ''}}" data-id="{{item.id}}" bindtap="onSwitch">
         <t-icon name="{{item.id === familyId ? 'check-circle-filled' : 'circle'}}" size="40rpx" color="{{item.id === familyId ? '#2F6B4F' : '#C9CFCC'}}" />
         <text class="fam-name">{{item.name}}</text>
         <text wx:if="{{item.id === familyId}}" class="fam-tag">当前</text>
       </view>
 
-      <view class="note-line">{{owner ? '你是家庭创建者，可以管理宠物和成员。' : '你可以记录日记，编辑自己的日记。'}}</view>
+      <view class="note-line">{{owner ? '你是当前家庭的创建者，可以管理宠物和成员。' : '你是当前家庭的成员，可以记录日记、编辑自己的日记。'}}</view>
 
       <view class="member" wx:for="{{members}}" wx:key="userId">
         <view class="member-avatar">
@@ -65,12 +70,19 @@
 
       <view class="card-actions">
         <t-button wx:if="{{owner}}" block theme="primary" variant="outline" shape="round" disabled="{{busy}}" bind:tap="onInvite">生成一次性邀请码</t-button>
-        <t-button wx:if="{{!owner}}" block theme="danger" variant="outline" shape="round" disabled="{{busy}}" bind:tap="onLeave">退出此家庭</t-button>
+        <t-button theme="primary" block shape="round" disabled="{{busy}}" bind:tap="onContinue">回到我的</t-button>
+      </view>
+      <view class="family-management">
+        <view class="field-label">管理当前家庭 · {{selectedFamilyName}}</view>
+        <view class="note-line">{{owner ? '解散后所有成员将失去访问权限。云端数据暂时保留，不会永久删除，暂不支持恢复。' : '退出只影响你，曾保存的日记仍留在家庭中。'}}</view>
+        <t-button wx:if="{{owner}}" theme="danger" variant="text" disabled="{{busy}}" bind:tap="onDissolve">解散家庭</t-button>
+        <t-button wx:else theme="danger" variant="text" disabled="{{busy}}" bind:tap="onLeave">退出家庭</t-button>
       </view>
     </view>
 
     <!-- 加入或创建 -->
     <view class="section-title">加入或创建</view>
+    <view class="note-line">已加入 {{families.length}} / 10 个家庭；退出或解散后会释放名额。</view>
     <view class="jd-card panel">
       <view class="field-label">加入家人的空间</view>
       <t-input placeholder="粘贴家人提供的邀请码" maxlength="48" value="{{inviteInput}}" bind:change="onInviteInput" />

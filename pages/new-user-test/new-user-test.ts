@@ -2,6 +2,7 @@ import { isDeveloperMode } from '../../utils/developer';
 import { getCloudSession } from '../../utils/store';
 import { callCloud } from '../../utils/cloud';
 import { Family } from '../../utils/repository';
+import { reconcileFamilyState } from '../../utils/family-state';
 import { enterEmptyTestFamily, getNewUserTestState, isTestFamily, returnToOriginalFamily } from '../../utils/new-user-test';
 
 Page({
@@ -19,6 +20,8 @@ Page({
       const session = getCloudSession();
       if (!session) throw new Error('请先连接云端');
       const families = await callCloud<Family[]>('family.list');
+      if (getCloudSession()?.userId !== session.userId || getCloudSession()?.familyId !== session.familyId) throw new Error('账号或家庭已切换，请重试');
+      reconcileFamilyState(session.userId, families.map((family) => family.id));
       this.setData({ currentFamilyName: families.find((family) => family.id === session.familyId)?.name || '当前家庭不可用' });
     });
   },
@@ -29,7 +32,7 @@ Page({
     this.setData({
       activeTest: isTestFamily(),
       originalFamilyName: state?.originalFamilyName || '',
-      canReturn: !!state && session?.familyId !== state.originalFamilyId,
+      canReturn: !!state?.originalFamilyId && session?.familyId !== state.originalFamilyId,
     });
   },
 

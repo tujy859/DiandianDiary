@@ -2,6 +2,7 @@ import { getCloudSession, uid } from './store';
 import { callCloud } from './cloud';
 import { Family, selectFamily } from './repository';
 import { isDeveloperMode } from './developer';
+import { reconcileFamilyState } from './family-state';
 
 export interface NewUserTestState {
   originalFamilyId: string;
@@ -26,6 +27,7 @@ function developerSession() {
   if (!isDeveloperMode()) throw new Error('请先在「我的」开启开发者模式');
   const session = getCloudSession();
   if (!session) throw new Error('请先连接云端');
+  if (!session.familyId) throw new Error('请先创建或加入一个家庭空间');
   return session;
 }
 function assertSession(userId: string, familyId: string) {
@@ -38,11 +40,12 @@ export async function enterEmptyTestFamily(): Promise<void> {
   const session = developerSession();
   const families = await callCloud<Family[]>('family.list');
   assertSession(session.userId, session.familyId);
+  reconcileFamilyState(session.userId, families.map((family) => family.id));
   const current = families.find((family) => family.id === session.familyId);
   if (!current) throw new Error('当前家庭不可用，请重新连接云端');
   let state = getNewUserTestState();
   // 一次测试流程只记最初的原家庭，多次新建测试家庭不能覆盖返回目标。
-  if (!state) state = { originalFamilyId: current.id, originalFamilyName: current.name };
+  if (!state || !state.originalFamilyId) state = { ...state, originalFamilyId: current.id, originalFamilyName: current.name };
   else if (current.id !== state.testFamilyId && !state.pendingClientId) {
     state = { ...state, originalFamilyId: current.id, originalFamilyName: current.name };
   }
@@ -69,7 +72,16 @@ export async function enterEmptyTestFamily(): Promise<void> {
     pendingFamilyName: state.pendingFamilyName || `新手测试 ${now.getMonth() + 1}/${now.getDate()} ${time}`,
   };
   wx.setStorageSync(stateKey(session.userId), state);
-  const family = await callCloud<Family>('family.create', { name: state.pendingFamilyName, clientId: state.pendingClientId });
+  let family: Family;
+  try {
+    family = await callCloud<Family>('family.create', { name: state.pendingFamilyName, clientId: state.pendingClientId });
+  } catch (err: any) {
+    assertSession(session.userId, session.familyId);
+    if (err.code === 'FORBIDDEN') {
+      wx.setStorageSync(stateKey(session.userId), { ...state, pendingClientId: '', pendingFamilyName: '' });
+    }
+    throw err;
+  }
   assertSession(session.userId, session.familyId);
   state = { ...state, pendingClientId: '', pendingFamilyName: '', testFamilyId: family.id, testFamilyName: family.name };
   // 先保存返回目标：即使刷新新家庭失败 / 小程序关闭，也能恢复操作。
@@ -83,6 +95,7 @@ export async function returnToOriginalFamily(): Promise<void> {
   if (!state) throw new Error('没有待返回的原家庭');
   const families = await callCloud<Family[]>('family.list');
   assertSession(session.userId, session.familyId);
+  reconcileFamilyState(session.userId, families.map((family) => family.id));
   if (!families.some((family) => family.id === state.originalFamilyId)) throw new Error('原家庭已不可访问，请在「账号与家庭空间」选择可用家庭');
   await selectFamily(state.originalFamilyId);
   // 保留最近测试家庭的标识，下次仍为空时复用；不删除测试数据。

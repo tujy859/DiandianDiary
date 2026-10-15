@@ -2,6 +2,7 @@
 import * as local from './store';
 import { Pet, DiaryRecord, RawInput, getCloudSession, setCloudSession, cacheCloudData, uid } from './store';
 import { callCloud, CloudError } from './cloud';
+import { reconcileFamilyState, forgetFamilyState } from './family-state';
 
 export interface Family {
   id: string; name: string;
@@ -16,6 +17,7 @@ interface CloudDiary {
 function session() {
   const s = getCloudSession();
   if (!s) throw new CloudError('UNAUTHENTICATED', '请先登录');
+  if (!s.familyId) throw new CloudError('NO_FAMILY', '请先创建或加入一个家庭空间');
   return s;
 }
 const sameSession = (s: local.CloudSession) => {
@@ -80,7 +82,7 @@ function hydrate(d: CloudDiary, urls: Record<string, string>): DiaryRecord {
     createdAt: d.createdAt, updatedAt: d.updatedAt, createdBy: d.createdBy, version: d.version, formatting: d.formatting };
 }
 export async function refreshCloud(): Promise<void> {
-  if (!getCloudSession()) return;
+  if (!getCloudSession()?.familyId) return;
   const s = session();
   const revision = local.getCloudCacheRevision();
   try {
@@ -99,6 +101,11 @@ export async function refreshCloud(): Promise<void> {
     if (error instanceof CloudError && ['FORBIDDEN', 'UNAUTHENTICATED'].includes(error.code)) {
       sameSession(s);
       local.clearAll();
+      if (error.code === 'FORBIDDEN') {
+        // 云端明确拒绝访问时立即切断旧空间，待家庭页重新确认剩余家庭。
+        forgetFamilyState(s.userId, s.familyId);
+        setCloudSession({ userId: s.userId, familyId: '' });
+      }
     }
     throw error;
   }
@@ -130,7 +137,7 @@ let inflightRefreshScope = '';
  */
 export function refreshCloudIfStale(maxAgeMs = 30000): Promise<boolean> {
   const current = getCloudSession();
-  if (!current) return Promise.resolve(false);
+  if (!current?.familyId) return Promise.resolve(false);
   const scope = `${current.userId}/${current.familyId}`;
   if (inflightRefresh && inflightRefreshScope === scope) return inflightRefresh.then(() => true);
   if (lastRefreshScope === scope && Date.now() - lastRefreshAt < maxAgeMs) return Promise.resolve(false);
@@ -142,21 +149,26 @@ export function refreshCloudIfStale(maxAgeMs = 30000): Promise<boolean> {
   return request.then(() => true);
 }
 export async function connectCloud(): Promise<{ user: { id: string; nickname: string }; families: Family[] }> {
+  const before = getCloudSession();
   const user = await callCloud<{ id: string; nickname: string }>('auth.login');
   const families = await callCloud<Family[]>('family.list');
   const previous = getCloudSession();
+  if (previous?.userId !== before?.userId || previous?.familyId !== before?.familyId) {
+    throw new CloudError('SESSION_CHANGED', '账号或家庭已切换，请重试');
+  }
   const selected = families.find((f) => previous?.userId === user.id && previous.familyId === f.id) || families[0];
-  if (!selected) throw new Error('没有可用的家庭空间');
+  reconcileFamilyState(user.id, families.map((f) => f.id));
   // Never inherit another WeChat identity's cache.
-  setCloudSession({ userId: user.id, familyId: selected.id });
+  setCloudSession({ userId: user.id, familyId: selected?.id || '' });
   return { user, families };
 }
 export async function selectFamily(familyId: string): Promise<void> {
-  const previous = session();
+  const previous = getCloudSession();
+  if (!previous) throw new CloudError('UNAUTHENTICATED', '请先登录');
   setCloudSession({ userId: previous.userId, familyId });
   try { await refreshCloud(); } catch (err) {
     const current = getCloudSession();
-    if (current?.userId === previous.userId && current.familyId === familyId) setCloudSession(previous);
+    if (current?.userId === previous.userId && (current.familyId === familyId || !current.familyId)) setCloudSession(previous);
     throw err;
   }
 }

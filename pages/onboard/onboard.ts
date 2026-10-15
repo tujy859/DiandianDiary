@@ -121,6 +121,11 @@ Page({
   async finish() {
     this.setData({ busy: true, error: '' });
     try {
+      if (getCloudSession() && !getCloudSession()!.familyId) {
+        this.setData({ busy: false });
+        wx.redirectTo({ url: '/pages/family/family' });
+        return;
+      }
       // 先确认家庭中是否已有宠物，换设备时不能按空缓存误开创建表单。
       await refreshCloudIfStale(0);
       if (!getPets().length) openAddPet();

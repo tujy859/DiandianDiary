@@ -7,6 +7,7 @@ import {
 import { displayDate, relDay } from '../../utils/date';
 import { extractTags } from '../../utils/intent';
 import { updateRecord, removeRecord, refreshCloudIfStale } from '../../utils/repository';
+import { guardReady } from '../../utils/onboard';
 
 Page({
   data: {
@@ -25,6 +26,11 @@ Page({
   },
 
   onShow() {
+    if (getCloudSession() && !getCloudSession()!.familyId) {
+      this.setData({ record: null, pets: [], loading: false, loadError: '请先创建或加入家庭空间' });
+      guardReady();
+      return;
+    }
     return this.loadRecord();
   },
 
@@ -50,6 +56,7 @@ Page({
       this.setData({ pets: getPets() });
       this.reload();
       this.setData({ loadError: err.message || '暂时没能读取日记，请检查网络后重试' });
+      if (!getCloudSession()?.familyId) guardReady();
     } finally {
       this.setData({ loading: false, refreshing: false });
     }

@@ -74,6 +74,7 @@ Page({
       if (refreshed && getCloudCacheRevision() !== revision) this.renderFromStore(this.data.tabbarHeight);
     } catch (err: any) {
       this.renderFromStore(this.data.tabbarHeight);
+      if (!getCloudSession()?.familyId) guardReady();
       this.setData({ loadError: err.message || '暂时没能读取时光册，请检查网络后重试' });
     } finally {
       this.setData({ loading: false, refreshing: false });

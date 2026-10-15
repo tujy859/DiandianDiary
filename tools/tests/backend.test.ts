@@ -28,6 +28,129 @@ const diary = (familyId: string, petId: string, clientId = 'record-one') => ({ f
   rawInput: { text: '今天早晨给点点洗了澡，乖乖的', photos: [] },
   formatted: { date: '2026-10-12', text: '点点洗澡', tags: ['洗澡'], photos: [] }, mode: 'tool' });
 
+test('创建者解散关闭所有访问、使邀请失效，但保留云端数据并支持幂等重试', async () => {
+  const { familyId, pet } = await setupPet();
+  const member = await join(familyId);
+  const d = await call('diary.save', diary(familyId, pet.id), 'bob');
+  const media = await call('media.upload', { familyId, base64: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1]).toString('base64') });
+  const invite = await call('invite.create', { familyId });
+  const summary = await call('family.summary', { familyId });
+  expect(summary).toMatchObject({ members: 2, pets: 1, diaries: 1 });
+  await expect(call('family.dissolve', { familyId, revision: summary.revision }, 'bob')).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  await expect(call('family.summary', { familyId }, 'bob')).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  await expect(call('family.dissolve', { familyId, revision: summary.revision })).resolves.toEqual({ dissolved: true });
+  await expect(call('family.dissolve', { familyId, revision: summary.revision })).resolves.toEqual({ dissolved: true });
+  expect(db.dump('families').find((f: any) => f._id === familyId).dissolvedAt).toBe(clock);
+  expect(db.dump('users').find((u: any) => u._id === member.userId).familyIds).not.toContain(familyId);
+  expect(db.dump('diaries')[0]._id).toBe(d.id);
+  expect(db.dump('media')[0].fileId).toBe(media.fileId);
+  expect(db.dump('pets')[0].deletedAt).toBeNull();
+  const args = { ...diary(familyId, pet.id), id: d.id, fileIds: [media.fileId], messages: [], version: 1 };
+  for (const name of ['alice', 'bob']) {
+    expect((await call('family.list', {}, name)).some((f: any) => f.id === familyId)).toBe(false);
+    for (const action of ['pet.list', 'pet.save', 'diary.list', 'diary.get', 'diary.save', 'media.urls', 'media.upload', 'invite.create', 'session.list', 'session.get', 'session.save', 'session.delete']) {
+      await expect(call(action, args, name)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    }
+  }
+  await expect(call('family.create', { name: '不能复活默认家庭', clientId: 'different' })).resolves.toHaveProperty('id');
+  await setupUser('eve');
+  await expect(call('invite.accept', { token: invite.token }, 'eve')).rejects.toMatchObject({ code: 'INVALID_INVITE' });
+});
+
+test('解散释放创建者和成员的家庭名额；最后一个家庭解散后登录不再自动创建', async () => {
+  const { familyId } = await setupUser();
+  for (let i = 0; i < 9; i++) await call('family.create', { name: `家${i}`, clientId: `quota-${i}` });
+  await expect(call('family.create', { name: '超限', clientId: 'over' })).rejects.toMatchObject({ code: 'LIMIT' });
+  const snapshot = await call('family.summary', { familyId });
+  await call('family.dissolve', { familyId, revision: snapshot.revision });
+  await call('family.create', { name: '释放后新建', clientId: 'over' });
+  expect(await call('family.list')).toHaveLength(10);
+  const bob = await setupUser('bob');
+  const own = await call('family.summary', { familyId: bob.familyId }, 'bob');
+  await call('family.dissolve', { familyId: bob.familyId, revision: own.revision }, 'bob');
+  await call('auth.login', {}, 'bob');
+  expect(await call('family.list', {}, 'bob')).toEqual([]);
+  await call('family.create', { name: '重新开始', clientId: 'new' }, 'bob');
+  expect(await call('family.list', {}, 'bob')).toHaveLength(1);
+});
+
+test('共享家庭解散释放普通成员名额，旧创建请求 ID 不能复活已解散家庭', async () => {
+  await setupUser();
+  const family = await call('family.create', { name: '共享测试家庭', clientId: 'shared' });
+  await join(family.id);
+  for (let i = 0; i < 8; i++) await call('family.create', { name: `成员的家${i}`, clientId: `member-${i}` }, 'bob');
+  await expect(call('family.create', { name: '超限', clientId: 'over' }, 'bob')).rejects.toMatchObject({ code: 'LIMIT' });
+  const summary = await call('family.summary', { familyId: family.id });
+  await call('family.dissolve', { familyId: family.id, revision: summary.revision });
+  await call('family.create', { name: '释放后加入', clientId: 'over' }, 'bob');
+  expect(await call('family.list', {}, 'bob')).toHaveLength(10);
+  await expect(call('family.create', { name: '重新创建旧家', clientId: 'shared' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+});
+
+test('接受邀请与解散并发时，迟到的加入不能恢复成员关系', async () => {
+  const { familyId } = await setupUser();
+  await setupUser('bob');
+  const invite = await call('invite.create', { familyId });
+  const summary = await call('family.summary', { familyId });
+  const transaction = db.transaction;
+  let release!: () => void, started!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  const ready = new Promise<void>((resolve) => { started = resolve; });
+  let held = false;
+  db.transaction = (work: any) => transaction(async (tx: any) => {
+    const result = await work(tx);
+    if (!held) { held = true; started(); await gate; }
+    return result;
+  });
+  const pending = call('invite.accept', { token: invite.token }, 'bob').catch((err: any) => err);
+  await ready;
+  await call('family.dissolve', { familyId, revision: summary.revision });
+  release();
+  expect((await pending).code).toBe('INVALID_INVITE');
+  expect((await call('family.list', {}, 'bob')).some((f: any) => f.id === familyId)).toBe(false);
+  expect(db.dump('users').every((u: any) => !u.familyIds.includes(familyId))).toBe(true);
+});
+
+test('确认后发生写入或成员变化必须重新确认，解散事务失败不能留下部分移除', async () => {
+  const { familyId, pet } = await setupPet();
+  const summary = await call('family.summary', { familyId });
+  await join(familyId);
+  await expect(call('family.dissolve', { familyId, revision: summary.revision })).rejects.toMatchObject({ code: 'CONFLICT' });
+  const next = await call('family.summary', { familyId });
+  await call('diary.save', diary(familyId, pet.id));
+  await expect(call('family.dissolve', { familyId, revision: next.revision })).rejects.toMatchObject({ code: 'CONFLICT' });
+  const latest = await call('family.summary', { familyId });
+  const transaction = db.transaction;
+  db.transaction = (work: any) => transaction((tx: any) => work({ ...tx, set: async (collection: string, id: string, value: any) => {
+    if (collection === 'families' && value.dissolvedAt != null) throw new Error('提交失败');
+    return tx.set(collection, id, value);
+  } }));
+  await expect(call('family.dissolve', { familyId, revision: latest.revision })).rejects.toThrow('提交失败');
+  expect(db.dump('users').every((u: any) => u.familyIds.includes(familyId))).toBe(true);
+  expect(db.dump('families').find((f: any) => f._id === familyId).dissolvedAt).toBeUndefined();
+});
+
+test.each(['diary.save', 'session.save'])('与解散并发的 %s 不能使用旧权限提交', async (action) => {
+  const { familyId, pet } = await setupPet();
+  const summary = await call('family.summary', { familyId });
+  const transaction = db.transaction;
+  let release!: () => void, started!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  const ready = new Promise<void>((resolve) => { started = resolve; });
+  let held = false;
+  db.transaction = (work: any) => transaction(async (tx: any) => {
+    const result = await work(tx);
+    if (!held) { held = true; started(); await gate; }
+    return result;
+  });
+  const pending = call(action, { ...diary(familyId, pet.id), messages: [] }).catch((err: any) => err);
+  await ready;
+  await call('family.dissolve', { familyId, revision: summary.revision });
+  release();
+  expect((await pending).code).toBe('FORBIDDEN');
+  expect(db.dump(action === 'diary.save' ? 'diaries' : 'chat_sessions')).toHaveLength(0);
+});
+
 beforeEach(() => {
   db = memoryDatabase(); clock = 1791792000000; sequence = 0;
   storage = { uploadFile: jest.fn(async ({ cloudPath }) => ({ fileID: `cloud://env/${cloudPath}` })),

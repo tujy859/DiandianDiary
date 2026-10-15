@@ -20,6 +20,7 @@ const wxStub: any = {
   clearStorageSync() {
     Object.keys(storage).forEach((k) => delete storage[k]);
   },
+  getStorageInfoSync() { return { keys: Object.keys(storage) }; },
 
   getFileSystemManager() {
     return {
@@ -49,6 +50,8 @@ const wxStub: any = {
   switchTab: () => undefined,
   navigateTo: () => undefined,
   navigateBack: () => undefined,
+  reLaunch: () => undefined,
+  redirectTo: () => undefined,
 };
 
 (global as any).wx = wxStub;

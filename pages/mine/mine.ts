@@ -47,6 +47,8 @@ Page({
       const refreshed = await refreshCloudIfStale();
       if (refreshed && getCloudCacheRevision() !== revision) this.reload();
     } catch (err: any) {
+      this.reload();
+      if (!getCloudSession()?.familyId) guardReady();
       Toast({ context: this, selector: '#t-toast', message: err.message || '云端读取失败', theme: 'error' });
     }
   },

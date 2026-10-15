@@ -1,0 +1,285 @@
+{
+  "basis": "current compiled WXML + current WXSS; approximate TDesign browser adapters; demo data only",
+  "results": [
+    {
+      "name": "owner",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 1292,
+      "buttons": [
+        {
+          "text": "保存昵称",
+          "visible": true
+        },
+        {
+          "text": "生成一次性邀请码",
+          "visible": true
+        },
+        {
+          "text": "回到我的",
+          "visible": true
+        },
+        {
+          "text": "解散家庭",
+          "visible": true
+        },
+        {
+          "text": "加入家庭",
+          "visible": true
+        },
+        {
+          "text": "创建家庭空间",
+          "visible": true
+        },
+        {
+          "text": "刷新云端数据",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "member",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 1267,
+      "buttons": [
+        {
+          "text": "保存昵称",
+          "visible": true
+        },
+        {
+          "text": "回到我的",
+          "visible": true
+        },
+        {
+          "text": "退出家庭",
+          "visible": true
+        },
+        {
+          "text": "加入家庭",
+          "visible": true
+        },
+        {
+          "text": "创建家庭空间",
+          "visible": true
+        },
+        {
+          "text": "刷新云端数据",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "empty",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 990,
+      "buttons": [
+        {
+          "text": "保存昵称",
+          "visible": true
+        },
+        {
+          "text": "加入家庭",
+          "visible": true
+        },
+        {
+          "text": "创建家庭空间",
+          "visible": true
+        },
+        {
+          "text": "刷新云端数据",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "error",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 1345,
+      "buttons": [
+        {
+          "text": "保存昵称",
+          "visible": true
+        },
+        {
+          "text": "生成一次性邀请码",
+          "visible": true
+        },
+        {
+          "text": "回到我的",
+          "visible": true
+        },
+        {
+          "text": "解散家庭",
+          "visible": true
+        },
+        {
+          "text": "加入家庭",
+          "visible": true
+        },
+        {
+          "text": "创建家庭空间",
+          "visible": true
+        },
+        {
+          "text": "刷新云端数据",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "disconnected",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "重新连接云端",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "owner",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 1173,
+      "buttons": [
+        {
+          "text": "保存昵称",
+          "visible": true
+        },
+        {
+          "text": "生成一次性邀请码",
+          "visible": true
+        },
+        {
+          "text": "回到我的",
+          "visible": true
+        },
+        {
+          "text": "解散家庭",
+          "visible": true
+        },
+        {
+          "text": "加入家庭",
+          "visible": true
+        },
+        {
+          "text": "创建家庭空间",
+          "visible": true
+        },
+        {
+          "text": "刷新云端数据",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "member",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 1144,
+      "buttons": [
+        {
+          "text": "保存昵称",
+          "visible": true
+        },
+        {
+          "text": "回到我的",
+          "visible": true
+        },
+        {
+          "text": "退出家庭",
+          "visible": true
+        },
+        {
+          "text": "加入家庭",
+          "visible": true
+        },
+        {
+          "text": "创建家庭空间",
+          "visible": true
+        },
+        {
+          "text": "刷新云端数据",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "empty",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 894,
+      "buttons": [
+        {
+          "text": "保存昵称",
+          "visible": true
+        },
+        {
+          "text": "加入家庭",
+          "visible": true
+        },
+        {
+          "text": "创建家庭空间",
+          "visible": true
+        },
+        {
+          "text": "刷新云端数据",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "error",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 1218,
+      "buttons": [
+        {
+          "text": "保存昵称",
+          "visible": true
+        },
+        {
+          "text": "生成一次性邀请码",
+          "visible": true
+        },
+        {
+          "text": "回到我的",
+          "visible": true
+        },
+        {
+          "text": "解散家庭",
+          "visible": true
+        },
+        {
+          "text": "加入家庭",
+          "visible": true
+        },
+        {
+          "text": "创建家庭空间",
+          "visible": true
+        },
+        {
+          "text": "刷新云端数据",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "disconnected",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": [
+        {
+          "text": "重新连接云端",
+          "visible": true
+        }
+      ]
+    }
+  ]
+}

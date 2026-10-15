@@ -1,39 +1,46 @@
 import Dialog from 'tdesign-miniprogram/dialog/index';
-import { getCloudSession } from '../../utils/store';
+import { getCloudSession, setCloudSession } from '../../utils/store';
 import { connectCloud, selectFamily, refreshCloud, Family } from '../../utils/repository';
 import { callCloud } from '../../utils/cloud';
+import { forgetFamilyState } from '../../utils/family-state';
 
 Page({
   data: {
     connected: false, busy: false, error: '', userId: '', nickname: '', familyId: '',
     families: [] as Family[], members: [] as Array<{ userId: string; role: string; label: string; nickname?: string }>,
-    owner: false, familyName: '', inviteInput: '', inviteToken: '', inviteExpiry: '',
+    owner: false, selectedFamilyName: '', familyName: '', inviteInput: '', inviteToken: '', inviteExpiry: '',
   },
   async onShow() {
-    this.setData({ connected: false, families: [], members: [], userId: '', familyId: '', nickname: '', inviteToken: '' });
+    this.setData({ connected: false, families: [], members: [], userId: '', familyId: '', nickname: '', inviteToken: '', owner: false, selectedFamilyName: '' });
     if (getCloudSession()) await this.run(() => this.load());
   },
   async run(work: () => Promise<void>) {
     if (this.data.busy) return;
     this.setData({ busy: true, error: '' });
-    try { await work(); } catch (err: any) { this.setData({ error: err.message || '操作失败，请重试' }); }
+    try { await work(); } catch (err: any) {
+      if (getCloudSession()?.familyId !== this.data.familyId) {
+        this.setData({ connected: false, families: [], members: [], familyId: '', selectedFamilyName: '', owner: false, inviteToken: '' });
+      }
+      this.setData({ error: err.message || '操作失败，请重试' });
+    }
     finally { this.setData({ busy: false }); }
   },
   async load() {
     const { user, families } = await connectCloud();
     const s = getCloudSession()!;
-    const selected = families.find((f) => f.id === s.familyId)!;
+    const selected = families.find((f) => f.id === s.familyId);
     this.setData({ connected: true, userId: user.id, nickname: user.nickname, families,
-      familyId: selected.id, owner: selected.members.some((m) => m.userId === user.id && m.role === 'owner'),
+      familyId: selected?.id || '', selectedFamilyName: selected?.name || '',
+      owner: !!selected?.members.some((m) => m.userId === user.id && m.role === 'owner'),
       // 昵称是展示用的首选；没设置昵称才退回「成员 N · 尾号」
-    members: selected.members.map((m, i) => ({
+    members: (selected?.members || []).map((m, i) => ({
       ...m,
       label: m.userId === user.id
         ? (user.nickname ? `我（${user.nickname}）` : '我')
         : (m.nickname || `成员 ${i + 1} · ${m.userId.slice(-6)}`),
     })),
     });
-    await refreshCloud();
+    if (selected) await refreshCloud();
   },
   onConnect() { return this.run(() => this.load()); },
   onNickname(e: WechatMiniprogram.CustomEvent) { this.setData({ nickname: e.detail.value }); },
@@ -82,11 +89,53 @@ Page({
       .then(() => this.run(async () => { await callCloud('family.removeMember', { familyId: this.data.familyId, userId }); await this.load(); })).catch(() => {});
   },
   onLeave() {
-    Dialog.confirm({ context: this, selector: '#t-dialog', title: '退出这个家庭？', content: '退出后将无法继续查看家庭日记，你曾保存的日记会保留在家庭中。' })
-      .then(() => this.run(async () => {
-        await callCloud('family.leave', { familyId: this.data.familyId });
-        // 退出后仍保持登录：connectCloud 会落到剩余的家庭空间
-        await this.load();
-      })).catch(() => {});
+    if (this.data.owner || !this.data.familyId) return;
+    return this.run(async () => {
+      const target = { userId: this.data.userId, familyId: this.data.familyId };
+      try {
+        await Dialog.confirm({ context: this, selector: '#t-dialog', title: `退出「${this.data.selectedFamilyName}」？`,
+          content: '仅你离开这个家庭。之后无法查看家庭数据，你曾保存的日记仍留在家庭中。', confirmBtn: { content: '退出家庭', theme: 'danger' } });
+      } catch (_) { return; }
+      this.assertTarget(target);
+      await callCloud('family.leave', { familyId: target.familyId });
+      this.afterDeparture(target);
+    });
+  },
+
+  onDissolve() {
+    if (!this.data.owner || !this.data.familyId) return;
+    return this.run(async () => {
+      const target = { userId: this.data.userId, familyId: this.data.familyId };
+      const summary = await callCloud<{ name: string; revision: number; members: number; pets: number; diaries: number }>('family.summary', { familyId: target.familyId });
+      this.assertTarget(target);
+      try {
+        await Dialog.confirm({ context: this, selector: '#t-dialog', title: `解散「${summary.name}」？`,
+          content: `影响 ${summary.members} 位成员、${summary.pets} 只宠物和 ${summary.diaries} 条可见日记。所有成员将失去访问权限，旧邀请码失效，并释放家庭名额。云端数据暂时保留，不会永久删除；暂不支持恢复。`,
+          confirmBtn: { content: '解散家庭', theme: 'danger' }, cancelBtn: '保留家庭' });
+        if (summary.members > 1) await Dialog.confirm({ context: this, selector: '#t-dialog', title: '所有成员都会失去访问权限',
+          content: `这会关闭整个「${summary.name}」，其他家人也无法再查看其中的宠物、日记和照片。请确认要解散整个家庭。`, confirmBtn: { content: '确认解散', theme: 'danger' }, cancelBtn: '保留家庭' });
+      } catch (_) { return; }
+      this.assertTarget(target);
+      await callCloud('family.dissolve', { familyId: target.familyId, revision: summary.revision });
+      this.afterDeparture(target);
+    });
+  },
+
+  assertTarget(target: { userId: string; familyId: string }) {
+    const current = getCloudSession();
+    if (current?.userId !== target.userId || current.familyId !== target.familyId) throw new Error('账号或家庭已切换，请重新确认');
+  },
+
+  afterDeparture(target: { userId: string; familyId: string }) {
+    forgetFamilyState(target.userId, target.familyId);
+    const current = getCloudSession();
+    if (current?.userId !== target.userId || current.familyId !== target.familyId) return;
+    setCloudSession({ userId: target.userId, familyId: '' });
+    // 重建页面栈，避免返回到已退出 / 解散空间的聊天与日记快照。
+    wx.reLaunch({ url: '/pages/family/family' });
+  },
+
+  onContinue() {
+    if (!this.data.busy && this.data.familyId) wx.reLaunch({ url: '/pages/mine/mine' });
   },
 });
