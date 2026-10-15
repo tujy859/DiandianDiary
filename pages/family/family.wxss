@@ -277,3 +277,6 @@
 }
 .family-management { margin-top:32rpx; padding-top:24rpx; border-top:1rpx solid var(--jd-line); }
 .empty-family { text-align:center; }
+.logout-panel { margin-top:32rpx; }
+.logout-option { display:flex; align-items:center; justify-content:space-between; gap:16rpx; margin-top:24rpx; font-size:var(--jd-fs-sm); color:var(--jd-text-2); }
+.logout-option switch { flex-shrink:0; }

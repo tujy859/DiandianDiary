@@ -5,7 +5,7 @@ import Toast from 'tdesign-miniprogram/toast/index';
 import {
   getPets, getCurrentPet, setCurrentPet,
   persistPhotos, uid,
-  getModelConfig, getRecords, getCloudSession, getCloudCacheRevision,
+  getModelConfig, getRecords, getCloudSession, getCloudSessionEpoch, getCloudCacheRevision,
   Pet, ChatMessage,
 } from '../../utils/store';
 import {
@@ -95,6 +95,8 @@ Page({
   _syncTail: Promise.resolve() as Promise<void>,
   _syncPending: 0,
   _visible: false,
+  _disposed: false,
+  _scopeEpoch: null as number | null,
   _idleTimer: null as ReturnType<typeof setTimeout> | null,
   /** 用户主动打开旧话题后，从打开时重新计时，避免刚打开就被自动移走。 */
   _resumedClientId: '',
@@ -107,6 +109,8 @@ Page({
   _manualLift: false,
 
   onLoad() {
+    this._disposed = false;
+    this._scopeEpoch = getCloudSessionEpoch();
     /*
      * 键盘避让分两条路：
      * - 安卓：键盘弹起时视口被压缩、100vh 变小，输入台在页面流底部自然落到键盘上沿，
@@ -203,6 +207,7 @@ Page({
   async onShow() {
     // 未登录或未配置模型：先走引导流程，本页不再渲染
     if (!guardReady()) return;
+    this._scopeEpoch = getCloudSessionEpoch();
     this.setData({ testFamily: isTestFamily() });
     this._visible = true;
     const layout = getLayout(true);
@@ -260,6 +265,7 @@ Page({
   },
 
   onUnload() {
+    this._disposed = true;
     this._visible = false;
     this.clearTopicTimer();
     if (this._offKeyboard) { this._offKeyboard(); this._offKeyboard = null; }
@@ -345,14 +351,16 @@ Page({
 
   /** 顺序同步到云端；版本冲突保留本机内容，交给用户重新打开话题。 */
   async syncSession(session?: ChatSession, sessionPetId?: string) {
+    if (this._disposed) return;
     const petId = sessionPetId || this.data.currentPet?.id;
     const target = session || this._session;
     const scope = JSON.stringify(getCloudSession());
+    const epoch = getCloudSessionEpoch();
     if (!petId || !target || !getCloudSession()) return;
     this._syncPending++;
     // 同一页面的保存按顺序执行，避免用户消息和 AI 回复同时以旧版本覆盖彼此。
     const work = this._syncTail.catch(() => {}).then(async () => {
-      if (JSON.stringify(getCloudSession()) !== scope) return;
+      if (this._disposed || getCloudSessionEpoch() !== epoch || JSON.stringify(getCloudSession()) !== scope) return;
       const current = this._session;
       const active = current?.clientId === target.clientId && this.data.currentPet?.id === petId;
       const source = active ? current! : target;
@@ -361,7 +369,7 @@ Page({
         const saved = await pushSession(petId, snapshot, false);
         target.id = saved.id;
         target.version = saved.version;
-        if (JSON.stringify(getCloudSession()) !== scope) return;
+        if (this._disposed || getCloudSessionEpoch() !== epoch || JSON.stringify(getCloudSession()) !== scope) return;
         if (this._session?.clientId === target.clientId && this.data.currentPet?.id === petId) {
           this._session.id = saved.id;
           this._session.version = saved.version;
@@ -383,7 +391,8 @@ Page({
    * 只在「会话被放下」时调用（开新话题、切换宠物），不打断正在进行的聊天。
    */
   async finalizeSession(petId: string, session: ChatSession) {
-    if (!session.messages.length) return;
+    if (this._disposed || !session.messages.length) return;
+    const epoch = getCloudSessionEpoch();
     const lines = session.messages
       .filter((m) => m.kind === 'text' && m.text)
       .slice(-40)
@@ -391,6 +400,7 @@ Page({
     if (!lines.length) return;
     try {
       const meta = await generateSessionMeta(getModelConfig(), session, lines);
+      if (this._disposed || epoch !== getCloudSessionEpoch()) return;
       if (!session.title && meta.title) session.title = meta.title;
       if (meta.summary) session.summary = meta.summary;
       // 只有当它还是当前会话时才写本机槽位，否则只推云端
@@ -428,6 +438,7 @@ Page({
     const active = this._session;
     try {
       const session = await readSession(petId, id);
+      if (this._disposed) return;
       if (this.data.currentPet?.id !== petId || this._session !== active) return;
       saveLocalSession(petId, session);
       this._session = session;
@@ -724,6 +735,8 @@ Page({
 
   /** 会话标题：第一句说完就由模型生成一次，之后不再改（失败也不影响聊天） */
   async maybeGenerateTitle() {
+    if (this._disposed) return;
+    const epoch = getCloudSessionEpoch();
     const petId = this.data.currentPet?.id;
     if (!petId || this._titleBusy) return;
     const session = this._session;
@@ -733,6 +746,7 @@ Page({
     this._titleBusy = true;
     try {
       const title = await generateTitle(getModelConfig(), userTexts);
+      if (this._disposed || epoch !== getCloudSessionEpoch()) return;
       // 等待期间同步可能已用服务端返回的新对象替换 _session，标题要落在最新对象上
       const current = this._session;
       if (!title || !current || current.clientId !== session.clientId || current.title || this.data.currentPet?.id !== petId) return;
@@ -747,12 +761,18 @@ Page({
   },
 
   async refreshSessionIndex() {
+    if (this._disposed) return;
+    const epoch = getCloudSessionEpoch();
     const petId = this.data.currentPet?.id;
     if (!petId) return;
-    try { this.setData({ sessions: await listSessions(petId) }); } catch (e) { /* 忽略 */ }
+    try {
+      const sessions = await listSessions(petId);
+      if (!this._disposed && epoch === getCloudSessionEpoch()) this.setData({ sessions });
+    } catch (e) { /* 忽略 */ }
   },
 
   persist() {
+    if (this._disposed || (this._scopeEpoch !== null && this._scopeEpoch !== getCloudSessionEpoch())) return;
     const pet = this.data.currentPet;
     if (!pet) return;
     if (!this._session) this._session = newSession();

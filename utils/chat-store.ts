@@ -4,7 +4,7 @@
  * - 旧会话：目录里点开即切换为当前会话，可以接着聊
  * - 照片：云端只存 fileId，打开会话时统一换成可展示链接，同时保留 fileId 供草稿保存复用
  */
-import { ChatMessage, Draft, ModelConfig, getCloudSession, uid } from './store';
+import { ChatMessage, Draft, ModelConfig, getCloudSession, getCloudSessionEpoch, uid } from './store';
 import { callCloud } from './cloud';
 import { cloudFileIds, resolvePhotoUrls } from './repository';
 import { summarizeSession, summarizeTitle } from './llm';
@@ -99,11 +99,13 @@ function fromCloud(m: any, urls: Record<string, string>, petId: string): ChatMes
 /** 会话目录：只取索引，正文按需拉取 */
 export async function listSessions(petId: string): Promise<SessionIndex[]> {
   const s = getCloudSession();
+  const epoch = getCloudSessionEpoch();
   if (!s) return [];
   const items: SessionIndex[] = [];
   let after = '';
   do {
     const page = await callCloud<{ items: SessionIndex[]; next: string }>('session.list', { familyId: s.familyId, petId, after, limit: 20 });
+    assertScope(s, epoch);
     items.push(...(page.items || []));
     after = page.next || '';
   } while (after);
@@ -131,10 +133,12 @@ async function hydrate(doc: any, petId: string): Promise<ChatSession> {
 /** 打开历史会话：拉取正文并切换为本机当前会话 */
 export async function readSession(petId: string, id: string): Promise<ChatSession> {
   const s = getCloudSession();
+  const epoch = getCloudSessionEpoch();
   if (!s) throw new Error('请先登录');
   const doc = await callCloud<any>('session.get', { familyId: s.familyId, petId, id });
+  assertScope(s, epoch);
   const result = await hydrate(doc, petId);
-  assertScope(s);
+  assertScope(s, epoch);
   return result;
 }
 
@@ -158,6 +162,7 @@ export async function pullSession(petId: string, session: ChatSession): Promise<
  */
 export async function pushSession(petId: string, session: ChatSession, cacheLocal = true): Promise<ChatSession> {
   const s = getCloudSession();
+  const epoch = getCloudSessionEpoch();
   if (!s) throw new Error('请先登录');
   if (session.messages.length > MAX_MESSAGES) throw new Error('当前话题已满，请开启新话题后继续');
   // 照片不在这里上传：发送时只存本机路径，入库与否由「有没有保存进日记」决定
@@ -192,14 +197,15 @@ export async function pushSession(petId: string, session: ChatSession, cacheLoca
   });
   // 服务端只收已入库的照片；回包不能覆盖本机尚未保存的照片、重试信息和原始输入。
   const saved: ChatSession = { ...session, id: doc.id, version: doc.version };
-  assertScope(s);
+  assertScope(s, epoch);
   if (cacheLocal) saveLocalSession(petId, saved);
   return saved;
 }
 
-function assertScope(expected: { userId: string; familyId: string }) {
+function assertScope(expected: { userId: string; familyId: string }, epoch: number) {
   const current = getCloudSession();
-  if (!current || current.userId !== expected.userId || current.familyId !== expected.familyId) throw new Error('家庭空间已切换，请重试');
+  if (!current || current.userId !== expected.userId || current.familyId !== expected.familyId
+    || epoch !== getCloudSessionEpoch()) throw new Error('账号或家庭空间已切换，请重试');
 }
 
 /** 标题兜底：在标点处收尾，避免切出半句话 */

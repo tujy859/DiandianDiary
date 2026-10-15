@@ -1,6 +1,6 @@
 /** UI mutations are acknowledged by the server before updating the cloud cache. */
 import * as local from './store';
-import { Pet, DiaryRecord, RawInput, getCloudSession, setCloudSession, cacheCloudData, uid } from './store';
+import { Pet, DiaryRecord, RawInput, getCloudSession, getCloudSessionEpoch, setCloudSession, cacheCloudData, uid } from './store';
 import { callCloud, CloudError } from './cloud';
 import { reconcileFamilyState, forgetFamilyState } from './family-state';
 
@@ -18,11 +18,12 @@ function session() {
   const s = getCloudSession();
   if (!s) throw new CloudError('UNAUTHENTICATED', '请先登录');
   if (!s.familyId) throw new CloudError('NO_FAMILY', '请先创建或加入一个家庭空间');
-  return s;
+  return { ...s, epoch: getCloudSessionEpoch() };
 }
-const sameSession = (s: local.CloudSession) => {
+const sameSession = (s: local.CloudSession & { epoch?: number }) => {
   const current = getCloudSession();
-  if (!current || current.userId !== s.userId || current.familyId !== s.familyId) throw new CloudError('SESSION_CHANGED', '家庭空间已切换，请重试');
+  if (!current || current.userId !== s.userId || current.familyId !== s.familyId
+    || (s.epoch !== undefined && s.epoch !== getCloudSessionEpoch())) throw new CloudError('SESSION_CHANGED', '账号或家庭空间已切换，请重试');
 };
 function mediaKey(s: local.CloudSession) { return `jd_media_${s.userId}_${s.familyId}`; }
 function mediaMap(s: local.CloudSession): Record<string, string> { return wx.getStorageSync(mediaKey(s)) || {}; }
@@ -138,7 +139,7 @@ let inflightRefreshScope = '';
 export function refreshCloudIfStale(maxAgeMs = 30000): Promise<boolean> {
   const current = getCloudSession();
   if (!current?.familyId) return Promise.resolve(false);
-  const scope = `${current.userId}/${current.familyId}`;
+  const scope = `${current.userId}/${current.familyId}/${getCloudSessionEpoch()}`;
   if (inflightRefresh && inflightRefreshScope === scope) return inflightRefresh.then(() => true);
   if (lastRefreshScope === scope && Date.now() - lastRefreshAt < maxAgeMs) return Promise.resolve(false);
   const request = refreshCloud()
@@ -150,10 +151,11 @@ export function refreshCloudIfStale(maxAgeMs = 30000): Promise<boolean> {
 }
 export async function connectCloud(): Promise<{ user: { id: string; nickname: string }; families: Family[] }> {
   const before = getCloudSession();
+  const epoch = getCloudSessionEpoch();
   const user = await callCloud<{ id: string; nickname: string }>('auth.login');
   const families = await callCloud<Family[]>('family.list');
   const previous = getCloudSession();
-  if (previous?.userId !== before?.userId || previous?.familyId !== before?.familyId) {
+  if (previous?.userId !== before?.userId || previous?.familyId !== before?.familyId || epoch !== getCloudSessionEpoch()) {
     throw new CloudError('SESSION_CHANGED', '账号或家庭已切换，请重试');
   }
   const selected = families.find((f) => previous?.userId === user.id && previous.familyId === f.id) || families[0];
@@ -166,9 +168,11 @@ export async function selectFamily(familyId: string): Promise<void> {
   const previous = getCloudSession();
   if (!previous) throw new CloudError('UNAUTHENTICATED', '请先登录');
   setCloudSession({ userId: previous.userId, familyId });
+  const epoch = getCloudSessionEpoch();
   try { await refreshCloud(); } catch (err) {
     const current = getCloudSession();
-    if (current?.userId === previous.userId && (current.familyId === familyId || !current.familyId)) setCloudSession(previous);
+    if (current?.userId === previous.userId && epoch === getCloudSessionEpoch()
+      && (current.familyId === familyId || !current.familyId)) setCloudSession(previous);
     throw err;
   }
 }

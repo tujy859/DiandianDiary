@@ -1,17 +1,18 @@
 import Dialog from 'tdesign-miniprogram/dialog/index';
-import { getCloudSession, setCloudSession } from '../../utils/store';
+import { getCloudSession, getCloudSessionEpoch, setCloudSession } from '../../utils/store';
 import { connectCloud, selectFamily, refreshCloud, Family } from '../../utils/repository';
 import { callCloud } from '../../utils/cloud';
 import { forgetFamilyState } from '../../utils/family-state';
+import { logoutLocal } from '../../utils/auth';
 
 Page({
   data: {
-    connected: false, busy: false, error: '', userId: '', nickname: '', familyId: '',
+    connected: false, loggedIn: false, clearModelOnLogout: false, busy: false, error: '', userId: '', nickname: '', familyId: '',
     families: [] as Family[], members: [] as Array<{ userId: string; role: string; label: string; nickname?: string }>,
     owner: false, selectedFamilyName: '', familyName: '', inviteInput: '', inviteToken: '', inviteExpiry: '',
   },
   async onShow() {
-    this.setData({ connected: false, families: [], members: [], userId: '', familyId: '', nickname: '', inviteToken: '', owner: false, selectedFamilyName: '' });
+    this.setData({ connected: false, loggedIn: !!getCloudSession(), families: [], members: [], userId: '', familyId: '', nickname: '', inviteToken: '', owner: false, selectedFamilyName: '' });
     if (getCloudSession()) await this.run(() => this.load());
   },
   async run(work: () => Promise<void>) {
@@ -29,7 +30,7 @@ Page({
     const { user, families } = await connectCloud();
     const s = getCloudSession()!;
     const selected = families.find((f) => f.id === s.familyId);
-    this.setData({ connected: true, userId: user.id, nickname: user.nickname, families,
+    this.setData({ connected: true, loggedIn: true, userId: user.id, nickname: user.nickname, families,
       familyId: selected?.id || '', selectedFamilyName: selected?.name || '',
       owner: !!selected?.members.some((m) => m.userId === user.id && m.role === 'owner'),
       // 昵称是展示用的首选；没设置昵称才退回「成员 N · 尾号」
@@ -137,5 +138,26 @@ Page({
 
   onContinue() {
     if (!this.data.busy && this.data.familyId) wx.reLaunch({ url: '/pages/mine/mine' });
+  },
+
+  onLogoutModelChange(e: WechatMiniprogram.CustomEvent) {
+    if (!this.data.busy) this.setData({ clearModelOnLogout: !!e.detail.value });
+  },
+
+  onLogout() {
+    if (!getCloudSession()) return;
+    return this.run(async () => {
+      const epoch = getCloudSessionEpoch();
+      const clearModel = this.data.clearModelOnLogout;
+      try {
+        await Dialog.confirm({ context: this, selector: '#t-dialog', title: '退出登录？',
+          content: `将清除当前账号在本机的登录状态、所有家庭缓存和聊天。云端宠物、日记和家庭成员关系保留。${clearModel ? '本机模型配置也会清除。' : '本机模型配置保留。'}再次连接仍使用当前微信身份。`,
+          confirmBtn: { content: '退出登录', theme: 'danger' }, cancelBtn: '取消' });
+      } catch (_) { return; }
+      if (epoch !== getCloudSessionEpoch()) throw new Error('账号或家庭已切换，请重新确认');
+      logoutLocal(clearModel);
+      this.setData({ loggedIn: false, connected: false, families: [], members: [], userId: '', nickname: '', familyId: '', inviteToken: '', inviteInput: '', familyName: '', owner: false, selectedFamilyName: '' });
+      wx.reLaunch({ url: '/pages/onboard/onboard' });
+    });
   },
 });

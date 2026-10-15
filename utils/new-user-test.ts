@@ -1,4 +1,4 @@
-import { getCloudSession, uid } from './store';
+import { getCloudSession, getCloudSessionEpoch, uid } from './store';
 import { callCloud } from './cloud';
 import { Family, selectFamily } from './repository';
 import { isDeveloperMode } from './developer';
@@ -28,18 +28,18 @@ function developerSession() {
   const session = getCloudSession();
   if (!session) throw new Error('请先连接云端');
   if (!session.familyId) throw new Error('请先创建或加入一个家庭空间');
-  return session;
+  return { ...session, epoch: getCloudSessionEpoch() };
 }
-function assertSession(userId: string, familyId: string) {
+function assertSession(userId: string, familyId: string, epoch: number) {
   const session = getCloudSession();
-  if (session?.userId !== userId || session.familyId !== familyId) throw new Error('账号或家庭已切换，请重新进入测试页');
+  if (session?.userId !== userId || session.familyId !== familyId || epoch !== getCloudSessionEpoch()) throw new Error('账号或家庭已切换，请重新进入测试页');
 }
 
 /** 创建失败 / 响应丢失时复用请求 ID，切换失败时保留返回信息。 */
 export async function enterEmptyTestFamily(): Promise<void> {
   const session = developerSession();
   const families = await callCloud<Family[]>('family.list');
-  assertSession(session.userId, session.familyId);
+  assertSession(session.userId, session.familyId, session.epoch);
   reconcileFamilyState(session.userId, families.map((family) => family.id));
   const current = families.find((family) => family.id === session.familyId);
   if (!current) throw new Error('当前家庭不可用，请重新连接云端');
@@ -55,7 +55,7 @@ export async function enterEmptyTestFamily(): Promise<void> {
     const previousTest = families.find((family) => family.id === state!.testFamilyId);
     if (previousTest && previousTest.members.length === 1) {
       const pets = await callCloud<{ items: unknown[] }>('pet.list', { familyId: previousTest.id, limit: 1 });
-      assertSession(session.userId, session.familyId);
+      assertSession(session.userId, session.familyId, session.epoch);
       if (!pets.items.length) {
         await selectFamily(previousTest.id);
         return;
@@ -76,13 +76,13 @@ export async function enterEmptyTestFamily(): Promise<void> {
   try {
     family = await callCloud<Family>('family.create', { name: state.pendingFamilyName, clientId: state.pendingClientId });
   } catch (err: any) {
-    assertSession(session.userId, session.familyId);
+    assertSession(session.userId, session.familyId, session.epoch);
     if (err.code === 'FORBIDDEN') {
       wx.setStorageSync(stateKey(session.userId), { ...state, pendingClientId: '', pendingFamilyName: '' });
     }
     throw err;
   }
-  assertSession(session.userId, session.familyId);
+  assertSession(session.userId, session.familyId, session.epoch);
   state = { ...state, pendingClientId: '', pendingFamilyName: '', testFamilyId: family.id, testFamilyName: family.name };
   // 先保存返回目标：即使刷新新家庭失败 / 小程序关闭，也能恢复操作。
   wx.setStorageSync(stateKey(session.userId), state);
@@ -94,7 +94,7 @@ export async function returnToOriginalFamily(): Promise<void> {
   const state = getNewUserTestState();
   if (!state) throw new Error('没有待返回的原家庭');
   const families = await callCloud<Family[]>('family.list');
-  assertSession(session.userId, session.familyId);
+  assertSession(session.userId, session.familyId, session.epoch);
   reconcileFamilyState(session.userId, families.map((family) => family.id));
   if (!families.some((family) => family.id === state.originalFamilyId)) throw new Error('原家庭已不可访问，请在「账号与家庭空间」选择可用家庭');
   await selectFamily(state.originalFamilyId);

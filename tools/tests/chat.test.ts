@@ -55,6 +55,23 @@ beforeEach(() => {
 });
 afterEach(() => { jest.restoreAllMocks(); jest.clearAllTimers(); jest.useRealTimers(); });
 
+test('退出卸载页面后，迟到标题 / 摘要不能重新保存旧聊天', async () => {
+  page._session = { ...sessions.newSession(), messages: [{ id: 'old', role: 'user', kind: 'text', text: '旧消息', time: Date.now() }] };
+  const old = page._session;
+  const pendingTitle = deferred(), pendingMeta = deferred();
+  jest.spyOn(sessions, 'generateTitle').mockReturnValueOnce(pendingTitle.promise);
+  jest.spyOn(sessions, 'generateSessionMeta').mockReturnValueOnce(pendingMeta.promise);
+  const save = jest.spyOn(sessions, 'saveLocalSession');
+  const title = page.maybeGenerateTitle();
+  const finalize = page.finalizeSession(a.id, old);
+  page.onUnload();
+  pendingTitle.resolve('迟到标题'); pendingMeta.resolve({ title: '迟到标题', summary: '迟到摘要' });
+  await Promise.all([title, finalize]);
+  page.persist();
+  expect(save).not.toHaveBeenCalled();
+  expect(old.title).toBe('');
+});
+
 test('快捷问题填入当前宠物名字但不自动发送，收起键盘后恢复导航空间', () => {
   const tabbar = { data: { hidden: false }, setData: jest.fn((patch) => Object.assign(tabbar.data, patch)) };
   page.getTabBar = () => tabbar;

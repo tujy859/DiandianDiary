@@ -105,6 +105,16 @@
     </view>
   </block>
 
+  <view wx:if="{{loggedIn}}" class="jd-card panel logout-panel">
+    <view class="field-label">退出登录</view>
+    <view class="note-line">仅退出本机登录，云端日记和家庭关系保留。</view>
+    <view class="logout-option">
+      <text>同时清除本机模型配置</text>
+      <switch checked="{{clearModelOnLogout}}" color="#32694F" disabled="{{busy}}" bindchange="onLogoutModelChange" aria-label="同时清除本机模型配置" />
+    </view>
+    <t-button block theme="danger" variant="outline" shape="round" disabled="{{busy}}" bind:tap="onLogout">退出登录</t-button>
+  </view>
+
   <view wx:if="{{busy}}" class="busy-note">正在连接或保存，请稍候…</view>
   <view class="foot-note">家庭空间的日记保存在云端，换设备登录后仍可查看。</view>
 

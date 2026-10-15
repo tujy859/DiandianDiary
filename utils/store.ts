@@ -83,8 +83,13 @@ const CUR_KEY = 'jd_current_pet';
 const MODEL_KEY = 'jd_model_config';
 const SESSION_KEY = 'jd_cloud_session';
 export interface CloudSession { userId: string; familyId: string }
+let cloudSessionEpoch = 0;
+/** 本次进程内的登录代次，退出后重新登录同一账号也不能接收旧请求。 */
+export function getCloudSessionEpoch(): number { return cloudSessionEpoch; }
 export function getCloudSession(): CloudSession | null { return wx.getStorageSync(SESSION_KEY) || null; }
 export function setCloudSession(session: CloudSession | null): void {
+  const previous = getCloudSession();
+  if (!session || previous?.userId !== session.userId || previous?.familyId !== session.familyId) cloudSessionEpoch++;
   if (session) wx.setStorageSync(SESSION_KEY, session);
   else wx.removeStorageSync(SESSION_KEY);
 }
