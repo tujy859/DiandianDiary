@@ -1,8 +1,8 @@
 .page {
   min-height: 100vh;
-  padding: 32rpx 28rpx calc(48rpx + env(safe-area-inset-bottom));
+  padding: 32rpx var(--jd-page-gutter) calc(48rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
-  background: #faf7f0;
+  background: var(--jd-bg);
 }
 
 /* 顶部说明 */
@@ -11,8 +11,8 @@
 }
 
 .hero-title {
-  font-size: var(--jd-fs-xxl);
-  font-weight: 700;
+  font-size: var(--jd-fs-xl);
+  font-weight: 600;
   color: var(--jd-text-1);
 }
 

@@ -11,6 +11,8 @@
 | [文档素材](../resources/document-assets/README.md) | 参考资料、脱敏截图及图表源稿 |
 | [开发记录](development-log.md) | 当前进度、按日期记录的重要改动、部署和待办 |
 | [UX 整合记录](ux-integration-2026-10-15.md) | 本地改动快照、合并取舍、回退基线与验证 |
+| [UX 连贯性核查](ux-audit-2026-10-15.md) | 首次使用、插画覆盖、流程断点、旧文案与状态问题 |
+| [新手流程测试](new-user-testing.md) | 开发者入口、引导演练、空白测试家庭与返回 |
 | [云开发说明](cloud-backend.md) | 后端接口、数据权限、部署和验收步骤 |
 | [打包与资源维护](package-size.md) | 运行时资源、原图、构建与包体预算 |
 | [查询与工具](query-and-tools.md) | 查询范围、工具调用与降级行为 |
@@ -18,6 +20,7 @@
 | [UI 实现与验证](ui-implementation/README.md) | UX 分支的实现与历史截图验证 |
 | [UI 探索](ui-exploration/README.md) | 历史设计方向及素材来源 |
 | [Agent 审查](agent-review.md) | 历史审查记录，需结合当前代码阅读 |
+| [自然陈述与年份错误诊断](agent-reliability-2026-10-15.md) | 两位年份复现、误查询路径与保持简单的改进建议 |
 
 ## 维护约定
 

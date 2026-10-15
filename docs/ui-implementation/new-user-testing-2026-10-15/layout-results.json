@@ -1,0 +1,297 @@
+{
+  "basis": "current compiled WXML + current WXSS; approximate TDesign browser adapters; demo data only",
+  "results": [
+    {
+      "name": "tools-regular",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "从欢迎页开始",
+          "visible": true
+        },
+        {
+          "text": "进入空白测试家庭",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "tools-test",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 878,
+      "buttons": [
+        {
+          "text": "从欢迎页开始",
+          "visible": true
+        },
+        {
+          "text": "进入空白测试家庭",
+          "visible": true
+        },
+        {
+          "text": "返回原家庭",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "tools-error",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 952,
+      "buttons": [
+        {
+          "text": "从欢迎页开始",
+          "visible": true
+        },
+        {
+          "text": "进入空白测试家庭",
+          "visible": true
+        },
+        {
+          "text": "返回原家庭",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "tools-blocked",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": []
+    },
+    {
+      "name": "mine-tools",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 828,
+      "buttons": [
+        {
+          "text": "添加宠物",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "replay-login",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "连接云端，继续",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "replay-model",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 888,
+      "buttons": [
+        {
+          "text": "测试填写的配置并继续",
+          "visible": true
+        },
+        {
+          "text": "使用现有配置继续",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "test-empty-chat",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "添加宠物",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "test-chat-welcome",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": []
+    },
+    {
+      "name": "test-empty-album",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "添加宠物",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "test-diary-error",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "重新加载",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "tools-regular",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 597,
+      "buttons": [
+        {
+          "text": "从欢迎页开始",
+          "visible": true
+        },
+        {
+          "text": "进入空白测试家庭",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "tools-test",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 771,
+      "buttons": [
+        {
+          "text": "从欢迎页开始",
+          "visible": true
+        },
+        {
+          "text": "进入空白测试家庭",
+          "visible": true
+        },
+        {
+          "text": "返回原家庭",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "tools-error",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 834,
+      "buttons": [
+        {
+          "text": "从欢迎页开始",
+          "visible": true
+        },
+        {
+          "text": "进入空白测试家庭",
+          "visible": true
+        },
+        {
+          "text": "返回原家庭",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "tools-blocked",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": []
+    },
+    {
+      "name": "mine-tools",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 714,
+      "buttons": [
+        {
+          "text": "添加宠物",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "replay-login",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": [
+        {
+          "text": "连接云端，继续",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "replay-model",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 794,
+      "buttons": [
+        {
+          "text": "测试填写的配置并继续",
+          "visible": true
+        },
+        {
+          "text": "使用现有配置继续",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "test-empty-chat",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": [
+        {
+          "text": "添加宠物",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "test-chat-welcome",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": []
+    },
+    {
+      "name": "test-empty-album",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": [
+        {
+          "text": "添加宠物",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "test-diary-error",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": [
+        {
+          "text": "重新加载",
+          "visible": true
+        }
+      ]
+    }
+  ]
+}

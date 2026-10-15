@@ -1,9 +1,10 @@
 <view class="page">
   <offline-bar />
+  <test-space-bar />
   <!-- 顶部说明 -->
   <view class="hero">
-    <view class="hero-title">与家人一起记录宠物生活</view>
-    <view class="hero-sub">连接后，已确认的日记会保存到云端；加入同一家庭即可查看共同宠物和日记。</view>
+    <view class="hero-title">一起记下它的日常</view>
+    <view class="hero-sub">加入同一家庭，和家人一起查看宠物与日记。</view>
   </view>
 
   <view wx:if="{{error}}" class="error">
@@ -11,7 +12,7 @@
     <text class="error-text">{{error}}</text>
   </view>
 
-  <!-- 未连接：本机模式 -->
+  <!-- 未连接：重新连接云端后才可管理家庭 -->
   <view wx:if="{{!connected}}" class="jd-card panel connect">
     <view class="connect-icon">
       <t-icon name="usergroup" size="56rpx" color="#2F6B4F" />

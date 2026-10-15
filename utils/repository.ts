@@ -121,19 +121,25 @@ export async function resolvePhotoUrls(ids: string[]): Promise<Record<string, st
 }
 
 let lastRefreshAt = 0;
+let lastRefreshScope = '';
 let inflightRefresh: Promise<void> | null = null;
+let inflightRefreshScope = '';
 /**
  * 节流 + 去重的云端刷新：tab 页 onShow 高频触发时，间隔内直接跳过、并发请求合并为一次。
  * 返回是否真的发起了刷新（false = 命中节流被跳过）。
  */
 export function refreshCloudIfStale(maxAgeMs = 30000): Promise<boolean> {
-  if (!getCloudSession()) return Promise.resolve(false);
-  if (inflightRefresh) return inflightRefresh.then(() => true);
-  if (Date.now() - lastRefreshAt < maxAgeMs) return Promise.resolve(false);
-  inflightRefresh = refreshCloud()
-    .then(() => { lastRefreshAt = Date.now(); })
-    .finally(() => { inflightRefresh = null; });
-  return inflightRefresh.then(() => true);
+  const current = getCloudSession();
+  if (!current) return Promise.resolve(false);
+  const scope = `${current.userId}/${current.familyId}`;
+  if (inflightRefresh && inflightRefreshScope === scope) return inflightRefresh.then(() => true);
+  if (lastRefreshScope === scope && Date.now() - lastRefreshAt < maxAgeMs) return Promise.resolve(false);
+  const request = refreshCloud()
+    .then(() => { lastRefreshAt = Date.now(); lastRefreshScope = scope; })
+    .finally(() => { if (inflightRefresh === request) { inflightRefresh = null; inflightRefreshScope = ''; } });
+  inflightRefresh = request;
+  inflightRefreshScope = scope;
+  return request.then(() => true);
 }
 export async function connectCloud(): Promise<{ user: { id: string; nickname: string }; families: Family[] }> {
   const user = await callCloud<{ id: string; nickname: string }>('auth.login');

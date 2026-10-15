@@ -18,22 +18,24 @@ page {
   --jd-fs-xl: 34rpx;
   --jd-fs-xxl: 42rpx;
   /* 文字三级：主 / 次 / 弱（暖底上要够黑够脆，避免发闷） */
-  --jd-text-1: #1f2b25;
-  --jd-text-2: #5d6d64;
+  --jd-text-1: #253a30;
+  --jd-text-2: #78837b;
   --jd-text-3: #97a39c;
   /* 全app唯一细线色 */
   --jd-line: rgba(31, 43, 37, 0.08);
   /* 品牌绿与淡绿辅助面 */
-  --jd-brand: #2f6b4f;
+  --jd-brand: #32694f;
   --jd-brand-deep: #245e41;
   --jd-tint: #edf4ef;
+  --jd-bg: #faf8f3;
+  --jd-page-gutter: 36rpx;
   /* 圆角三档 + 全圆 */
   --jd-r-sm: 16rpx;
   --jd-r-md: 24rpx;
   --jd-r-lg: 32rpx;
 
   /* TDesign 主题令牌覆盖 */
-  --td-brand-color: #256145;
+  --td-brand-color: var(--jd-brand);
   --td-brand-color-hover: #337655;
   --td-brand-color-active: #1e5039;
   --td-brand-color-disabled: #b6ccbf;
@@ -43,10 +45,10 @@ page {
   --td-success-color: #52af87;
   --td-warning-color: #f2a65a;
   --td-error-color: #d54941;
-  --td-bg-color-page: #faf8f3;
+  --td-bg-color-page: var(--jd-bg);
   --td-bg-color-container: #ffffff;
-  --td-text-color-primary: #26362e;
-  --td-text-color-secondary: #687970;
+  --td-text-color-primary: var(--jd-text-1);
+  --td-text-color-secondary: var(--jd-text-2);
   --td-text-color-placeholder: #a1ada6;
   --td-radius-medium: 18rpx;
   --td-radius-large: 28rpx;
@@ -85,12 +87,12 @@ scroll-view {
   color: var(--jd-text-1);
 }
 
-/* 高级白玉质感通用卡片：双层弥散柔光与细边框 */
+/* 轻量白底卡片，主要依靠细边框区分层次 */
 .jd-card {
   background: #ffffff;
   border-radius: 28rpx;
   border: 1rpx solid rgba(240, 236, 228, 0.85);
-  box-shadow: 0 6rpx 24rpx rgba(47, 107, 79, 0.05), 0 1rpx 4rpx rgba(0, 0, 0, 0.02);
+  box-shadow: 0 2rpx 8rpx rgba(47, 107, 79, 0.03);
 }
 
 /* 页面骨架：底部留白统一交给 tabBar 占位变量，避免各页各写一套 */
@@ -100,12 +102,27 @@ scroll-view {
   flex-direction: column;
   box-sizing: border-box;
   overflow-x: hidden;
-  background: #faf7f0;
+  background: var(--jd-bg);
 }
 
 /* 滚动区域收尾留白 */
 .jd-scroll-tail {
   height: 40rpx;
+}
+
+/* 有缓存时继续展示内容，持续提示刷新失败并给出重试入口。 */
+.jd-refresh-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  flex-shrink: 0;
+  padding: 12rpx 24rpx;
+  margin: 12rpx 0;
+  border-radius: var(--jd-r-sm);
+  background: #fff6e5;
+  font-size: var(--jd-fs-xs);
+  color: #8a5a00;
 }
 
 /* 暖阳杏橙微小圆点装饰 */

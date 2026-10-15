@@ -10,6 +10,7 @@
 .section-add { display:flex; align-items:center; gap:4rpx; padding:20rpx 0 20rpx 20rpx; font-size:24rpx; color:#32694f; }
 .panel { padding:0 28rpx; }
 .panel-empty { padding:38rpx 0; color:#78837b; text-align:center; font-size:25rpx; }
+.panel-empty-sub { font-size:var(--jd-fs-sm); margin:12rpx 0 24rpx; }
 .pet-row { display:flex; align-items:center; gap:22rpx; padding:30rpx 0; border-bottom:1rpx solid #e9ece6; }
 .pet-row:last-child { border-bottom:0; }
 .pet-avatar { flex-shrink:0; width:88rpx; height:88rpx; padding:4rpx; border-radius:28rpx; background:#f2eee5; }

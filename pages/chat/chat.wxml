@@ -1,5 +1,6 @@
-<view class="page" bindtap="onTapPageBlank">
+<view class="page {{testFamily ? 'is-test-family' : ''}}" bindtap="onTapPageBlank">
   <offline-bar />
+  <test-space-bar />
   <!-- 顶部：当前宠物，点击切换（catchtap 阻止冒泡到根节点的 onTapPageBlank，避免弹窗弹出时布局跳变） -->
   <view wx:if="{{currentPet}}" class="petbar">
     <view class="pet-chip" catchtap="onSwitchPet">

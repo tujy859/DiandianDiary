@@ -31,6 +31,31 @@ beforeEach(() => {
 const input = (petId: string) => ({ petId, date: '2026-10-12', text: '整理的洗澡记录', tags: ['洗澡'], photos: [],
   rawInput: { text: '今天早上给点点洗澡了，好乖', photos: [] }, clientId: 'draft-one', mode: 'tool' });
 
+test('切换家庭后的节流刷新不复用旧家庭正在等待的请求', async () => {
+  await repo.connectCloud();
+  const previous = local.getCloudSession()!;
+  const next = await callCloud<repo.Family>('family.create', { name: '新测试家庭', clientId: 'new-user-test-refresh' });
+  let release!: () => void;
+  let started!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const ready = new Promise<void>(resolve => { started = resolve; });
+  let wait = true;
+  rpc.mockImplementation(async (action, data) => {
+    const result = await baseRpc(action, data);
+    if (action === 'pet.list' && data.familyId === previous.familyId && wait) { wait = false; started(); await gate; }
+    return result;
+  });
+  const stale = repo.refreshCloudIfStale(0).catch(error => error);
+  await ready;
+  local.setCloudSession({ userId: previous.userId, familyId: next.id });
+  try {
+    // 新家庭刷新须独立完成，不能等待上一个家庭的请求。
+    await expect(repo.refreshCloudIfStale(0)).resolves.toBe(true);
+    expect(local.getCloudSession()!.familyId).toBe(next.id);
+  } finally { release(); }
+  expect(await stale).toMatchObject({ code: 'SESSION_CHANGED' });
+});
+
 test('未登录不能写入本机；连接云端后按账号和家庭隔离缓存', async () => {
   await expect(repo.savePet({ name: '本机猫', species: '猫' })).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
   await repo.connectCloud();

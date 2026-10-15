@@ -7,6 +7,7 @@ import { refreshCloudIfStale } from '../../utils/repository';
 import { getLayout, resetViewport } from '../../utils/layout';
 import { showPetPicker } from '../../utils/pet-picker';
 import { guardReady } from '../../utils/onboard';
+import { openAddPet } from '../../utils/pet-navigation';
 
 interface TimelineItem extends DiaryRecord {
   dateText: string;
@@ -31,6 +32,9 @@ Page({
     gallery: [] as GalleryItem[],
     tabbarHeight: 60,
     viewportHeight: 667,
+    loading: true,
+    refreshing: false,
+    loadError: '',
   },
 
   /** 缓存优先渲染；后台刷新后只有数据真的变化才重渲染 */
@@ -51,17 +55,37 @@ Page({
     // 收起键盘并重新测量布局
     resetViewport(this);
     if (!guardReady()) return;
-    const revision = getCloudCacheRevision();
     this.renderFromStore(getLayout(true).tabbarHeight);
     const tabbar = this.getTabBar && this.getTabBar();
     if (tabbar) tabbar.setData({ selected: 0 });
-    if (!getCloudSession()) return;
+    await this.loadCloud();
+  },
+
+  async loadCloud(force = false) {
+    if (this.data.refreshing) return;
+    if (!getCloudSession()) {
+      this.setData({ loading: false, loadError: '请先连接云端，再读取时光册' });
+      return;
+    }
+    const revision = getCloudCacheRevision();
+    this.setData({ loading: !this.data.records.length, refreshing: true, loadError: '' });
     try {
-      const refreshed = await refreshCloudIfStale();
+      const refreshed = await refreshCloudIfStale(force || !this.data.records.length ? 0 : 30000);
       if (refreshed && getCloudCacheRevision() !== revision) this.renderFromStore(this.data.tabbarHeight);
     } catch (err: any) {
-      wx.showToast({ title: err.message || '云端读取失败', icon: 'none' });
+      this.renderFromStore(this.data.tabbarHeight);
+      this.setData({ loadError: err.message || '暂时没能读取时光册，请检查网络后重试' });
+    } finally {
+      this.setData({ loading: false, refreshing: false });
     }
+  },
+
+  onRetry() {
+    return this.loadCloud(true);
+  },
+
+  goAddPet() {
+    openAddPet();
   },
 
   reload() {
@@ -106,7 +130,7 @@ Page({
   onPetSelected(e: WechatMiniprogram.CustomEvent) {
     const { index } = e.detail;
     if (index === this.data.pets.length) {
-      wx.switchTab({ url: '/pages/mine/mine' });
+      openAddPet();
       return;
     }
     const pet = this.data.pets[index];

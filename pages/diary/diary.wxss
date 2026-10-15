@@ -1,7 +1,7 @@
 /* 日记详情页：字号/字色/圆角/线色全部走 app.wxss 设计令牌 */
 .page {
   min-height: 100vh;
-  padding: 24rpx;
+  padding: 24rpx var(--jd-page-gutter) calc(40rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
@@ -122,3 +122,4 @@
 .diary-avatar { width:60rpx; height:60rpx; padding:3rpx; border-radius:20rpx; background:#f2eee5; }
 .missing { padding:120rpx 36rpx 40rpx; }
 .missing-illustration { width:320rpx; height:294rpx; border-radius:32rpx; }
+.missing-sub { color:var(--jd-text-2); font-size:var(--jd-fs-sm); margin:12rpx 0 28rpx; padding:0 36rpx; word-break:break-word; }

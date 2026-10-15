@@ -1,5 +1,6 @@
 <view class="page" style="height: {{viewportHeight}}px; padding-bottom: {{tabbarHeight}}px;">
   <offline-bar />
+  <test-space-bar />
   <!-- 头部：宠物 + 视角切换 -->
   <view class="header">
     <view wx:if="{{currentPet}}" class="pet-chip" bindtap="onSwitchPet">
@@ -14,10 +15,25 @@
   </view>
 
   <scroll-view scroll-y class="body" enhanced show-scrollbar="{{false}}">
+    <view wx:if="{{loadError && records.length}}" class="jd-refresh-note">
+      <text>刷新失败，正在显示已缓存的记录</text>
+      <t-button size="small" variant="text" theme="primary" loading="{{refreshing}}" disabled="{{refreshing}}" bindtap="onRetry">重试</t-button>
+    </view>
     <!-- 空状态 -->
-    <view wx:if="{{!currentPet}}" class="empty">
+    <view wx:if="{{loading && !records.length}}" class="empty">
+      <view class="empty-text">正在翻开时光册…</view>
+    </view>
+    <view wx:elif="{{loadError && !records.length}}" class="empty">
+      <t-icon name="cloud" size="64rpx" color="#78837B" />
+      <view class="empty-text">暂时没能读取时光册</view>
+      <view class="empty-sub">{{loadError}}</view>
+      <t-button theme="primary" size="medium" shape="round" loading="{{refreshing}}" disabled="{{refreshing}}" bindtap="onRetry">重新加载</t-button>
+    </view>
+    <view wx:elif="{{!currentPet}}" class="empty">
       <image class="empty-illustration" src="/assets/brand/app-icon.png" mode="aspectFit" />
-      <view class="empty-text">先在「我的」添加一只宠物吧</view>
+      <view class="empty-text">还没有小伙伴</view>
+      <view class="empty-sub">先建个档案，再慢慢收集它的日常</view>
+      <t-button theme="primary" size="medium" shape="round" bindtap="goAddPet">添加宠物</t-button>
     </view>
     <view wx:elif="{{!records.length}}" class="empty">
       <image class="empty-illustration" src="/assets/illustrations/empty-album.png" mode="aspectFit" />
@@ -63,7 +79,9 @@
     <block wx:else>
       <view wx:if="{{!gallery.length}}" class="empty">
         <image class="empty-illustration" src="/assets/illustrations/empty-gallery.png" mode="aspectFit" />
-        <view class="empty-text">还没有照片，发张照片给{{currentPet.name}}记一条吧</view>
+        <view class="empty-text">还没有{{currentPet.name}}的照片</view>
+        <view class="empty-sub">去「聊聊」发张照片，留住一个小瞬间</view>
+        <t-button theme="primary" size="medium" shape="round" bindtap="goChat">去发照片</t-button>
       </view>
       <view class="gallery">
         <view wx:for="{{gallery}}" wx:key="src" class="polaroid">

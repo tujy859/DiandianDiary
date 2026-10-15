@@ -1,8 +1,8 @@
 .page {
   min-height: 100vh;
-  padding: 32rpx 28rpx calc(48rpx + env(safe-area-inset-bottom));
+  padding: 32rpx var(--jd-page-gutter) calc(48rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
-  background: #faf7f0;
+  background: var(--jd-bg);
 }
 
 /* 步骤条 */
@@ -11,7 +11,7 @@
   align-items: center;
   justify-content: center;
   gap: 16rpx;
-  margin-bottom: 40rpx;
+  margin-bottom: 48rpx;
 }
 
 .step {
@@ -69,20 +69,18 @@
   padding: 8rpx 0 8rpx;
 }
 
-.hero-icon {
-  width: 144rpx;
-  height: 144rpx;
-  border-radius: 50%;
-  background: var(--jd-tint);
-  margin: 0 auto 16rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.hero-brand {
+  display: block;
+  width: 192rpx;
+  height: 192rpx;
+  border-radius: 48rpx;
+  margin: 0 auto 28rpx;
 }
+.is-model .hero-brand { width:112rpx; height:112rpx; border-radius:32rpx; margin-bottom:20rpx; }
 
 .hero-title {
   font-size: var(--jd-fs-xxl);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--jd-text-1);
 }
 
@@ -180,6 +178,11 @@
   margin-top: 40rpx;
 }
 
-.actions .t-button + .t-button {
+.secondary-action {
   margin-top: 24rpx;
 }
+.next-note, .privacy-note { font-size:var(--jd-fs-xs); color:var(--jd-text-2); line-height:1.7; }
+.next-note { margin-top:24rpx; text-align:center; }
+.privacy-note { margin:24rpx 8rpx 0; }
+.replay-note { padding:16rpx 20rpx; margin-bottom:24rpx; background:#fff6e5; border-radius:var(--jd-r-sm); color:#8a5a00; font-size:var(--jd-fs-xs); }
+.replay-link { color:var(--jd-brand); padding-top:8rpx; }

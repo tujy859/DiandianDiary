@@ -1,6 +1,7 @@
 {
   "navigationBarTitleText": "聊聊",
   "usingComponents": {
+    "test-space-bar": "../../components/test-space-bar/index",
     "t-icon": "tdesign-miniprogram/icon/icon",
     "t-button": "tdesign-miniprogram/button/button",
     "t-dialog": "tdesign-miniprogram/dialog/dialog",

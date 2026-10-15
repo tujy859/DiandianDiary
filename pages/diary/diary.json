@@ -1,6 +1,7 @@
 {
   "navigationBarTitleText": "日记",
   "usingComponents": {
+    "test-space-bar": "../../components/test-space-bar/index",
     "t-icon": "tdesign-miniprogram/icon/icon",
     "t-tag": "tdesign-miniprogram/tag/tag",
     "t-dialog": "tdesign-miniprogram/dialog/dialog",

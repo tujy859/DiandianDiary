@@ -2,7 +2,7 @@ import { petAvatar } from '../../utils/pet-avatars';
 import Dialog from 'tdesign-miniprogram/dialog/index';
 import Toast from 'tdesign-miniprogram/toast/index';
 import {
-  getRecord, getPets, persistPhotos, Pet, DiaryRecord, getCloudSession, getCloudCacheRevision,
+  getRecord, getPets, persistPhotos, Pet, DiaryRecord, getCloudSession,
 } from '../../utils/store';
 import { displayDate, relDay } from '../../utils/date';
 import { extractTags } from '../../utils/intent';
@@ -13,6 +13,8 @@ Page({
     id: '',
     record: null as (DiaryRecord & { dateText?: string; rel?: string; petName?: string; petAvatar?: string }) | null,
     loading: true,
+    refreshing: false,
+    loadError: '',
     pets: [] as Pet[],
     editorVisible: false,
     editorValue: {} as any,
@@ -22,24 +24,43 @@ Page({
     this.setData({ id: options.id || '', pets: getPets() });
   },
 
-  async onShow() {
+  onShow() {
+    return this.loadRecord();
+  },
+
+  async loadRecord(force = false) {
+    if (this.data.refreshing) return;
     // 先用本地缓存渲染：文字立即可见，照片按 <image> 各自进度加载
-    this.setData({ pets: getPets() });
+    this.setData({ pets: getPets(), loadError: '' });
     this.reload();
-    if (!getCloudSession()) return;
-    // 缓存里没有这条记录时先维持加载态，等云端确认后再判定「不存在」
-    if (!this.data.record) this.setData({ loading: true });
-    const revision = getCloudCacheRevision();
-    let changed = false;
-    try {
-      const refreshed = await refreshCloudIfStale();
-      changed = refreshed && getCloudCacheRevision() !== revision;
-    } catch (err: any) {
-      Toast({ context: this, selector: '#t-toast', message: err.message || '云端读取失败', theme: 'error' });
+    if (!getCloudSession()) {
+      this.setData({ loadError: '请先连接云端，再读取这条日记' });
+      return;
     }
-    if (changed) this.setData({ pets: getPets() });
-    // 数据有更新、或刚才在等云端确认时，才重新渲染，避免无谓的闪烁
-    if (changed || this.data.loading) this.reload();
+    // 缓存里没有这条记录时先维持加载态，等云端确认后再判定「不存在」
+    this.setData({ loading: !this.data.record, refreshing: true });
+    try {
+      // 缓存无记录时必须读云端确认；重试也不能被最近成功刷新的节流跳过。
+      await refreshCloudIfStale(force || !this.data.record ? 0 : 30000);
+      this.setData({ pets: getPets() });
+      this.reload();
+    } catch (err: any) {
+      // 保留已有内容；读取失败不能当作云端确认记录不存在。
+      // 权限 / 身份错误可能已清理缓存，此时不能保留失效的页面快照。
+      this.setData({ pets: getPets() });
+      this.reload();
+      this.setData({ loadError: err.message || '暂时没能读取日记，请检查网络后重试' });
+    } finally {
+      this.setData({ loading: false, refreshing: false });
+    }
+  },
+
+  onRetry() {
+    return this.loadRecord(true);
+  },
+
+  goAlbum() {
+    wx.switchTab({ url: '/pages/album/album' });
   },
 
   reload() {

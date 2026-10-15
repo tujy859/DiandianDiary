@@ -1,7 +1,7 @@
 <view class="page">
-  <view class="banner">
-    <t-icon name="info-circle" size="32rpx" color="#C07A1F" />
-    <text>配置保存后，「聊聊」会优先调用真实模型；调用失败时自动回退本地演示规则并明确提示。API Key 仅保存在本机。真机使用需在小程序后台配置 request 合法域名。</text>
+  <view class="model-head">
+    <image class="model-brand" src="/assets/brand/app-icon.png" mode="aspectFit" />
+    <view><view class="model-title">连接模型服务</view><view class="model-sub">用于理解聊天内容、整理日记和查询记录</view></view>
   </view>
 
   <view class="label">服务商</view>
@@ -16,16 +16,18 @@
   </view>
 
   <view class="jd-card panel">
-    <t-input label="Base URL" placeholder="例如：https://api.deepseek.com" value="{{form.baseUrl}}" bind:change="onBaseUrl" />
-    <t-input label="API Key" type="password" placeholder="只保存在本机" value="{{form.apiKey}}" bind:change="onApiKey" />
-    <t-input label="模型" placeholder="例如：deepseek-flash" value="{{form.model}}" bind:change="onModel" />
+    <t-input label="Base URL" placeholder="服务商提供的 API 地址" disabled="{{testing}}" value="{{form.baseUrl}}" bind:change="onBaseUrl" />
+    <t-input label="API Key" type="password" placeholder="填写服务商提供的密钥" disabled="{{testing}}" value="{{form.apiKey}}" bind:change="onApiKey" />
+    <t-input label="模型" placeholder="填写服务商提供的模型名" disabled="{{testing}}" value="{{form.model}}" bind:change="onModel" />
   </view>
 
-  <view class="default-link" bindtap="onUseDefault">使用推荐默认值（deepseek-flash）</view>
+  <view wx:if="{{recommendedModel}}" class="default-link" bindtap="onUseDefault">恢复默认地址和模型（{{recommendedModel}}）</view>
+  <view class="privacy-note">{{modelHelp}}</view>
 
-  <t-button theme="primary" size="large" block shape="round" bind:tap="onSave">保存配置</t-button>
-  <t-button theme="default" size="large" block shape="round" variant="outline" loading="{{testing}}" bind:tap="onTest">测试连接</t-button>
-  <t-button theme="danger" size="large" block shape="round" variant="outline" bind:tap="onClear">清除配置</t-button>
+  <view class="connection-note">{{connectionNote}}</view>
+  <view class="primary-action"><t-button theme="primary" size="large" block shape="round" disabled="{{testing}}" bind:tap="onSave">保存配置</t-button></view>
+  <view class="secondary-action"><t-button theme="default" size="large" block shape="round" variant="outline" loading="{{testing}}" disabled="{{testing}}" bind:tap="onTest">测试当前配置</t-button></view>
+  <view class="clear-action"><t-button theme="danger" size="small" variant="text" disabled="{{testing}}" bind:tap="onClear">清除模型配置</t-button></view>
 </view>
 
 <t-toast id="t-toast" />

@@ -23,7 +23,7 @@
         <t-icon name="close" size="26rpx" color="#D54941" />
         <text>保存失败</text>
       </view>
-      <text class="pcard-title">网络异常，请重试</text>
+      <text class="pcard-title">请检查提示后重试</text>
     </block>
     <block wx:else>
       <view class="pcard-badge is-discarded">
@@ -36,11 +36,11 @@
     <!-- 元信息轻盈条目 -->
     <view class="pcard-meta-box">
       <view class="pcard-meta-row">
-        <text class="meta-label">🐾 宠物</text>
+        <view class="meta-label"><image class="meta-icon" src="/assets/icons/paw.png" mode="aspectFit" /><text>宠物</text></view>
         <text class="meta-value">{{petName}}</text>
       </view>
       <view class="pcard-meta-row">
-        <text class="meta-label">📅 日期</text>
+        <view class="meta-label"><t-icon name="calendar" size="26rpx" /><text>日期</text></view>
         <text wx:if="{{draft.date}}" class="meta-value is-date">{{dateText}}</text>
         <view wx:else class="pcard-chips">
           <text
@@ -80,7 +80,7 @@
   <!-- 底部操作按钮 -->
   <view wx:if="{{draft.status === 'pending'}}" class="pcard-actions">
     <view class="pcard-btn is-primary" bindtap="onSave">
-      <text>保存这篇</text>
+      <text>保存这条</text>
     </view>
     <view class="pcard-btn is-outline" bindtap="onEdit">
       <text>修改</text>

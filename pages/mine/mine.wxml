@@ -1,5 +1,6 @@
 <view class="page" style="padding-bottom: {{tabbarHeight}}px;">
   <offline-bar />
+  <test-space-bar />
   <!-- 品牌小猫与用户宠物头像分开 -->
   <view class="brand">
     <view class="brand-avatar">
@@ -11,7 +12,11 @@
   <!-- 宠物档案 -->
   <view class="section-heading"><view class="section-title">宠物档案</view><view class="section-add" bindtap="onAddPet" aria-role="button"><t-icon name="add" size="28rpx" color="#32694F" /><text>添加宠物</text></view></view>
   <view class="jd-card panel">
-    <view wx:if="{{!pets.length}}" class="panel-empty">还没有宠物，先添加一只吧（只要名字和物种）</view>
+    <view wx:if="{{!pets.length}}" class="panel-empty">
+      <view>还没有小伙伴</view>
+      <view class="panel-empty-sub">名字和物种，就能开启陪伴记录</view>
+      <t-button theme="primary" size="medium" shape="round" bindtap="onAddPet">添加宠物</t-button>
+    </view>
     <view wx:for="{{pets}}" wx:key="id" class="pet-row" data-id="{{item.id}}" bindtap="onEditPet">
       <image class="pet-avatar" src="{{item.avatar}}" mode="aspectFit" />
       <view class="pet-info">
@@ -39,16 +44,6 @@
         <t-icon name="chevron-right" size="32rpx" color="#C9CFCC" />
       </view>
     </view>
-    <view wx:if="{{devMode}}" class="cell" bindtap="goSelftest">
-      <view class="cell-left">
-        <t-icon name="check-circle" size="36rpx" color="#2F6B4F" />
-        <text class="cell-text">开发自检</text>
-      </view>
-      <view class="cell-right">
-        <text class="cell-note">跑一遍确定性逻辑</text>
-        <t-icon name="chevron-right" size="32rpx" color="#C9CFCC" />
-      </view>
-    </view>
     <view class="cell" bindtap="onAbout">
       <view class="cell-left">
         <t-icon name="info-circle" size="36rpx" color="#2F6B4F" />
@@ -66,6 +61,19 @@
   </view>
 
   <!-- 宠物表单弹层 -->
+  <block wx:if="{{devMode}}">
+    <view class="section-title">开发者工具</view>
+    <view class="jd-card panel">
+      <view class="cell" bindtap="goNewUserTest">
+        <view class="cell-left"><t-icon name="refresh" size="36rpx" color="#32694F" /><text class="cell-text">新手流程测试</text></view>
+        <view class="cell-right"><t-icon name="chevron-right" size="32rpx" color="#C9CFCC" /></view>
+      </view>
+      <view class="cell" bindtap="goSelftest">
+        <view class="cell-left"><t-icon name="check-circle" size="36rpx" color="#32694F" /><text class="cell-text">开发自检</text></view>
+        <view class="cell-right"><t-icon name="chevron-right" size="32rpx" color="#C9CFCC" /></view>
+      </view>
+    </view>
+  </block>
   <view class="brand-footnote">每一天，都有一点值得记住</view>
   <t-popup id="pet-form" visible="{{formVisible}}" placement="bottom" bind:visible-change="onFormClose">
     <scroll-view scroll-y class="form-scroll">

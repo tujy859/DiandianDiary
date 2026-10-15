@@ -1,4 +1,9 @@
+<test-space-bar />
 <view wx:if="{{record}}" class="page">
+  <view wx:if="{{loadError}}" class="jd-refresh-note">
+    <text>刷新失败，正在显示已缓存的日记</text>
+    <t-button size="small" variant="text" theme="primary" loading="{{refreshing}}" disabled="{{refreshing}}" bindtap="onRetry">重试</t-button>
+  </view>
   <view class="jd-card card">
     <view class="head">
       <view class="pet"><image class="diary-avatar" src="{{record.petAvatar}}" mode="aspectFit" /><text>{{record.petName}}</text></view>
@@ -55,9 +60,18 @@
   <view class="missing-text">加载中…</view>
 </view>
 
+<view wx:elif="{{loadError}}" class="missing">
+  <t-icon name="cloud" size="64rpx" color="#78837B" />
+  <view class="missing-text">暂时没能读取日记</view>
+  <view class="missing-sub">{{loadError}}</view>
+  <t-button theme="primary" size="medium" shape="round" loading="{{refreshing}}" disabled="{{refreshing}}" bindtap="onRetry">重新加载</t-button>
+</view>
+
 <view wx:else class="missing">
   <image class="missing-illustration" src="/assets/illustrations/missing-diary.png" mode="aspectFit" />
   <view class="missing-text">这条日记不存在或已被删除</view>
+  <view class="missing-sub">回时光册看看其他回忆吧</view>
+  <t-button theme="primary" size="medium" shape="round" bindtap="goAlbum">回时光册</t-button>
 </view>
 
 <t-dialog id="t-dialog" />

@@ -1,0 +1,4 @@
+:host { flex-shrink:0; }
+.test-space-bar { display:flex; align-items:center; justify-content:space-between; gap:16rpx; padding:16rpx 24rpx; background:#fff6e5; color:#8a5a00; font-size:22rpx; line-height:1.5; }
+.test-space-text { flex:1; min-width:0; }
+.test-space-link { flex-shrink:0; color:#32694f; }

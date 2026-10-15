@@ -1,11 +1,11 @@
 import { isOffline, watchNetwork } from '../../utils/network';
 
 Component({
-  data: { offline: false },
+  data: { offline: false, dismissed: false },
   lifetimes: {
     attached() {
       this.setData({ offline: isOffline() });
-      this._unwatch = watchNetwork((offline: boolean) => this.setData({ offline }));
+      this._unwatch = watchNetwork((offline: boolean) => this.setData(offline ? { offline } : { offline, dismissed: false }));
     },
     detached() {
       if (this._unwatch) this._unwatch();

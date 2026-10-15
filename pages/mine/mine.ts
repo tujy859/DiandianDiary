@@ -7,6 +7,8 @@ import { isModelReady } from '../../utils/llm';
 import { displayDate, fmt } from '../../utils/date';
 import { getLayout, resetViewport } from '../../utils/layout';
 import { guardReady } from '../../utils/onboard';
+import { consumeAddPetRequest } from '../../utils/pet-navigation';
+import { isDeveloperMode, enableDeveloperMode } from '../../utils/developer';
 
 const SPECIES = ['猫', '狗', '其他'];
 
@@ -34,8 +36,9 @@ Page({
     if (!guardReady()) return;
     // 缓存优先渲染；后台节流刷新，只有数据真的变化才重渲染
     const revision = getCloudCacheRevision();
-    this.setData({ cloudOn: !!getCloudSession(), tabbarHeight: getLayout(true).tabbarHeight });
+    this.setData({ cloudOn: !!getCloudSession(), tabbarHeight: getLayout(true).tabbarHeight, devMode: isDeveloperMode() });
     this.reload();
+    if (consumeAddPetRequest()) this.onAddPet();
     this.setData({ modelNote: isModelReady(getModelConfig()) ? '已接入' : '未接入' });
     const tabbar = this.getTabBar && this.getTabBar();
     if (tabbar) tabbar.setData({ selected: 2 });
@@ -172,11 +175,16 @@ Page({
     wx.navigateTo({ url: '/pages/selftest/selftest' });
   },
 
+  goNewUserTest() {
+    if (isDeveloperMode()) wx.navigateTo({ url: '/pages/new-user-test/new-user-test' });
+  },
+
   onAbout() {
     // 连点 5 次「关于」进入开发者模式（显示开发自检入口）
     const taps = this.data.aboutTaps + 1;
     this.setData({ aboutTaps: taps });
     if (taps >= 5 && !this.data.devMode) {
+      enableDeveloperMode();
       this.setData({ devMode: true });
       Toast({ context: this, selector: '#t-toast', message: '已进入开发者模式', theme: 'success' });
     }

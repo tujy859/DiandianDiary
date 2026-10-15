@@ -1,0 +1,33 @@
+<view class="page">
+  <view class="hero-title">新手流程测试</view>
+  <view wx:if="{{!allowed}}" class="hero-sub">请先在「我的」连续点击 5 次「关于记一下喵」，开启开发者模式。</view>
+  <block wx:else>
+    <view class="hero-sub">重看第一次见面，或在独立家庭里从零开始记录。</view>
+    <view class="space-note {{activeTest ? 'is-test' : ''}}">
+      <view class="space-label">{{activeTest ? '当前处于新手测试家庭' : '当前家庭'}}</view>
+      <view>{{currentFamilyName || '正在读取…'}}</view>
+      <view wx:if="{{canReturn}}" class="space-sub">可返回：{{originalFamilyName}}</view>
+    </view>
+
+    <view class="jd-card tool-card">
+      <view class="tool-title">重走开始使用</view>
+      <view class="tool-desc">依次展示欢迎页和模型配置步骤。保留当前家庭、登录状态和模型配置；测试填写的配置不会覆盖原配置。</view>
+      <view class="tool-action"><t-button theme="primary" block shape="round" disabled="{{busy}}" bindtap="onReplay">从欢迎页开始</t-button></view>
+    </view>
+
+    <view class="jd-card tool-card">
+      <view class="tool-title">进入空白测试家庭</view>
+      <view class="tool-desc">创建独立的云端家庭，测试添加第一只宠物、空状态和第一条日记。测试中保存的内容属于这个家庭，原家庭数据保留。</view>
+      <view class="tool-action"><t-button theme="primary" variant="outline" block shape="round" loading="{{busy}}" disabled="{{busy}}" bindtap="onEnterEmpty">进入空白测试家庭</t-button></view>
+    </view>
+
+    <view wx:if="{{canReturn}}" class="jd-card tool-card">
+      <view class="tool-title">返回原家庭</view>
+      <view class="tool-desc">回到「{{originalFamilyName}}」。测试家庭和其中的数据会保留，之后可在家庭列表查看。</view>
+      <view class="tool-action"><t-button theme="primary" block shape="round" disabled="{{busy}}" bindtap="onReturn">返回原家庭</t-button></view>
+    </view>
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+    <view class="foot-note">仍为空的测试家庭会复用，已有宠物时另建空白家庭。每个账号最多加入 10 个家庭，不自动删除测试数据。本工具不模拟后台首次创建账号。</view>
+    <view class="family-link" bindtap="goFamily">查看账号与家庭空间</view>
+  </block>
+</view>

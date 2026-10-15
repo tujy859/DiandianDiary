@@ -24,6 +24,8 @@
   z-index: 30;
   display: flex;
 }
+.is-test-family .petbar { position:relative; top:auto; left:auto; padding:16rpx 28rpx 0; flex-shrink:0; }
+.is-test-family .msgs { padding-top:24rpx; }
 
 /* 消息流 */
 .msgs {

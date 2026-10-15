@@ -1,6 +1,7 @@
 {
   "navigationBarTitleText": "账号与家庭空间",
   "usingComponents": {
+    "test-space-bar": "../../components/test-space-bar/index",
     "t-icon": "tdesign-miniprogram/icon/icon",
     "t-button": "tdesign-miniprogram/button/button",
     "t-input": "tdesign-miniprogram/input/input",

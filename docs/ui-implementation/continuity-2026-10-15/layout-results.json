@@ -1,0 +1,333 @@
+{
+  "basis": "current compiled WXML + current WXSS; approximate TDesign browser adapters; demo data only",
+  "results": [
+    {
+      "name": "onboard-login",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "连接云端，继续",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "onboard-model",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "保存并测试连接",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "onboard-error",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 792,
+      "buttons": [
+        {
+          "text": "保存并测试连接",
+          "visible": true
+        },
+        {
+          "text": "配置已保存，先进入",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "model",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "保存配置",
+          "visible": true
+        },
+        {
+          "text": "测试当前配置",
+          "visible": true
+        },
+        {
+          "text": "清除模型配置",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "model-custom",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "保存配置",
+          "visible": true
+        },
+        {
+          "text": "测试当前配置",
+          "visible": true
+        },
+        {
+          "text": "清除模型配置",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "album-no-pet",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "添加宠物",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "album-no-record",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "去聊聊",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "album-no-photo",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "去发照片",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "album-error",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "重新加载",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "diary-error",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "重新加载",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "diary-missing",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "回时光册",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "mine-no-pet",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "添加宠物",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "onboard-login",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": [
+        {
+          "text": "连接云端，继续",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "onboard-model",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 608,
+      "buttons": [
+        {
+          "text": "保存并测试连接",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "onboard-error",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 711,
+      "buttons": [
+        {
+          "text": "保存并测试连接",
+          "visible": true
+        },
+        {
+          "text": "配置已保存，先进入",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "model",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 622,
+      "buttons": [
+        {
+          "text": "保存配置",
+          "visible": true
+        },
+        {
+          "text": "测试当前配置",
+          "visible": true
+        },
+        {
+          "text": "清除模型配置",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "model-custom",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 594,
+      "buttons": [
+        {
+          "text": "保存配置",
+          "visible": true
+        },
+        {
+          "text": "测试当前配置",
+          "visible": true
+        },
+        {
+          "text": "清除模型配置",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "album-no-pet",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": [
+        {
+          "text": "添加宠物",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "album-no-record",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": [
+        {
+          "text": "去聊聊",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "album-no-photo",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": [
+        {
+          "text": "去发照片",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "album-error",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": [
+        {
+          "text": "重新加载",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "diary-error",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": [
+        {
+          "text": "重新加载",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "diary-missing",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": [
+        {
+          "text": "回时光册",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "mine-no-pet",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": [
+        {
+          "text": "添加宠物",
+          "visible": true
+        }
+      ]
+    }
+  ]
+}

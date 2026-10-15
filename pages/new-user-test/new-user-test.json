@@ -1,0 +1,4 @@
+{
+  "navigationBarTitleText": "新手流程测试",
+  "usingComponents": { "t-button": "tdesign-miniprogram/button/button" }
+}

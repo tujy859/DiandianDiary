@@ -28,6 +28,8 @@ import { getLayout } from '../../utils/layout';
 import { isOffline } from '../../utils/network';
 import { showPetPicker } from '../../utils/pet-picker';
 import { guardReady } from '../../utils/onboard';
+import { openAddPet } from '../../utils/pet-navigation';
+import { isTestFamily } from '../../utils/new-user-test';
 
 /** 欢迎态建议：按当前宠物生成，点一下就能直接开聊 */
 function buildSuggestions(pet: Pet | null) {
@@ -54,6 +56,7 @@ Page({
     pets: [] as Pet[],
     currentPet: null as Pet | null,
     petAvatar: '',
+    testFamily: false,
     messages: [] as ChatMessage[],
     inputValue: '',
     attachments: [] as string[],
@@ -200,6 +203,7 @@ Page({
   async onShow() {
     // 未登录或未配置模型：先走引导流程，本页不再渲染
     if (!guardReady()) return;
+    this.setData({ testFamily: isTestFamily() });
     this._visible = true;
     const layout = getLayout(true);
     // 缓存优先渲染：本地数据毫秒级呈现，不再先清空等云端
@@ -977,7 +981,7 @@ Page({
   onPetSelected(e: WechatMiniprogram.CustomEvent) {
     const { index } = e.detail;
     if (index === this.data.pets.length) {
-      wx.switchTab({ url: '/pages/mine/mine' });
+      openAddPet();
       return;
     }
     const pet = this.data.pets[index];
@@ -1005,6 +1009,6 @@ Page({
   },
 
   goAddPet() {
-    wx.switchTab({ url: '/pages/mine/mine' });
+    openAddPet();
   },
 });

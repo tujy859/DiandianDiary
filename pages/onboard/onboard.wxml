@@ -1,5 +1,10 @@
 <view class="page">
   <offline-bar />
+  <test-space-bar />
+  <view wx:if="{{replay}}" class="replay-note">
+    <view>新手引导演练 · 保留原登录和模型配置</view>
+    <view class="replay-link" bindtap="onBackToTools">返回测试工具</view>
+  </view>
   <view class="steps">
     <view class="step {{step === 'login' ? 'is-active' : 'is-done'}}">
       <view class="step-dot">1</view>
@@ -15,9 +20,7 @@
   <!-- 第一步：微信身份登录（静默，无授权弹窗） -->
   <block wx:if="{{step === 'login'}}">
     <view class="hero">
-      <view class="hero-icon">
-        <t-icon name="cat" size="72rpx" color="#2F6B4F" />
-      </view>
+      <image class="hero-brand" src="/assets/brand/app-icon.png" mode="aspectFit" />
       <view class="hero-title">记一下喵</view>
       <view class="hero-sub">用聊天的方式，记下和小家伙的每一天</view>
     </view>
@@ -33,7 +36,7 @@
       </view>
       <view class="feature">
         <t-icon name="chart-bubble" size="36rpx" color="#2F6B4F" />
-        <text class="feature-text">需要联网使用，第一次还要接入一个大模型</text>
+        <text class="feature-text">接入模型后，聊聊天就能整理成待确认的日记</text>
       </view>
     </view>
 
@@ -43,15 +46,17 @@
     </view>
 
     <view class="actions">
-      <t-button theme="primary" size="large" block shape="round" loading="{{busy}}" disabled="{{busy}}" bind:tap="onStart">连接云端并开始</t-button>
+      <t-button theme="primary" size="large" block shape="round" loading="{{busy}}" disabled="{{busy}}" bind:tap="onStart">连接云端，继续</t-button>
+      <view class="next-note">首次使用：连接云端 → 接入模型 → 添加小伙伴</view>
     </view>
   </block>
 
   <!-- 第二步：接入模型（API Key 只保存在本机，不同步） -->
   <block wx:else>
-    <view class="hero">
-      <view class="hero-title">接入一个大模型</view>
-      <view class="hero-sub">聊聊需要模型来理解你的话。API Key 只会保存在这台手机上，不会上传到云端。</view>
+    <view class="hero is-model">
+      <image class="hero-brand" src="/assets/brand/app-icon.png" mode="aspectFit" />
+      <view class="hero-title">连接模型服务</view>
+      <view class="hero-sub">用于理解聊天内容、整理日记和查询记录</view>
     </view>
 
     <view class="label">服务商</view>
@@ -66,12 +71,14 @@
     </view>
 
     <view class="jd-card panel">
-      <t-input label="Base URL" placeholder="例如：https://api.deepseek.com" value="{{form.baseUrl}}" bind:change="onBaseUrl" />
-      <t-input label="API Key" type="password" placeholder="只保存在本机" value="{{form.apiKey}}" bind:change="onApiKey" />
-      <t-input label="模型" placeholder="例如：deepseek-flash" value="{{form.model}}" bind:change="onModel" />
+      <t-input label="Base URL" placeholder="服务商提供的 API 地址" disabled="{{busy}}" value="{{form.baseUrl}}" bind:change="onBaseUrl" />
+      <t-input label="API Key" type="password" placeholder="填写服务商提供的密钥" disabled="{{busy}}" value="{{form.apiKey}}" bind:change="onApiKey" />
+      <t-input label="模型" placeholder="填写服务商提供的模型名" disabled="{{busy}}" value="{{form.model}}" bind:change="onModel" />
     </view>
 
-    <view class="default-link" bindtap="onUseDefault">使用推荐默认值（deepseek-flash）</view>
+    <view wx:if="{{recommendedModel}}" class="default-link" bindtap="onUseDefault">恢复默认地址和模型（{{recommendedModel}}）</view>
+    <view class="privacy-note">{{modelHelp}}</view>
+    <view wx:if="{{replay}}" class="privacy-note">演练中填写的配置仅用于这次连接测试，不会保存。进入应用后继续使用原模型配置。</view>
 
     <view wx:if="{{error}}" class="error">
       <t-icon name="error-circle" size="32rpx" color="#D54941" />
@@ -79,8 +86,10 @@
     </view>
 
     <view class="actions">
-      <t-button theme="primary" size="large" block shape="round" loading="{{busy}}" disabled="{{busy}}" bind:tap="onSaveModel">保存并开始使用</t-button>
-      <t-button wx:if="{{testFailed}}" theme="default" size="large" block shape="round" variant="outline" bind:tap="onSkip">先用这个配置进入</t-button>
+      <t-button theme="primary" size="large" block shape="round" loading="{{busy}}" disabled="{{busy}}" bind:tap="onSaveModel">{{replay ? '测试填写的配置并继续' : '保存并测试连接'}}</t-button>
+      <view wx:if="{{replay && hasSavedModel}}" class="secondary-action"><t-button theme="default" size="large" block shape="round" variant="outline" disabled="{{busy}}" bind:tap="onUseSavedModel">使用现有配置继续</t-button></view>
+      <view wx:if="{{testFailed && !replay}}" class="secondary-action"><t-button theme="default" size="large" block shape="round" variant="outline" disabled="{{busy}}" bind:tap="onSkip">配置已保存，先进入</t-button></view>
+      <view class="next-note">还没有宠物的话，接下来为小伙伴建个档案</view>
     </view>
   </block>
 

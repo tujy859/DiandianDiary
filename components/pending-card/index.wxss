@@ -3,7 +3,7 @@
   margin: 16rpx 0;
   background: #ffffff;
   border-radius: 28rpx;
-  box-shadow: 0 8rpx 28rpx rgba(47, 107, 79, 0.05), 0 2rpx 6rpx rgba(0, 0, 0, 0.02);
+  box-shadow: 0 2rpx 8rpx rgba(47, 107, 79, 0.03);
   border: 1rpx solid rgba(240, 236, 228, 0.85);
   position: relative;
   overflow: hidden;
@@ -92,6 +92,9 @@
 }
 
 .meta-label {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
   font-size: 23rpx;
   color: #84938b;
   width: 120rpx;
@@ -103,6 +106,7 @@
   color: #283730;
   font-weight: 500;
 }
+.meta-icon { width:26rpx; height:26rpx; flex-shrink:0; }
 
 .meta-value.is-date {
   color: #256145;

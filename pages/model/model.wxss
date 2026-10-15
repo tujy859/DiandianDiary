@@ -1,21 +1,17 @@
 /* 模型配置页：字号/字色/圆角/线色全部走 app.wxss 设计令牌 */
 .page {
   min-height: 100vh;
-  padding: 24rpx;
+  padding: 32rpx var(--jd-page-gutter) calc(48rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
-/* 提示横幅：暖杏警示面，圆角与字号对齐令牌 */
-.banner {
-  display: flex;
-  gap: 12rpx;
-  background: #fdf0dd;
-  border-radius: var(--jd-r-sm);
-  padding: 20rpx 24rpx;
-  font-size: var(--jd-fs-sm);
-  color: #8a6d3b;
-  line-height: 1.6;
-}
+.model-head { display:flex; align-items:center; gap:24rpx; padding:8rpx 0 16rpx; }
+.model-brand { width:104rpx; height:104rpx; border-radius:30rpx; flex-shrink:0; }
+.model-title { font-size:var(--jd-fs-xl); font-weight:600; color:var(--jd-text-1); }
+.model-sub { font-size:var(--jd-fs-sm); color:var(--jd-text-2); margin-top:4rpx; }
+.privacy-note, .connection-note { font-size:var(--jd-fs-xs); color:var(--jd-text-2); line-height:1.7; margin:24rpx 8rpx 0; }
+.connection-note { text-align:center; margin-top:32rpx; }
+.clear-action { margin-top:24rpx; text-align:center; }
 
 .label {
   font-size: var(--jd-fs-sm);
@@ -69,10 +65,10 @@
   color: var(--jd-brand-deep);
 }
 
-.page .t-button {
+.primary-action {
   margin-top: 32rpx;
 }
 
-.page .t-button + .t-button {
+.secondary-action {
   margin-top: 24rpx;
 }
