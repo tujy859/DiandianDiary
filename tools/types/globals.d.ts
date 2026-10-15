@@ -4,6 +4,7 @@ declare function Page(options: any): any;
 declare function Component(options: any): any;
 declare function App(options: any): any;
 declare function getApp(): any;
+declare function getCurrentPages(): any[];
 
 declare namespace WechatMiniprogram {
   interface CustomEvent { detail: any; currentTarget: { dataset: any }; }

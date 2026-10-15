@@ -6,12 +6,12 @@ import { forgetFamilyState, logoutLocal } from '../../utils/family-state';
 
 Page({
   data: {
-    connected: false, loggedIn: false, clearModelOnLogout: false, busy: false, error: '', userId: '', nickname: '', familyId: '',
+    connected: false, loggedIn: false, clearModelOnLogout: false, needsContinue: false, busy: false, error: '', userId: '', nickname: '', familyId: '',
     families: [] as Family[], members: [] as Array<{ userId: string; role: string; label: string; nickname?: string }>,
     owner: false, selectedFamilyName: '', familyName: '', inviteInput: '', inviteToken: '', inviteExpiry: '',
   },
   async onShow() {
-    this.setData({ connected: false, loggedIn: !!getCloudSession(), families: [], members: [], userId: '', familyId: '', nickname: '', inviteToken: '', owner: false, selectedFamilyName: '' });
+    this.setData({ connected: false, loggedIn: !!getCloudSession(), needsContinue: getCurrentPages().length <= 1, families: [], members: [], userId: '', familyId: '', nickname: '', inviteToken: '', owner: false, selectedFamilyName: '' });
     if (getCloudSession()) await this.run(() => this.load());
   },
   async run(work: () => Promise<void>) {

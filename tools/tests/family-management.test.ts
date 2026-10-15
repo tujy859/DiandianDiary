@@ -41,6 +41,31 @@ function page() {
   return instance;
 }
 
+test('普通进入家庭页不显示继续入口；无返回栈时保留可继续使用的路径', async () => {
+  const stack = jest.spyOn(global, 'getCurrentPages');
+  stack.mockReturnValue([{ route: 'pages/mine/mine' }, { route: 'pages/family/family' }]);
+  const normal = page(); await normal.onShow();
+  expect(normal.data.needsContinue).toBe(false);
+  stack.mockReturnValue([{ route: 'pages/family/family' }]);
+  const standalone = page(); await standalone.onShow();
+  expect(standalone.data.needsContinue).toBe(true);
+  standalone.onContinue();
+  expect(wx.reLaunch).toHaveBeenCalledWith({ url: '/pages/mine/mine' });
+});
+
+test('无家庭时不跳出管理页，创建家庭后可从单页栈继续使用', async () => {
+  jest.spyOn(global, 'getCurrentPages').mockReturnValue([{ route: 'pages/family/family' }]);
+  const family = page(); await family.onShow(); await family.onDissolve();
+  const standalone = page(); await standalone.onShow();
+  expect(standalone.data).toMatchObject({ needsContinue: true, familyId: '' });
+  (wx.reLaunch as jest.Mock).mockClear();
+  standalone.onContinue();
+  expect(wx.reLaunch).not.toHaveBeenCalled();
+  standalone.data.familyName = '重新开始'; await standalone.onCreate();
+  standalone.onContinue();
+  expect(wx.reLaunch).toHaveBeenCalledWith({ url: '/pages/mine/mine' });
+});
+
 test('解散测试家庭后清理其缓存和测试标记，恢复原家庭与模型配置', async () => {
   const original = store.getCloudSession()!;
   const originalPet = await repo.savePet({ name: '原家庭宠物', species: '猫' });

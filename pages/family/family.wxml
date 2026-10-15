@@ -70,7 +70,7 @@
 
       <view class="card-actions">
         <t-button wx:if="{{owner}}" block theme="primary" variant="outline" shape="round" disabled="{{busy}}" bind:tap="onInvite">生成一次性邀请码</t-button>
-        <t-button theme="primary" block shape="round" disabled="{{busy}}" bind:tap="onContinue">回到我的</t-button>
+        <t-button wx:if="{{needsContinue}}" theme="primary" block shape="round" disabled="{{busy}}" bind:tap="onContinue">继续使用</t-button>
       </view>
       <view class="family-management">
         <view class="field-label">管理当前家庭 · {{selectedFamilyName}}</view>

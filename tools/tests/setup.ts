@@ -61,5 +61,6 @@ const wxStub: any = {
 (global as any).Component = (options: any) => options;
 (global as any).App = (options: any) => options;
 (global as any).getApp = () => ({ globalData: {} });
+(global as any).getCurrentPages = () => [];
 
 export {};
