@@ -175,11 +175,11 @@ Page({
   goFamily() { wx.navigateTo({ url: '/pages/family/family' }); },
 
   goSelftest() {
-    if (isDeveloperMode()) wx.navigateTo({ url: '/pages/selftest/selftest' });
+    if (isDeveloperMode()) wx.navigateTo({ url: '/pages/selftest/selftest?section=start' });
   },
 
   goNewUserTest() {
-    if (isDeveloperMode()) wx.navigateTo({ url: '/pages/new-user-test/new-user-test' });
+    if (isDeveloperMode()) wx.navigateTo({ url: '/pages/selftest/selftest?section=start' });
   },
 
   onDisableDeveloperMode() {

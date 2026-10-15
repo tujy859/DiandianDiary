@@ -3,8 +3,11 @@ import { runCoreSelfChecks, SELF_CHECK_REFERENCE_DATE, SelfCheckResult } from '.
 import { isTraceEnabled, setTraceEnabled, getDebugTraces, clearDebugTraces, debugReport } from '../../utils/debug-trace';
 import { FlowRun, getFlowRun, prepareFlowRun, cleanupFlowRun, recoverFlowRun, openFlowRun } from '../../utils/flow-test';
 import { diaryFlowSteps } from '../../utils/flow-scenarios';
-import { getCloudSession } from '../../utils/store';
-import { returnToOriginalFamily } from '../../utils/new-user-test';
+import { getCloudSession, getCloudSessionEpoch } from '../../utils/store';
+import { enterEmptyTestFamily, getNewUserTestState, isTestFamily, returnToOriginalFamily } from '../../utils/new-user-test';
+import { callCloud } from '../../utils/cloud';
+import { Family } from '../../utils/repository';
+import { reconcileFamilyState } from '../../utils/family-state';
 
 Page({
   data: {
@@ -12,34 +15,80 @@ Page({
     running: false, lastRunAt: '', referenceDate: SELF_CHECK_REFERENCE_DATE,
     section: 'core', tracing: false, traceRows: [] as Array<{ id: string; status: string; durationMs: number; detail: string }>,
     flow: null as FlowRun | null, flowBusy: false, flowError: '', flowSteps: diaryFlowSteps(SELF_CHECK_REFERENCE_DATE),
+    firstUseBusy: false, firstUseError: '', currentFamilyName: '', originalFamilyName: '', activeTest: false, canReturn: false,
   },
 
   onLoad(options: { section?: string }) {
-    if (['flow', 'logs'].includes(options?.section || '')) this.setData({ section: options.section });
+    if (['start', 'core', 'flow', 'logs'].includes(options?.section || '')) this.setData({ section: options.section });
   },
 
   onShow() {
+    this._viewEpoch = (this._viewEpoch || 0) + 1;
     this._flowPageActive = true;
     if (!isDeveloperMode()) {
       this.setData({ allowed: false, results: [], passed: 0, failed: 0, running: false, lastRunAt: '' });
       return;
     }
     this.setData({ allowed: true });
-    if (!this.data.lastRunAt) this.run();
+    if (this.data.section === 'start') return this.refreshFirstUse();
+    if (this.data.section === 'core' && !this.data.lastRunAt) this.run();
     if (this.data.section === 'logs') this.refreshLogs();
     if (this.data.section === 'flow') this.refreshFlow();
   },
-  onHide() { this._flowPageActive = false; },
-  onUnload() { this._flowPageActive = false; },
+  onHide() { this._flowPageActive = false; this._viewEpoch++; this.setData({ firstUseBusy: false }); },
+  onUnload() { this._flowPageActive = false; this._viewEpoch++; },
 
   onSection(e: WechatMiniprogram.TouchEvent) {
-    if (!isDeveloperMode()) return;
+    if (!isDeveloperMode() || this.data.firstUseBusy || this.data.flowBusy) return;
     const section = e.currentTarget.dataset.section;
-    if (!['core', 'flow', 'logs'].includes(section)) return;
+    if (!['start', 'core', 'flow', 'logs'].includes(section)) return;
     this.setData({ section });
+    if (section === 'start') return this.refreshFirstUse();
+    if (section === 'core' && !this.data.lastRunAt) this.run();
     if (section === 'logs') this.refreshLogs();
     if (section === 'flow') this.refreshFlow();
   },
+  updateFirstUseState() {
+    const state = getNewUserTestState();
+    this.setData({ activeTest: isTestFamily(), originalFamilyName: state?.originalFamilyName || '',
+      canReturn: !!state?.originalFamilyId && getCloudSession()?.familyId !== state.originalFamilyId });
+  },
+  async firstUseAction(work: (active: () => boolean) => Promise<void>) {
+    if (!isDeveloperMode() || this.data.firstUseBusy) return;
+    this.setData({ firstUseBusy: true, firstUseError: '' });
+    const epoch = this._viewEpoch;
+    const active = () => this._flowPageActive && this._viewEpoch === epoch && isDeveloperMode();
+    try { await work(active); }
+    catch (error: any) { if (active()) this.setData({ firstUseError: error.message || '操作失败，请重试' }); }
+    finally { if (active()) { this.updateFirstUseState(); this.setData({ firstUseBusy: false }); } }
+  },
+  refreshFirstUse() {
+    this.updateFirstUseState();
+    return this.firstUseAction(async active => {
+      const session = getCloudSession(), epoch = getCloudSessionEpoch();
+      if (!session) throw new Error('请先连接云端');
+      const families = await callCloud<Family[]>('family.list');
+      if (!active() || epoch !== getCloudSessionEpoch()) return;
+      reconcileFamilyState(session.userId, families.map(family => family.id));
+      this.setData({ currentFamilyName: families.find(family => family.id === session.familyId)?.name || '当前家庭不可用' });
+    });
+  },
+  onReplay() {
+    if (isDeveloperMode() && !this.data.firstUseBusy) wx.navigateTo({ url: '/pages/onboard/onboard?replay=1' });
+  },
+  onEnterEmpty() {
+    return this.firstUseAction(async active => {
+      await enterEmptyTestFamily(active);
+      if (active()) wx.reLaunch({ url: '/pages/chat/chat' });
+    });
+  },
+  onReturn() {
+    return this.firstUseAction(async active => {
+      await returnToOriginalFamily();
+      if (active()) wx.reLaunch({ url: '/pages/mine/mine' });
+    });
+  },
+  goFamily() { wx.navigateTo({ url: '/pages/family/family' }); },
   refreshFlow() { if (isDeveloperMode()) this.setData({ flow: recoverFlowRun() }); },
   async onPrepareFlow() {
     if (!isDeveloperMode() || this.data.flowBusy) return;

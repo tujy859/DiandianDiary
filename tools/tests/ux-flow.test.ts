@@ -6,6 +6,7 @@ import { openAddPet, consumeAddPetRequest } from '../../utils/pet-navigation';
 import { enableDeveloperMode } from '../../utils/developer';
 import { isDeveloperMode } from '../../utils/developer';
 import Dialog from 'tdesign-miniprogram/dialog/index';
+import { callCloud } from '../../utils/cloud';
 
 jest.mock('tdesign-miniprogram/dialog/index', () => ({ __esModule: true, default: { alert: jest.fn(), confirm: jest.fn() } }), { virtual: true });
 jest.mock('tdesign-miniprogram/toast/index', () => ({ __esModule: true, default: jest.fn() }), { virtual: true });
@@ -13,6 +14,7 @@ jest.mock('tdesign-miniprogram/action-sheet/index', () => ({ __esModule: true, d
 jest.mock('../../utils/repository', () => ({ refreshCloudIfStale: jest.fn(), connectCloud: jest.fn() }));
 jest.mock('../../utils/llm', () => ({ ...jest.requireActual('../../utils/llm'), testConnection: jest.fn() }));
 jest.mock('../../utils/layout', () => ({ resetViewport: jest.fn(), getLayout: () => ({ tabbarHeight: 56, viewportHeight: 667 }) }));
+jest.mock('../../utils/cloud', () => ({ ...jest.requireActual('../../utils/cloud'), callCloud: jest.fn() }));
 
 const definitions: Record<string, any> = {};
 const refresh = refreshCloudIfStale as jest.Mock;
@@ -21,7 +23,7 @@ const pet: store.Pet = { id: 'demo-pet', name: '点点', species: '猫', created
 const record: store.DiaryRecord = { id: 'demo-record', petId: pet.id, date: '2026-10-15', text: '散步', tags: [], photos: [], createdAt: 1, updatedAt: 1 };
 
 beforeAll(() => {
-  for (const name of ['diary', 'album', 'mine', 'onboard', 'model', 'new-user-test']) {
+  for (const name of ['diary', 'album', 'mine', 'onboard', 'model', 'new-user-test', 'selftest']) {
     (global as any).Page = (value: any) => { definitions[name] = value; };
     require(`../../pages/${name}/${name}.ts`);
   }
@@ -37,12 +39,13 @@ beforeEach(() => {
   consumeAddPetRequest();
   refresh.mockReset().mockResolvedValue(true);
   (testConnection as jest.Mock).mockReset().mockResolvedValue('收到');
+  (callCloud as jest.Mock).mockReset().mockResolvedValue([{ id: 'demo-family', name: '演示家庭' }]);
   jest.spyOn(wx, 'switchTab').mockImplementation(() => {});
 });
 afterEach(() => jest.restoreAllMocks());
 
 function page(name: string) {
-  const instance = { ...definitions[name], data: JSON.parse(JSON.stringify(definitions[name].data)) };
+  const instance = { ...definitions[name], data: JSON.parse(JSON.stringify(definitions[name].data || {})) };
   instance.setData = (patch: any) => {
     for (const [key, value] of Object.entries(patch)) {
       const [parent, child] = key.split('.');
@@ -281,7 +284,7 @@ test('演练连接失败可使用现有配置继续，普通引导不被测试�
 });
 
 test('连点关于开启开发者工具，切页后状态仍在；未开启时直接进入测试页不可操作', async () => {
-  const tools = page('new-user-test'); await tools.onShow();
+  const tools = page('selftest'); await tools.onShow();
   expect(tools.data.allowed).toBe(false);
   const mine = page('mine');
   for (let i = 0; i < 5; i++) mine.onAbout();
@@ -330,13 +333,40 @@ test('取消关闭时保留开关和测试家庭；关闭后测试提示条仍�
 
 test('测试页操作等待中防止重复执行，失败后恢复可重试状态', async () => {
   enableDeveloperMode();
-  const tools = page('new-user-test');
+  const tools = page('selftest');
+  tools.onShow();
   let fail!: (reason: Error) => void;
   const pending = new Promise<void>((_, reject) => { fail = reject; });
-  const first = tools.run(() => pending);
+  const first = tools.firstUseAction(() => pending);
   const extra = jest.fn();
-  await tools.run(extra);
+  await tools.firstUseAction(extra);
   expect(extra).not.toHaveBeenCalled();
   fail(new Error('网络中断')); await first;
-  expect(tools.data).toMatchObject({ busy: false, error: '网络中断' });
+  expect(tools.data).toMatchObject({ firstUseBusy: false, firstUseError: '网络中断' });
+});
+
+test('统一开发测试按阶段进入，只有首次使用分区读取家庭，旧入口重定向', async () => {
+  enableDeveloperMode();
+  const tools = page('selftest'); tools.onLoad({ section: 'start' }); await tools.onShow();
+  expect(tools.data).toMatchObject({ allowed: true, section: 'start', currentFamilyName: '演示家庭', results: [] });
+  expect(callCloud).toHaveBeenCalledTimes(1);
+  tools.onSection({ currentTarget: { dataset: { section: 'core' } } });
+  expect(tools.data.passed).toBe(12);
+  expect(callCloud).toHaveBeenCalledTimes(1);
+  const navigate = jest.spyOn(wx, 'navigateTo'); tools.onReplay();
+  expect(navigate).toHaveBeenLastCalledWith({ url: '/pages/onboard/onboard?replay=1' });
+  const redirect = jest.spyOn(wx, 'redirectTo'); page('new-user-test').onLoad();
+  expect(redirect).toHaveBeenLastCalledWith({ url: '/pages/selftest/selftest?section=start' });
+  expect(store.getCloudSession()?.familyId).toBe('demo-family');
+});
+
+test('首次使用家庭读取迟到时不覆盖重新进入的页面', async () => {
+  enableDeveloperMode();
+  let release!: (value: any) => void;
+  (callCloud as jest.Mock).mockReturnValueOnce(new Promise(resolve => { release = resolve; }));
+  const tools = page('selftest'); tools.onLoad({ section: 'start' });
+  const old = tools.onShow(); tools.onHide();
+  await tools.onShow(); expect(tools.data.currentFamilyName).toBe('演示家庭');
+  release([{ id: 'demo-family', name: '旧请求' }]); await old;
+  expect(tools.data.currentFamilyName).toBe('演示家庭');
 });

@@ -1,5 +1,5 @@
 {
-  "navigationBarTitleText": "开发自检",
+  "navigationBarTitleText": "开发测试",
   "usingComponents": {
     "t-button": "tdesign-miniprogram/button/button",
     "t-icon": "tdesign-miniprogram/icon/icon"

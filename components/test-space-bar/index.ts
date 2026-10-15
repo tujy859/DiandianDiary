@@ -7,7 +7,7 @@ Component({
   pageLifetimes: { show() { this.setData({ active: isTestFamily() }); } },
   methods: {
     onManage() {
-      wx.navigateTo({ url: isDeveloperMode() ? '/pages/new-user-test/new-user-test' : '/pages/family/family' });
+      wx.navigateTo({ url: isDeveloperMode() ? '/pages/selftest/selftest?section=start' : '/pages/family/family' });
     },
   },
 });
