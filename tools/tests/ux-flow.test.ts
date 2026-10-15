@@ -29,6 +29,8 @@ beforeAll(() => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  (wx as any).getAppBaseInfo = () => ({ SDKVersion: '3.15.1' });
+  (wx as any).cloud = { init: jest.fn(), extend: { AI: { createModel: jest.fn() } } };
   (wx as any).clearStorageSync();
   store.setCloudSession({ userId: 'demo-user', familyId: 'demo-family' });
   store.saveModelConfig(config);
@@ -50,6 +52,60 @@ function page(name: string) {
   };
   return instance;
 }
+
+const cloudConfig = { source: 'cloud' as const, provider: '微信云开发 AI', baseUrl: '', apiKey: '', model: 'hy3' };
+const chooseCloud = { currentTarget: { dataset: { source: 'cloud' } } };
+
+test.each(['model', 'onboard'])('%s 可选云开发，切换不保存且不混用自定义凭证', name => {
+  enableDeveloperMode();
+  const instance = page(name); instance.onLoad(name === 'onboard' ? { replay: '1' } : {});
+  instance.onSelectSource(chooseCloud);
+  expect(instance.data.form).toEqual(cloudConfig);
+  expect(instance.data.modelHelp).toContain('聊天文字');
+  expect(store.getModelConfig()).toEqual(config);
+  instance.onSelectSource({ currentTarget: { dataset: { source: 'custom' } } });
+  expect(instance.data.form.apiKey).toBe(''); expect(instance.data.form.model).not.toBe('hy3');
+  expect(store.getModelConfig()).toEqual(config);
+});
+
+test('设置页测试云开发不自动保存，显式保存后无密钥，重新进入保留来源', async () => {
+  const model = page('model'); model.onLoad(); model.onSelectSource(chooseCloud);
+  await model.onTest();
+  expect(testConnection).toHaveBeenCalledWith(cloudConfig);
+  expect(store.getModelConfig()).toEqual(config);
+  model.onSave(); expect(store.getModelConfig()).toEqual(cloudConfig);
+  const reopened = page('model'); reopened.onLoad();
+  expect(reopened.data.source).toBe('cloud'); expect(reopened.data.form).toEqual(cloudConfig);
+});
+
+test('初次引导可直接保存并测试云开发，已有云开发配置可进入应用', async () => {
+  store.clearModelConfig();
+  const onboard = page('onboard'); onboard.onLoad(); onboard.onSelectSource(chooseCloud);
+  await onboard.onSaveModel();
+  expect(testConnection).toHaveBeenCalledWith(cloudConfig);
+  expect(store.getModelConfig()).toEqual(cloudConfig);
+  expect(wx.switchTab).toHaveBeenCalled();
+  const reopened = page('onboard'); await reopened.onLoad();
+  expect(reopened.data.source).toBe('cloud');
+});
+
+test.each(['model', 'onboard'])('%s 不将缺失 AI 能力的配置保存成可用', async name => {
+  enableDeveloperMode();
+  const instance = page(name); instance.onLoad({ replay: '1' }); instance.onSelectSource(chooseCloud);
+  (wx as any).cloud.extend = {};
+  if (name === 'model') instance.onSave(); else await instance.onSaveModel();
+  expect(store.getModelConfig()).toEqual(config);
+  expect(testConnection).not.toHaveBeenCalled();
+});
+
+test('引导演练选择云开发仍不覆盖已保存 API，忙碌时不能切换来源', async () => {
+  enableDeveloperMode();
+  const onboard = page('onboard'); onboard.onLoad({ replay: '1' });
+  onboard.onSelectSource(chooseCloud); await onboard.onSaveModel();
+  expect(store.getModelConfig()).toEqual(config);
+  const model = page('model'); model.onLoad(); model.data.testing = true;
+  model.onSelectSource(chooseCloud); expect(model.data.source).toBe('custom');
+});
 
 test('跨年日记详情显示真实年份、星期与天数，不会显示成当年的 14 天前', () => {
   jest.useFakeTimers({ now: new Date('2026-10-15T12:00:00+08:00') });

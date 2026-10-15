@@ -1,0 +1,66 @@
+/* 来源选择：等宽双卡片，选中态品牌绿描边 */
+.source-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.source-card {
+  flex: 1;
+  min-width: 0;
+  padding: 24rpx 20rpx;
+  border-radius: var(--jd-r-md);
+  background: #ffffff;
+  border: 1rpx solid var(--jd-line);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.source-card:active {
+  transform: scale(0.98);
+}
+
+.source-card.is-active {
+  border-color: var(--jd-brand);
+  background: var(--jd-tint);
+}
+
+.source-name {
+  font-size: var(--jd-fs-sm);
+  font-weight: 600;
+  color: var(--jd-text-1);
+}
+
+.source-desc {
+  font-size: var(--jd-fs-xs);
+  color: var(--jd-text-2);
+  margin-top: 6rpx;
+  line-height: 1.5;
+}
+
+.cloud-card {
+  padding: 8rpx 24rpx 16rpx;
+}
+
+.cloud-row {
+  display: flex;
+  align-items: baseline;
+  padding: 14rpx 0;
+  border-bottom: 1rpx solid var(--jd-line);
+}
+
+.cloud-row:last-child {
+  border-bottom: none;
+}
+
+.cloud-key {
+  width: 140rpx;
+  flex-shrink: 0;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-text-2);
+}
+
+.cloud-val {
+  flex: 1;
+  font-size: var(--jd-fs-sm);
+  color: var(--jd-text-1);
+  font-weight: 600;
+}

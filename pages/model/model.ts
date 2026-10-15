@@ -2,12 +2,18 @@ import Toast from 'tdesign-miniprogram/toast/index';
 import Dialog from 'tdesign-miniprogram/dialog/index';
 import { getModelConfig, saveModelConfig, clearModelConfig } from '../../utils/store';
 import { testConnection, isModelReady } from '../../utils/llm';
-import { MODEL_PRESETS, MODEL_HELP, modelPreset, modelForm, normalizeModelForm } from '../../utils/model-presets';
+import { MODEL_PRESETS, MODEL_HELP, CLOUD_HELP, CLOUD_MODEL, modelPreset, modelForm, normalizeModelForm } from '../../utils/model-presets';
+import { isCloudAiSupported, assertCloudAiAvailable, CLOUD_AI_MIN_SDK } from '../../utils/cloud-ai';
 
 Page({
   data: {
     providers: Object.keys(MODEL_PRESETS),
     modelHelp: MODEL_HELP,
+    cloudHelp: CLOUD_HELP,
+    cloudModel: CLOUD_MODEL,
+    minSdk: CLOUD_AI_MIN_SDK,
+    cloudSupported: true,
+    source: 'custom' as 'custom' | 'cloud',
     recommendedModel: MODEL_PRESETS.DeepSeek.model,
     connectionNote: '保存配置后生效，可以单独测试连接',
     form: { provider: 'DeepSeek', baseUrl: '', apiKey: '', model: '' },
@@ -19,7 +25,25 @@ Page({
     const form = modelForm(cfg);
     this.setData({
       form,
+      source: cfg.source === 'cloud' ? 'cloud' : 'custom',
+      modelHelp: cfg.source === 'cloud' ? CLOUD_HELP : MODEL_HELP,
+      cloudSupported: isCloudAiSupported(),
       recommendedModel: modelPreset(form.provider).model,
+    });
+  },
+
+  /** 切换来源时不保留另一来源的凭证与模型名，两套模型标识不能混用 */
+  onSelectSource(e: WechatMiniprogram.TouchEvent) {
+    if (this.data.testing) return;
+    const source = e.currentTarget.dataset.source === 'cloud' ? 'cloud' : 'custom';
+    if (source === this.data.source) return;
+    const form = modelForm({ provider: '', baseUrl: '', apiKey: '', model: '', source });
+    this.setData({
+      source,
+      form,
+      modelHelp: source === 'cloud' ? CLOUD_HELP : MODEL_HELP,
+      recommendedModel: source === 'cloud' ? '' : modelPreset(form.provider).model,
+      connectionNote: '来源已切换，保存后生效',
     });
   },
 
@@ -62,14 +86,23 @@ Page({
 
   onSave() {
     if (this.data.testing) return;
-    const form = normalizeModelForm(this.data.form);
+    const form = normalizeModelForm({ ...this.data.form, source: this.data.source });
     if (!isModelReady(form)) {
-      Toast({ context: this, selector: '#t-toast', message: '请填好 Base URL、API Key 和模型', theme: 'warning' });
+      Toast({ context: this, selector: '#t-toast', message: this.unreadyHint(), theme: 'warning' });
+      return;
+    }
+    try { if (form.source === 'cloud') assertCloudAiAvailable(); } catch (err: any) {
+      Toast({ context: this, selector: '#t-toast', message: err.message, theme: 'warning' });
       return;
     }
     saveModelConfig(form);
     this.setData({ form, connectionNote: '配置已保存；测试连接可确认是否可用' });
     Toast({ context: this, selector: '#t-toast', message: '配置已保存', theme: 'success' });
+  },
+
+  unreadyHint(): string {
+    if (this.data.source === 'cloud') return '云开发 AI 当前不可用，请升级微信或改用自定义 API';
+    return '请填好 Base URL、API Key 和模型';
   },
 
   /** 单独清除模型配置：API Key 属于敏感凭证，给一个明确的删除入口 */
@@ -79,11 +112,15 @@ Page({
       context: this,
       selector: '#t-dialog',
       title: '清除模型配置？',
-      content: 'Base URL、API Key 和模型名都会被删除，之后需要重新配置才能继续聊天。',
+      content: this.data.source === 'cloud'
+        ? '云开发 AI 配置会被删除，之后需要重新选择来源才能继续聊天。'
+        : 'Base URL、API Key 和模型名都会被删除，之后需要重新配置才能继续聊天。',
       confirmBtn: { content: '清除', theme: 'danger' },
     }).then(() => {
       clearModelConfig();
       this.setData({
+        source: 'custom',
+        modelHelp: MODEL_HELP,
         form: { provider: 'DeepSeek', baseUrl: MODEL_PRESETS.DeepSeek.baseUrl, apiKey: '', model: MODEL_PRESETS.DeepSeek.model },
         recommendedModel: MODEL_PRESETS.DeepSeek.model,
         connectionNote: '配置已清除，请重新填写后保存',
@@ -94,9 +131,9 @@ Page({
 
   async onTest() {
     if (this.data.testing) return;
-    const form = normalizeModelForm(this.data.form);
+    const form = normalizeModelForm({ ...this.data.form, source: this.data.source });
     if (!isModelReady(form)) {
-      Toast({ context: this, selector: '#t-toast', message: '请先填好 Base URL、API Key 和模型', theme: 'warning' });
+      Toast({ context: this, selector: '#t-toast', message: this.unreadyHint(), theme: 'warning' });
       return;
     }
     this.setData({ testing: true });
@@ -119,7 +156,9 @@ Page({
         context: this,
         selector: '#t-dialog',
         title: '连接失败',
-        content: (err && err.message) || '未知错误，请检查 Base URL 和 API Key',
+        content: (err && err.message) || (this.data.source === 'cloud'
+          ? '请检查网络连接后重试'
+          : '未知错误，请检查 Base URL 和 API Key'),
         confirmBtn: '知道了',
       });
     } finally {

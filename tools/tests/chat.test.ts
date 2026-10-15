@@ -8,6 +8,7 @@ import * as sessions from '../../utils/chat-store';
 import { SESSION_GAP_MS, buildHistory } from '../../utils/context';
 import { enableDeveloperMode } from '../../utils/developer';
 import { setTraceEnabled, getDebugTraces } from '../../utils/debug-trace';
+import { CloudError } from '../../utils/cloud';
 
 jest.mock('tdesign-miniprogram/action-sheet/index', () => ({ __esModule: true, default: { show: jest.fn() } }), { virtual: true });
 jest.mock('tdesign-miniprogram/toast/index', () => ({ __esModule: true, default: jest.fn() }), { virtual: true });
@@ -34,6 +35,23 @@ let b: store.Pet;
 const result = (reply: string) => ({ reply, drafts: [], refs: [], toolsUsed: [] });
 const deferred = () => { let resolve!: (value: any) => void; let reject!: (value: any) => void;
   return { promise: new Promise<any>((ok, fail) => { resolve = ok; reject = fail; }), resolve: (value: any) => resolve(value), reject: (value: any) => reject(value) }; };
+
+test.each(['QUOTA', 'AUTH', 'CONCURRENT', 'TIMEOUT', 'SDK_VERSION', 'CLOUD_AI'])('云开发 %s 错误直接提供重试，不再调用 JSON 通道', async code => {
+  store.saveModelConfig({ source: 'cloud', provider: '微信云开发 AI', baseUrl: '', apiKey: '', model: 'hy3' });
+  run.mockRejectedValueOnce(new CloudError(code, '云开发连接失败'));
+  await page.replyByAI('合成输入', [], a);
+  expect(json).not.toHaveBeenCalled();
+  expect(page.data.messages[0]).toMatchObject({ retry: true, sourceText: '合成输入' });
+  expect(page.data.aiThinking).toBe(false);
+});
+
+test('云开发明确不支持工具时仍可进入严格 JSON 降级', async () => {
+  store.saveModelConfig({ source: 'cloud', provider: '微信云开发 AI', baseUrl: '', apiKey: '', model: 'hy3' });
+  run.mockRejectedValueOnce(new CloudError('UNSUPPORTED_TOOLS', '不支持工具调用'));
+  json.mockResolvedValueOnce({ reply: '你好', draft: null, query: null });
+  await page.replyByAI('你好', [], a);
+  expect(json).toHaveBeenCalledTimes(1); expect(page.data.messages[0].text).toBe('你好');
+});
 
 test('JSON 降级的纯记录只显示草稿，不展示背景查询或待确认文本', async () => {
   run.mockRejectedValueOnce(new Error('工具不可用'));

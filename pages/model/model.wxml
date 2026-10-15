@@ -4,24 +4,48 @@
     <view><view class="model-title">连接模型服务</view><view class="model-sub">用于理解聊天内容、整理日记和查询记录</view></view>
   </view>
 
-  <view class="label">服务商</view>
-  <view class="provider-row">
-    <view
-      wx:for="{{providers}}"
-      wx:key="*this"
-      class="provider-chip {{form.provider === item ? 'is-active' : ''}}"
-      data-value="{{item}}"
-      bindtap="onSelectProvider"
-    >{{item}}</view>
+  <view class="label">AI 服务来源</view>
+  <view class="source-row">
+    <view class="source-card {{source === 'cloud' ? 'is-active' : ''}}" data-source="cloud" bindtap="onSelectSource">
+      <view class="source-name">微信云开发 AI</view>
+      <view class="source-desc">无需填写地址和密钥</view>
+    </view>
+    <view class="source-card {{source === 'custom' ? 'is-active' : ''}}" data-source="custom" bindtap="onSelectSource">
+      <view class="source-name">自定义 API</view>
+      <view class="source-desc">自行填写地址和密钥</view>
+    </view>
   </view>
 
-  <view class="jd-card panel">
-    <t-input label="Base URL" placeholder="服务商提供的 API 地址" disabled="{{testing}}" value="{{form.baseUrl}}" bind:change="onBaseUrl" />
-    <t-input label="API Key" type="password" placeholder="填写服务商提供的密钥" disabled="{{testing}}" value="{{form.apiKey}}" bind:change="onApiKey" />
-    <t-input label="模型" placeholder="填写服务商提供的模型名" disabled="{{testing}}" value="{{form.model}}" bind:change="onModel" />
-  </view>
+  <block wx:if="{{source === 'cloud'}}">
+    <view class="jd-card panel cloud-card">
+      <view class="cloud-row"><view class="cloud-key">提供方</view><view class="cloud-val">微信云开发</view></view>
+      <view class="cloud-row"><view class="cloud-key">模型</view><view class="cloud-val">{{cloudModel}}</view></view>
+      <view class="cloud-row"><view class="cloud-key">额度</view><view class="cloud-val">以当前云环境为准</view></view>
+    </view>
+    <view wx:if="{{!cloudSupported}}" class="privacy-note">当前微信版本过低，云开发 AI 需要基础库 {{minSdk}} 以上。请升级微信，或改用自定义 API。</view>
+  </block>
 
-  <view wx:if="{{recommendedModel}}" class="default-link" bindtap="onUseDefault">恢复默认地址和模型（{{recommendedModel}}）</view>
+  <block wx:else>
+    <view class="label">服务商</view>
+    <view class="provider-row">
+      <view
+        wx:for="{{providers}}"
+        wx:key="*this"
+        class="provider-chip {{form.provider === item ? 'is-active' : ''}}"
+        data-value="{{item}}"
+        bindtap="onSelectProvider"
+      >{{item}}</view>
+    </view>
+
+    <view class="jd-card panel">
+      <t-input label="Base URL" placeholder="服务商提供的 API 地址" disabled="{{testing}}" value="{{form.baseUrl}}" bind:change="onBaseUrl" />
+      <t-input label="API Key" type="password" placeholder="填写服务商提供的密钥" disabled="{{testing}}" value="{{form.apiKey}}" bind:change="onApiKey" />
+      <t-input label="模型" placeholder="填写服务商提供的模型名" disabled="{{testing}}" value="{{form.model}}" bind:change="onModel" />
+    </view>
+
+    <view wx:if="{{recommendedModel}}" class="default-link" bindtap="onUseDefault">恢复默认地址和模型（{{recommendedModel}}）</view>
+  </block>
+
   <view class="privacy-note">{{modelHelp}}</view>
 
   <view class="connection-note">{{connectionNote}}</view>

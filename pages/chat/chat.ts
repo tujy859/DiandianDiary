@@ -18,6 +18,7 @@ import { chatWithModel } from '../../utils/llm';
 import { runAgent, AbortedError } from '../../utils/agent';
 import { today, isValidDate } from '../../utils/date';
 import { RequestToken } from '../../utils/cancellation';
+import { CloudError } from '../../utils/cloud';
 import { isHistoryQuery, hasExplicitQuestion, queryRecords, resolveQueryOptions } from '../../utils/query';
 import { validateDraft } from '../../utils/draft';
 import {
@@ -695,6 +696,15 @@ Page({
       trace?.finish('complete', { path: 'tool', drafts: res.drafts.length, refs: res.refs.map(r => r.recordId) });
     } catch (err: any) {
       if (err instanceof AbortedError || !this.isActive(token, pet.id)) { trace?.finish('cancelled'); return; }
+      if (cfg.source === 'cloud' && err instanceof CloudError && !['UNSUPPORTED_TOOLS', 'EMPTY'].includes(err.code)) {
+        trace?.finish('failed', { path: 'tool', error: traceError(err) });
+        const notice = this.toMessage({ kind: 'text', text: `${err.message}。可检查配置后重试。` }, 'model');
+        notice.retry = true;
+        notice.sourceText = text;
+        notice.sourcePhotos = savedPhotos.slice();
+        this.appendMessages([notice]);
+        return;
+      }
       trace?.emit('fallback.json', { path: 'json', error: traceError(err) });
       try {
         const out = await chatWithModel(cfg, text, {

@@ -1,5 +1,7 @@
 /** OpenAI 兼容协议：工具调用 + 严格 JSON 降级；两种模式均可取消。 */
 import { ModelConfig } from './store';
+import { cloudAiRequest, CLOUD_AI_MODEL } from './cloud-ai';
+import { CloudError } from './cloud';
 import { isValidDate, parse, fmt } from './date';
 import { EVENT_TYPES, RecordQueryOptions } from './query';
 import { AbortToken, AbortedError, throwIfAborted } from './cancellation';
@@ -19,7 +21,9 @@ export interface LlmOutput {
 export interface LlmToolCall { id: string; name: string; arguments: Record<string, any>; }
 export interface LlmTurn { content: string; toolCalls: LlmToolCall[]; message: any; }
 export function isModelReady(cfg: ModelConfig): boolean {
-  return !!(cfg && cfg.apiKey && cfg.baseUrl && cfg.model);
+  if (!cfg) return false;
+  if (cfg.source === 'cloud') return !!(cfg.model || CLOUD_AI_MODEL);
+  return !!(cfg.apiKey && cfg.baseUrl && cfg.model);
 }
 
 function buildJsonPrompt(ctx: LlmContext): string {
@@ -72,7 +76,12 @@ export function extractJson(content: string): LlmOutput {
   return { reply: obj.reply, draft: obj.draft, query: obj.query };
 }
 
+/** 云开发 AI 与自建 API 共用同一套解析，只有传输层不同。 */
 function rawRequest(cfg: ModelConfig, payload: Record<string, any>, token?: AbortToken): Promise<any> {
+  return cfg.source === 'cloud' ? cloudAiRequest(payload, token) : httpRequest(cfg, payload, token);
+}
+
+function httpRequest(cfg: ModelConfig, payload: Record<string, any>, token?: AbortToken): Promise<any> {
   throwIfAborted(token);
   const base = cfg.baseUrl.replace(/\/+$/, '');
   const url = `${/\/v1$/.test(base) ? base : base + '/v1'}/chat/completions`;
@@ -131,9 +140,21 @@ export async function chatTurn(cfg: ModelConfig, messages: Array<Record<string, 
 }
 export async function chatWithModel(cfg: ModelConfig, userText: string, ctx: LlmContext, token?: AbortToken): Promise<LlmOutput> {
   const messages = [{ role: 'system', content: buildJsonPrompt(ctx) }, ...ctx.history, { role: 'user', content: userText }];
-  const data = await rawRequest(cfg, { model: cfg.model, messages, temperature: 0.3, response_format: { type: 'json_object' } }, token);
+  const data = await requestStructured(cfg, messages, token);
   throwIfAborted(token);
   return extractJson(String((data.choices[0].message || {}).content || ''));
+}
+
+/** 仅在云模型明确不支持 response_format 时重试，输出仍须通过严格 JSON 校验。 */
+async function requestStructured(cfg: ModelConfig, messages: Array<Record<string, any>>, token?: AbortToken): Promise<any> {
+  const withJson = { model: cfg.model, messages, temperature: 0.3, response_format: { type: 'json_object' } };
+  if (cfg.source !== 'cloud') return rawRequest(cfg, withJson, token);
+  try {
+    return await rawRequest(cfg, withJson, token);
+  } catch (error) {
+    if (!(error instanceof CloudError) || error.code !== 'UNSUPPORTED_FORMAT') throw error;
+    return rawRequest(cfg, { model: cfg.model, messages, temperature: 0.3 }, token);
+  }
 }
 /** 会话标题：让模型概括 10–20 字；超长时不在这里截断（会切出半句话），由调用方决定是否重新生成 */
 export async function summarizeTitle(cfg: ModelConfig, userTexts: string[]): Promise<string> {

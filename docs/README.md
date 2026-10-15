@@ -18,6 +18,7 @@
 | [云开发说明](cloud-backend.md) | 后端接口、家庭退出 / 解散、数据权限、部署和验收步骤 |
 | [打包与资源维护](package-size.md) | 运行时资源、原图、构建与包体预算 |
 | [查询与工具](query-and-tools.md) | 查询范围、工具调用与降级行为 |
+| [微信云开发大模型](wechat-cloud-ai-integration.md) | 分支核查、免密钥接入、来源切换及验证边界 |
 | [仓库安全](repository-security.md) | 配置、凭据与提交检查约定 |
 | [UI 实现与验证](ui-implementation/README.md) | UX 分支的实现与历史截图验证 |
 | [UI 探索](ui-exploration/README.md) | 历史设计方向及素材来源 |

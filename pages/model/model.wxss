@@ -1,3 +1,4 @@
+@import "../../styles/model-source.wxss";
 /* 模型配置页：字号/字色/圆角/线色全部走 app.wxss 设计令牌 */
 .page {
   min-height: 100vh;

@@ -258,6 +258,8 @@ export interface ModelConfig {
   baseUrl: string;
   apiKey: string;
   model: string;
+  /** custom 走自建 API；cloud 走微信云开发 AI。缺省视为 custom，兼容已有本机配置。 */
+  source?: 'custom' | 'cloud';
 }
 
 export function getModelConfig(): ModelConfig {

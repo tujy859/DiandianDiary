@@ -1,6 +1,6 @@
 /**
  * 引导守卫：登录 + 模型配置是使用前的两个必要条件。
- * 两台设备/换设备后需要重新配置 API Key（Key 只存在本机，不同步到云端）。
+ * 换设备后需重新选择模型来源；自定义 API 的 Key 只存在本机。
  */
 import { getCloudSession, getModelConfig } from './store';
 import { isModelReady } from './llm';

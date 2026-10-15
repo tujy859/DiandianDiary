@@ -4,7 +4,8 @@ import { connectCloud, refreshCloudIfStale } from '../../utils/repository';
 import { isModelReady, testConnection } from '../../utils/llm';
 import { pendingStep } from '../../utils/onboard';
 import { openAddPet } from '../../utils/pet-navigation';
-import { MODEL_PRESETS, MODEL_HELP, modelPreset, modelForm, normalizeModelForm } from '../../utils/model-presets';
+import { MODEL_PRESETS, MODEL_HELP, CLOUD_HELP, CLOUD_MODEL, modelPreset, modelForm, normalizeModelForm } from '../../utils/model-presets';
+import { isCloudAiSupported, assertCloudAiAvailable, CLOUD_AI_MIN_SDK } from '../../utils/cloud-ai';
 import { isDeveloperMode } from '../../utils/developer';
 
 Page({
@@ -17,6 +18,10 @@ Page({
     error: '',
     providers: Object.keys(MODEL_PRESETS),
     modelHelp: MODEL_HELP,
+    source: 'custom' as 'custom' | 'cloud',
+    cloudModel: CLOUD_MODEL,
+    minSdk: CLOUD_AI_MIN_SDK,
+    cloudSupported: true,
     recommendedModel: MODEL_PRESETS.DeepSeek.model,
     form: { provider: 'DeepSeek', baseUrl: '', apiKey: '', model: '' },
   },
@@ -28,7 +33,10 @@ Page({
     const replay = options.replay === '1' && isDeveloperMode() && !!getCloudSession() && hasSavedModel;
     const step = replay ? 'login' : pendingStep();
     const form = modelForm(replay ? { provider: '', baseUrl: '', apiKey: '', model: '' } : saved);
-    this.setData({ replay, hasSavedModel, step: step || 'model', form, recommendedModel: modelPreset(form.provider).model });
+    this.setData({ replay, hasSavedModel, step: step || 'model', form,
+      source: form.source, cloudSupported: isCloudAiSupported(),
+      modelHelp: form.source === 'cloud' ? CLOUD_HELP : MODEL_HELP,
+      recommendedModel: form.source === 'cloud' ? '' : modelPreset(form.provider).model });
     if (!step) {
       return this.finish();
     }
@@ -48,6 +56,16 @@ Page({
     } catch (err: any) {
       this.setData({ busy: false, error: err.message || '连接失败，请检查网络后重试' });
     }
+  },
+
+  onSelectSource(e: WechatMiniprogram.TouchEvent) {
+    if (this.data.busy) return;
+    const source = e.currentTarget.dataset.source === 'cloud' ? 'cloud' : 'custom';
+    if (source === this.data.source) return;
+    const form = modelForm({ source, provider: '', baseUrl: '', apiKey: '', model: '' });
+    this.setData({ source, form, modelHelp: source === 'cloud' ? CLOUD_HELP : MODEL_HELP,
+      recommendedModel: source === 'cloud' ? '' : modelPreset(form.provider).model,
+      error: '', testFailed: false });
   },
 
   onSelectProvider(e: WechatMiniprogram.TouchEvent) {
@@ -81,9 +99,13 @@ Page({
   /** 第二步：保存配置并验证连通，失败也不阻断（可稍后在「我的」里改） */
   async onSaveModel() {
     if (this.data.busy) return;
-    const form = normalizeModelForm(this.data.form);
+    const form = normalizeModelForm({ ...this.data.form, source: this.data.source });
     if (!isModelReady(form)) {
       Toast({ context: this, selector: '#t-toast', message: '请填好 Base URL、API Key 和模型', theme: 'warning' });
+      return;
+    }
+    try { if (form.source === 'cloud') assertCloudAiAvailable(); } catch (err: any) {
+      this.setData({ error: err.message, testFailed: false });
       return;
     }
     if (!this.data.replay) saveModelConfig(form);
@@ -98,7 +120,7 @@ Page({
       this.setData({
         busy: false,
         testFailed: true,
-        error: (err && err.message) || '连接失败，请检查 Base URL 和 API Key',
+        error: (err && err.message) || (form.source === 'cloud' ? '云开发 AI 连接失败，请检查网络与云环境' : '连接失败，请检查 Base URL 和 API Key'),
       });
     }
   },
