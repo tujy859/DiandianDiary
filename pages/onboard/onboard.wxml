@@ -2,7 +2,7 @@
   <offline-bar />
   <test-space-bar />
   <view wx:if="{{replay}}" class="replay-note">
-    <view>新手引导演练 · 保留原登录和模型配置</view>
+    <view>引导演练 · 保留原登录和模型配置</view>
     <view class="replay-link" bindtap="onBackToTools">返回测试工具</view>
   </view>
   <view class="steps">

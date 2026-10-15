@@ -64,7 +64,7 @@ Page({
   },
   onCleanupFlow() {
     if (!isDeveloperMode() || this.data.flowBusy) return;
-    wx.showModal({ title: '清理本轮测试？', content: '仅清理本轮已知日记和专用测试宠物；其他家庭与记录保留。', success: async (result: any) => {
+    wx.showModal({ title: '清理本轮测试？', content: '清理本轮已知日记和专用测试宠物，保留测试家庭供下次复用。如需解散，请到「账号与家庭空间」操作。', success: async (result: any) => {
       if (!result.confirm || !this._flowPageActive || !isDeveloperMode() || this.data.flowBusy) return;
       this.setData({ flowBusy: true, flowError: '' });
       try { await cleanupFlowRun(() => this._flowPageActive); }

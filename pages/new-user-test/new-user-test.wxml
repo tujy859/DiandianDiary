@@ -1,10 +1,10 @@
 <view class="page">
-  <view class="hero-title">新手流程测试</view>
+  <view class="hero-title">测试家庭</view>
   <view wx:if="{{!allowed}}" class="hero-sub">请先在「我的」连续点击 5 次「关于记一下喵」，开启开发者模式。</view>
   <block wx:else>
     <view class="hero-sub">重看第一次见面，或在独立家庭里从零开始记录。</view>
     <view class="space-note {{activeTest ? 'is-test' : ''}}">
-      <view class="space-label">{{activeTest ? '当前处于新手测试家庭' : '当前家庭'}}</view>
+      <view class="space-label">{{activeTest ? '当前处于测试家庭' : '当前家庭'}}</view>
       <view>{{currentFamilyName || '正在读取…'}}</view>
       <view wx:if="{{canReturn}}" class="space-sub">可返回：{{originalFamilyName}}</view>
     </view>

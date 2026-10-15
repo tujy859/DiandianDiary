@@ -1,4 +1,4 @@
 <view wx:if="{{active}}" class="test-space-bar" bindtap="onManage" aria-role="button">
-  <text class="test-space-text">新手测试家庭 · 记录会保存到此家庭</text>
+  <text class="test-space-text">测试家庭 · 记录会保存到此家庭</text>
   <text class="test-space-link">管理 / 返回</text>
 </view>

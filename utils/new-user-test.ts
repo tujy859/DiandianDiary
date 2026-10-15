@@ -71,7 +71,7 @@ export async function enterEmptyTestFamily(alive: () => boolean = () => true): P
   state = {
     ...state,
     pendingClientId: state.pendingClientId || `new-user-${uid()}`,
-    pendingFamilyName: state.pendingFamilyName || `新手测试 ${now.getMonth() + 1}/${now.getDate()} ${time}`,
+    pendingFamilyName: state.pendingFamilyName || `测试家庭 ${now.getMonth() + 1}/${now.getDate()} ${time}`,
   };
   wx.setStorageSync(stateKey(session.userId), state);
   let family: Family;

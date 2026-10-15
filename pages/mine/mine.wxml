@@ -65,7 +65,7 @@
     <view class="section-title">开发者工具</view>
     <view class="jd-card panel">
       <view class="cell" bindtap="goNewUserTest">
-        <view class="cell-left"><t-icon name="refresh" size="36rpx" color="#32694F" /><text class="cell-text">新手流程测试</text></view>
+        <view class="cell-left"><t-icon name="refresh" size="36rpx" color="#32694F" /><text class="cell-text">测试家庭</text></view>
         <view class="cell-right"><t-icon name="chevron-right" size="32rpx" color="#C9CFCC" /></view>
       </view>
       <view class="cell" bindtap="goSelftest">

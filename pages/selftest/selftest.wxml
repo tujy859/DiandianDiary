@@ -42,7 +42,7 @@
       <view wx:if="{{flow.error}}" class="case-detail">{{flow.error}}</view>
     </view>
     <view class="log-actions">
-      <t-button wx:if="{{!flow || flow.status === 'prepare_failed' || flow.status === 'preparing'}}" theme="primary" size="small" loading="{{flowBusy}}" disabled="{{flowBusy}}" bind:tap="onPrepareFlow">{{flow ? '继续准备' : '准备测试空间'}}</t-button>
+      <t-button wx:if="{{!flow || flow.status === 'prepare_failed' || flow.status === 'preparing'}}" theme="primary" size="small" loading="{{flowBusy}}" disabled="{{flowBusy}}" bind:tap="onPrepareFlow">{{flow ? '继续准备' : '准备测试家庭'}}</t-button>
       <t-button wx:if="{{flow.petId}}" theme="primary" size="small" disabled="{{flowBusy}}" bind:tap="onOpenFlow">打开测试聊天</t-button>
       <t-button wx:if="{{flow}}" size="small" disabled="{{flowBusy}}" bind:tap="onCleanupFlow">清理本轮测试</t-button>
       <t-button size="small" disabled="{{flowBusy}}" bind:tap="onReturnFamily">返回原家庭</t-button>
