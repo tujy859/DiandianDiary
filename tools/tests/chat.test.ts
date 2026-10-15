@@ -6,6 +6,8 @@ import { RequestToken } from '../../utils/cancellation';
 import { today } from '../../utils/date';
 import * as sessions from '../../utils/chat-store';
 import { SESSION_GAP_MS, buildHistory } from '../../utils/context';
+import { enableDeveloperMode } from '../../utils/developer';
+import { setTraceEnabled, getDebugTraces } from '../../utils/debug-trace';
 
 jest.mock('tdesign-miniprogram/action-sheet/index', () => ({ __esModule: true, default: { show: jest.fn() } }), { virtual: true });
 jest.mock('tdesign-miniprogram/toast/index', () => ({ __esModule: true, default: jest.fn() }), { virtual: true });
@@ -41,6 +43,19 @@ test('JSON 降级的纯记录只显示草稿，不展示背景查询或待确认
   await page.replyByAI('2025年1月1号领养了点点', [], a);
   expect(page.data.messages).toHaveLength(1);
   expect(page.data.messages[0].kind).toBe('draft');
+});
+
+test('同一请求日志包含工具失败、JSON 路径及最终外显引用，不采集聊天正文', async () => {
+  store.setCloudSession({ userId: 'demo-user', familyId: 'demo-family' });
+  enableDeveloperMode(); setTraceEnabled(true);
+  run.mockRejectedValueOnce(new Error('HTTP 400'));
+  json.mockResolvedValueOnce({ reply: '你好', draft: null, query: null });
+  await page.replyByAI('这是私人原文', [], a);
+  const rows = getDebugTraces();
+  expect(rows).toHaveLength(1);
+  expect(rows[0].events.some(e => e.phase === 'fallback.json')).toBe(true);
+  expect(rows[0].events[rows[0].events.length - 1].detail.path).toBe('json');
+  expect(JSON.stringify(rows)).not.toContain('私人原文');
 });
 
 beforeAll(() => {

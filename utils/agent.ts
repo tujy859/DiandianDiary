@@ -6,6 +6,7 @@ import { EVENT_TYPES, isHistoryQuery, hasExplicitQuestion, queryRecords, resolve
 import { validateDraft, DRAFT_WRITING_GUIDE } from './draft';
 import { AbortToken, throwIfAborted } from './cancellation';
 import { ConversationLine } from './context';
+import { TraceObserver, traceError } from './debug-trace';
 export { AbortedError } from './cancellation';
 
 export interface AgentDraft {
@@ -62,6 +63,7 @@ export async function runAgent(cfg: ModelConfig, userText: string, opts: {
   readSession?: (id: string, offset: number, limit: number) => Promise<string>;
   /** 本话题记录卡的实时状态（用户确认/丢弃后由界面维护），让模型不必猜测 */
   draftStatuses?: Array<{ text: string; status: string }>;
+  onEvent?: TraceObserver;
 }): Promise<AgentResult> {
   const { pet, history, photos, abortToken } = opts;
   const conversation = opts.conversation || history;
@@ -71,6 +73,7 @@ export async function runAgent(cfg: ModelConfig, userText: string, opts: {
   const queries: Array<{ purpose: string; result: RecordQueryResult }> = [];
   let fallbackError = '';
   let draftRejected = false;
+  const emit: TraceObserver = (phase, detail) => { try { opts.onEvent?.(phase, detail); } catch (_) { /* 观察器不能影响业务。 */ } };
   const messages: Array<Record<string, any>> = [
     { role: 'system', content: `你是「记一下喵」的宠物陪伴助手。当前宠物是「${pet.name}」（${pet.species}），今天是 ${referenceDate}。
 由你理解用户意图，必要时查询记录辅助回答，包括追问、咨询、回顾；闲聊不必查询。查询参数由你结合上下文填写，代码不会用本句关键词覆盖。明确事实查询用 purpose=answer；需要结合事实给出建议、比较或回顾用 purpose=context。没有记录就明确说没有。不能根据对话历史推断已保存事实。
@@ -98,7 +101,10 @@ ${DRAFT_WRITING_GUIDE}
   let final = '';
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
     throwIfAborted(abortToken);
+    emit('model.request', { path: 'tool', round: round + 1, historyCount: history.length });
+    const started = Date.now();
     const turn = await chatTurn(cfg, messages, TOOLS, abortToken);
+    emit('model.result', { path: 'tool', round: round + 1, durationMs: Date.now() - started });
     throwIfAborted(abortToken);
     messages.push(turn.message || { role: 'assistant', content: turn.content });
     if (!turn.toolCalls.length) { final = turn.content; break; }
@@ -107,16 +113,20 @@ ${DRAFT_WRITING_GUIDE}
       let result: any;
       try {
         const args = call.arguments;
+        emit('tool.start', { tool: call.name, round: round + 1,
+          ...(call.name === 'query_records' ? { eventType: args?.eventType, keyword: args?.keyword, purpose: args?.purpose || 'answer', startDate: args?.startDate, endDateExclusive: args?.endDateExclusive, mode: args?.mode, limit: args?.limit, offset: args?.offset } : {}) });
         if (!args || typeof args !== 'object' || Array.isArray(args)) throw new Error('工具参数必须为对象');
         if (call.name === 'query_records') {
           if (args.purpose !== undefined && !['answer', 'context', 'evidence'].includes(args.purpose)) throw new Error('未知查询用途');
           result = queryRecords({ ...args, referenceDate, petId: pet.id });
           queries.push({ purpose: args.purpose || 'answer', result });
+          emit('tool.result', { tool: call.name, purpose: args.purpose || 'answer', matched: result.totalMatched, records: result.records.map(r => ({ id: r.id, date: r.date })) });
         } else if (call.name === 'create_draft_record') {
           if (typeof args.sourceText !== 'string') throw new Error('请提供从用户原话摘取的 sourceText');
           const draft = validateDraft(args, { text: userText, petId: pet.id, photos,
             userHistory: conversation.filter((m) => m.role === 'user') }, referenceDate);
           if (!drafts.length) drafts.push(draft); // 单次输入最多一张草稿，重复工具调用不复制
+          emit('draft.validated', { tool: call.name, date: draft.date, proposedDate: args.date });
           result = { ok: true, message: '本轮仅保留一张待确认草稿，尚未保存；若还有不同事件，请用户下一条分别记录。',
             draft: { text: drafts[0].text, date: drafts[0].date, tags: drafts[0].tags } };
         } else if (call.name === 'read_session') {
@@ -132,6 +142,7 @@ ${DRAFT_WRITING_GUIDE}
         } else throw new Error(`未知工具 ${call.name}`);
         toolsUsed.push(call.name);
       } catch (error: any) {
+        emit('tool.error', { tool: call.name, error: traceError(error) });
         if (call.name === 'create_draft_record') draftRejected = true;
         result = { ok: false, message: error.message };
       }
@@ -140,6 +151,7 @@ ${DRAFT_WRITING_GUIDE}
   }
   // 最后一轮仍在调用工具时，给模型一次收尾机会；不执行新的工具，避免无声返回空回复。
   if (!final) {
+    emit('model.request', { path: 'tool', round: MAX_TOOL_ROUNDS + 1 });
     const turn = await chatTurn(cfg, [...messages, { role: 'system', content: '工具步骤已结束，请根据已获取的结果回答；信息不足时说明，不要猜测。' }], undefined, abortToken);
     final = turn.content || '这次还没有完成，请补充具体信息或重试。';
   }
@@ -151,6 +163,7 @@ ${DRAFT_WRITING_GUIDE}
       if (!options.eventType && !options.keyword && !/记录|日记/.test(userText)) throw new Error('想查哪类事情？请补充事件关键词。');
       const result = queryRecords({ ...options, petId: pet.id });
       queries.push({ purpose: 'answer', result });
+      emit('query.fallback', { matched: result.totalMatched, records: result.records.map(r => ({ id: r.id, date: r.date })) });
     } catch (error: any) { fallbackError = error.message; }
   }
   // 正文与引用从同一组可见查询生成；内部取证不能附到其他答案下面。
@@ -163,6 +176,7 @@ ${DRAFT_WRITING_GUIDE}
     : fallbackError || final;
   if (draftRejected && !drafts.length) reply = (reply ? reply + '\n\n' : '') + '这次没有生成记录卡，请补充事实原文或确认日期。';
   const refs = visible.flatMap(q => q.result.refs);
+  emit('answer.selected', { drafts: drafts.length, refs: Array.from(new Set(refs.map(r => r.recordId))) });
   return { reply, drafts, refs: refs.filter((ref, i) => refs.findIndex((r) => r.recordId === ref.recordId) === i), toolsUsed };
 }
 

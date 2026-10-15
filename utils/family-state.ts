@@ -15,7 +15,7 @@ export function logoutLocal(clearModel = false): void {
 /** 仅在云端确认家庭列表后清理失效缓存；网络失败不能冒充退出或解散。 */
 export function reconcileFamilyState(userId: string, familyIds: string[]): void {
   const keys: string[] = wx.getStorageInfoSync().keys;
-  for (const kind of ['cloud', 'chat', 'media']) {
+  for (const kind of ['cloud', 'chat', 'media', 'debug']) {
     const prefix = `jd_${kind}_${userId}_`;
     for (const key of keys) {
       if (!key.startsWith(prefix)) continue;
@@ -29,7 +29,7 @@ export function reconcileFamilyState(userId: string, familyIds: string[]): void 
 
 /** 明确失去一个家庭权限时仅清该家庭，不动仍可访问的空间。 */
 export function forgetFamilyState(userId: string, familyId: string): void {
-  const prefixes = ['cloud', 'chat'].map((kind) => `jd_${kind}_${userId}_${familyId}_`);
+  const prefixes = ['cloud', 'chat', 'debug'].map((kind) => `jd_${kind}_${userId}_${familyId}_`);
   for (const key of wx.getStorageInfoSync().keys as string[]) {
     if (prefixes.some((prefix) => key.startsWith(prefix)) || key === `jd_media_${userId}_${familyId}`) wx.removeStorageSync(key);
   }

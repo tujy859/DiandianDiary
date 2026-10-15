@@ -48,6 +48,12 @@ describe('可见答案与内部取证隔离', () => {
     const res = await runAgent(CFG, '我哪天领养的点点', { pet, history: [], photos: [] });
     expect(res.reply).toContain('2025-01-01'); expect(res.refs[0].recordId).toBe(record.id);
   });
+
+  test('观察器失败不会改变草稿结果', async () => {
+    mockModel([{ content: '', tool_calls: [call('d', 'create_draft_record', { sourceText: '2025年1月1号领养了点点', text: '领养了点点', tags: ['领养'] })] }, { content: '整理好了' }]);
+    const result = await runAgent(CFG, '2025年1月1号领养了点点', { pet, history: [], photos: [], onEvent: () => { throw new Error('observer'); } });
+    expect(result.drafts[0].date).toBe('2025-01-01');
+  });
 });
 
 /** 模拟模型的多轮返回：每一轮给一个 assistant message */

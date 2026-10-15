@@ -30,6 +30,7 @@ import { showPetPicker } from '../../utils/pet-picker';
 import { guardReady } from '../../utils/onboard';
 import { openAddPet } from '../../utils/pet-navigation';
 import { isTestFamily } from '../../utils/new-user-test';
+import { beginTrace, traceError, TraceHandle } from '../../utils/debug-trace';
 
 /** 欢迎态建议：按当前宠物生成，点一下就能直接开聊 */
 function buildSuggestions(pet: Pet | null) {
@@ -605,6 +606,7 @@ Page({
 
   /** 两级降级共享请求信号、草稿校验和查询服务：工具调用失败时降级为严格 JSON，再失败只给错误与重试。 */
   async replyByAI(text: string, savedPhotos: string[], pet: Pet, token = new RequestToken(), historyMessages?: ChatMessage[]) {
+    const trace = beginTrace({ path: 'tool', historyCount: (historyMessages || this.data.messages).length });
     this._abort = token;
     this.setData({ aiThinking: true });
     this.clearTopicTimer();
@@ -625,6 +627,7 @@ Page({
         pet, history, conversation, photos: photoPool, abortToken: token,
         // 记录卡实时状态：用户点了保存/不记录，模型立刻知道，不再反复提醒确认
         draftStatuses,
+        onEvent: trace?.emit,
         // 历史话题只给标题目录，正文由模型判断后按需取回
         sessionIndex: this.data.sessions.filter((s) => s.id !== this.data.sessionId).slice(0, 10),
         readSession: async (id: string, offset: number, limit: number) => {
@@ -641,11 +644,14 @@ Page({
         if (d.rawInput?.text === text) d.rawInput.text = originalText;
         return this.toMessage({ kind: 'draft', draft: d, sourceText: originalText, sourcePhotos: savedPhotos }, 'tool');
       });
+      if (trace) { if (!this._draftTraces) this._draftTraces = {}; msgs.forEach(m => { this._draftTraces[m.id] = trace; }); }
       if (res.reply || res.refs.length) msgs.push(this.toMessage({ kind: res.refs.length ? 'query' : 'text', text: res.reply || '', refs: res.refs }, 'tool'));
       if (!msgs.length) msgs.push(this.toMessage({ kind: 'text', text: '我在呢，继续说～' }, 'tool'));
       this.appendMessages(msgs);
+      trace?.finish('complete', { path: 'tool', drafts: res.drafts.length, refs: res.refs.map(r => r.recordId) });
     } catch (err: any) {
-      if (err instanceof AbortedError || !this.isActive(token, pet.id)) return;
+      if (err instanceof AbortedError || !this.isActive(token, pet.id)) { trace?.finish('cancelled'); return; }
+      trace?.emit('fallback.json', { path: 'json', error: traceError(err) });
       try {
         const out = await chatWithModel(cfg, text, {
           petName: pet.name, species: pet.species, today: referenceDate, history, draftStatuses,
@@ -658,6 +664,8 @@ Page({
             userHistory: conversation.filter((m) => m.role === 'user') }, referenceDate);
           if (draft.rawInput.text === text) draft.rawInput.text = originalText;
           msgs.push(this.toMessage({ kind: 'draft', draft, sourceText: originalText, sourcePhotos: savedPhotos }, 'model'));
+          trace?.emit('draft.validated', { path: 'json', date: draft.date, proposedDate: out.draft.date });
+          if (trace) { if (!this._draftTraces) this._draftTraces = {}; this._draftTraces[msgs[msgs.length - 1].id] = trace; }
         }
         const historical = isHistoryQuery(text);
         const querying = (!!out.query || historical) && (!out.draft || hasExplicitQuestion(text));
@@ -665,13 +673,16 @@ Page({
           const options = out.query || resolveQueryOptions(text, {}, referenceDate);
           if (!out.query && !options.eventType && !options.keyword && !/记录|日记/.test(text)) throw new Error('请补充要查询的事件关键词');
           const result = queryRecords({ ...options, petId: pet.id });
+          trace?.emit('query.result', { path: 'json', ...options, matched: result.totalMatched, records: result.records.map(r => ({ id: r.id, date: r.date })) });
           msgs.push(this.toMessage({ kind: 'query', text: result.summary, refs: result.refs }, 'model'));
         }
         if (!out.draft && !querying && out.reply) msgs.push(this.toMessage({ kind: 'text', text: out.reply }, 'model'));
         if (!msgs.length) msgs.push(this.toMessage({ kind: 'text', text: '我在呢，继续说～' }, 'model'));
         this.appendMessages(msgs);
+        trace?.finish('complete', { path: 'json', drafts: out.draft ? 1 : 0, refs: msgs.flatMap(m => (m.refs || []).map(r => r.recordId)) });
       } catch (error: any) {
-        if (error instanceof AbortedError || !this.isActive(token, pet.id)) return;
+        if (error instanceof AbortedError || !this.isActive(token, pet.id)) { trace?.finish('cancelled'); return; }
+        trace?.finish('failed', { path: 'json', error: traceError(error) });
         // 联网与模型是使用的前提，失败时只给错误和重试，不做无模型的兜底应答
         const notice = this.toMessage({
           kind: 'text',
@@ -838,6 +849,8 @@ Page({
       Toast({ context: this, selector: '#t-toast', message: '先点选一下发生日期吧', theme: 'warning' });
       return;
     }
+    const trace: TraceHandle | undefined = this._draftTraces?.[key] || beginTrace({ path: 'manual' });
+    trace?.emit('save.start', { date: draft.date });
     try {
       this._savingDrafts = { ...this._savingDrafts, [key]: true };
       this.clearTopicTimer();
@@ -857,6 +870,7 @@ Page({
         mode,
         clientId: key,
       });
+      trace?.finish('saved', { date: rec.date, records: [{ id: rec.id, date: rec.date }] });
       // 保存成功 = 照片才正式上云：回填云端 fileId，这条聊天在别的设备也能显示同一张图
       const cloudIds = cloudFileIds(savedPhotos);
       if (cloudIds.some(Boolean)) this.backfillPhotoIds(savedPhotos, cloudIds);
@@ -865,6 +879,7 @@ Page({
       }
       if (cloudIds.some(Boolean)) this.persist(); // 让会话带着云端照片再同步一次
     } catch (err: any) {
+      trace?.finish('save_failed', { error: traceError(err) });
       if (this.data.messages[idx]?.draft?.key === key) this.updateDraft(idx, { status: 'failed' });
       Toast({ context: this, selector: '#t-toast', message: err.message || '保存失败，请重试', theme: 'error' });
     } finally {
