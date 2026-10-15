@@ -1,4 +1,4 @@
 {
-  "navigationBarTitleText": "测试家庭",
+  "navigationBarTitleText": "使用流程演练",
   "usingComponents": { "t-button": "tdesign-miniprogram/button/button" }
 }
