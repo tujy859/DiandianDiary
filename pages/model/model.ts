@@ -2,13 +2,14 @@ import Toast from 'tdesign-miniprogram/toast/index';
 import Dialog from 'tdesign-miniprogram/dialog/index';
 import { getModelConfig, saveModelConfig, clearModelConfig } from '../../utils/store';
 import { testConnection, isModelReady } from '../../utils/llm';
-import { MODEL_PRESETS, MODEL_HELP, CLOUD_HELP, CLOUD_MODEL, modelPreset, modelForm, normalizeModelForm } from '../../utils/model-presets';
+import { MODEL_PRESETS, MODEL_HELP, CLOUD_HELP, CLOUD_MODEL, MODEL_INPUT_STYLE, modelPreset, modelForm, normalizeModelForm } from '../../utils/model-presets';
 import { isCloudAiSupported, assertCloudAiAvailable, CLOUD_AI_MIN_SDK } from '../../utils/cloud-ai';
 
 Page({
   data: {
     providers: Object.keys(MODEL_PRESETS),
     modelHelp: MODEL_HELP,
+    inputStyle: MODEL_INPUT_STYLE,
     cloudHelp: CLOUD_HELP,
     cloudModel: CLOUD_MODEL,
     minSdk: CLOUD_AI_MIN_SDK,

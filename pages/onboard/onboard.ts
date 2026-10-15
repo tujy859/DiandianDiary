@@ -4,7 +4,7 @@ import { connectCloud, refreshCloudIfStale } from '../../utils/repository';
 import { isModelReady, testConnection } from '../../utils/llm';
 import { pendingStep } from '../../utils/onboard';
 import { openAddPet } from '../../utils/pet-navigation';
-import { MODEL_PRESETS, MODEL_HELP, CLOUD_HELP, CLOUD_MODEL, modelPreset, modelForm, normalizeModelForm } from '../../utils/model-presets';
+import { MODEL_PRESETS, MODEL_HELP, CLOUD_HELP, CLOUD_MODEL, MODEL_INPUT_STYLE, modelPreset, modelForm, normalizeModelForm } from '../../utils/model-presets';
 import { isCloudAiSupported, assertCloudAiAvailable, CLOUD_AI_MIN_SDK } from '../../utils/cloud-ai';
 import { isDeveloperMode } from '../../utils/developer';
 
@@ -12,12 +12,14 @@ Page({
   data: {
     step: 'login' as 'login' | 'model',
     busy: false,
-    testFailed: false,
+    testingModel: false,
+    modelTest: 'idle' as 'idle' | 'success' | 'failed',
     replay: false,
     hasSavedModel: false,
     error: '',
     providers: Object.keys(MODEL_PRESETS),
     modelHelp: MODEL_HELP,
+    inputStyle: MODEL_INPUT_STYLE,
     source: 'custom' as 'custom' | 'cloud',
     cloudModel: CLOUD_MODEL,
     minSdk: CLOUD_AI_MIN_SDK,
@@ -32,7 +34,7 @@ Page({
     // 演练必须有正常账号和配置；不借测试参数绕过真实使用前提。
     const replay = options.replay === '1' && isDeveloperMode() && !!getCloudSession() && hasSavedModel;
     const step = replay ? 'login' : pendingStep();
-    const form = modelForm(replay ? { provider: '', baseUrl: '', apiKey: '', model: '' } : saved);
+    const form = modelForm(saved);
     this.setData({ replay, hasSavedModel, step: step || 'model', form,
       source: form.source, cloudSupported: isCloudAiSupported(),
       modelHelp: form.source === 'cloud' ? CLOUD_HELP : MODEL_HELP,
@@ -65,7 +67,7 @@ Page({
     const form = modelForm({ source, provider: '', baseUrl: '', apiKey: '', model: '' });
     this.setData({ source, form, modelHelp: source === 'cloud' ? CLOUD_HELP : MODEL_HELP,
       recommendedModel: source === 'cloud' ? '' : modelPreset(form.provider).model,
-      error: '', testFailed: false });
+      error: '', modelTest: 'idle' });
   },
 
   onSelectProvider(e: WechatMiniprogram.TouchEvent) {
@@ -74,7 +76,7 @@ Page({
     const preset = modelPreset(provider);
     this.setData({
       recommendedModel: preset.model,
-      testFailed: false,
+      modelTest: 'idle',
       error: '',
       'form.provider': provider,
       'form.baseUrl': preset.baseUrl || this.data.form.baseUrl,
@@ -82,9 +84,9 @@ Page({
     });
   },
 
-  onBaseUrl(e: WechatMiniprogram.CustomEvent) { this.setData({ 'form.baseUrl': e.detail.value, testFailed: false, error: '' }); },
-  onApiKey(e: WechatMiniprogram.CustomEvent) { this.setData({ 'form.apiKey': e.detail.value, testFailed: false, error: '' }); },
-  onModel(e: WechatMiniprogram.CustomEvent) { this.setData({ 'form.model': e.detail.value, testFailed: false, error: '' }); },
+  onBaseUrl(e: WechatMiniprogram.CustomEvent) { this.setData({ 'form.baseUrl': e.detail.value, modelTest: 'idle', error: '' }); },
+  onApiKey(e: WechatMiniprogram.CustomEvent) { this.setData({ 'form.apiKey': e.detail.value, modelTest: 'idle', error: '' }); },
+  onModel(e: WechatMiniprogram.CustomEvent) { this.setData({ 'form.model': e.detail.value, modelTest: 'idle', error: '' }); },
 
   onUseDefault() {
     if (this.data.busy) return;
@@ -93,51 +95,54 @@ Page({
       Toast({ context: this, selector: '#t-toast', message: '该服务商没有推荐默认值，请手动填写', theme: 'warning' });
       return;
     }
-    this.setData({ 'form.baseUrl': preset.baseUrl, 'form.model': preset.model, testFailed: false, error: '' });
+    this.setData({ 'form.baseUrl': preset.baseUrl, 'form.model': preset.model, modelTest: 'idle', error: '' });
   },
 
-  /** 第二步：保存配置并验证连通，失败也不阻断（可稍后在「我的」里改） */
-  async onSaveModel() {
-    if (this.data.busy) return;
+  readyModelForm() {
     const form = normalizeModelForm({ ...this.data.form, source: this.data.source });
     if (!isModelReady(form)) {
       Toast({ context: this, selector: '#t-toast', message: '请填好 Base URL、API Key 和模型', theme: 'warning' });
       return;
     }
     try { if (form.source === 'cloud') assertCloudAiAvailable(); } catch (err: any) {
-      this.setData({ error: err.message, testFailed: false });
+      this.setData({ error: err.message, modelTest: 'idle' });
       return;
     }
-    if (!this.data.replay) saveModelConfig(form);
-    this.setData({ form, busy: true, error: '', testFailed: false });
+    return form;
+  },
+
+  /** 测试仅请求当前表单，不保存配置，也不跳页。 */
+  async onTestModel() {
+    if (this.data.busy) return;
+    const form = this.readyModelForm();
+    if (!form) return;
+    this.setData({ form, busy: true, testingModel: true, error: '', modelTest: 'idle' });
     wx.showLoading({ title: '测试连接…', mask: true });
     try {
       await testConnection(form);
-      wx.hideLoading();
-      await this.finish();
+      this.setData({ modelTest: 'success' });
     } catch (err: any) {
-      wx.hideLoading();
       this.setData({
-        busy: false,
-        testFailed: true,
+        modelTest: 'failed',
         error: (err && err.message) || (form.source === 'cloud' ? '云开发 AI 连接失败，请检查网络与云环境' : '连接失败，请检查 Base URL 和 API Key'),
       });
-    }
+    } finally { wx.hideLoading(); this.setData({ busy: false, testingModel: false }); }
   },
 
-  /** 测试失败但用户想先进入：配置已保存，之后在「我的 → 模型连接配置」可改 */
-  onSkip() {
+  /** 确认时才保存；演练仅结束当前体验，正式配置保留。 */
+  onConfirmModel() {
     if (this.data.busy) return;
-    return this.finish();
-  },
-
-  onUseSavedModel() {
-    if (this.data.busy || !this.data.replay || !isModelReady(getModelConfig())) return;
+    if (!this.data.replay) {
+      const form = this.readyModelForm();
+      if (!form) return;
+      saveModelConfig(form);
+      this.setData({ form });
+    }
     return this.finish();
   },
 
   onBackToTools() {
-    if (!this.data.busy && this.data.replay) wx.redirectTo({ url: '/pages/new-user-test/new-user-test' });
+    if (!this.data.busy && this.data.replay) wx.redirectTo({ url: '/pages/selftest/selftest?section=start' });
   },
 
   async finish() {

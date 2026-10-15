@@ -72,7 +72,7 @@
     </view>
 
     <block wx:if="{{source === 'cloud'}}">
-      <view class="jd-card panel cloud-card">
+      <view class="jd-card model-panel cloud-card">
         <view class="cloud-row"><view class="cloud-key">提供方</view><view class="cloud-val">微信云开发</view></view>
         <view class="cloud-row"><view class="cloud-key">模型</view><view class="cloud-val">{{cloudModel}}</view></view>
         <view class="cloud-row"><view class="cloud-key">额度</view><view class="cloud-val">以当前云环境为准</view></view>
@@ -92,17 +92,18 @@
         >{{item}}</view>
       </view>
 
-      <view class="jd-card panel">
-        <t-input label="Base URL" placeholder="服务商提供的 API 地址" disabled="{{busy}}" value="{{form.baseUrl}}" bind:change="onBaseUrl" />
-        <t-input label="API Key" type="password" placeholder="填写服务商提供的密钥" disabled="{{busy}}" value="{{form.apiKey}}" bind:change="onApiKey" />
-        <t-input label="模型" placeholder="填写服务商提供的模型名" disabled="{{busy}}" value="{{form.model}}" bind:change="onModel" />
+      <view class="jd-card model-panel custom-panel">
+        <view class="model-field"><t-input borderless custom-style="{{inputStyle}}" label="Base URL" placeholder="服务商提供的 API 地址" disabled="{{busy}}" value="{{form.baseUrl}}" bind:change="onBaseUrl" /></view>
+        <view class="model-field"><t-input borderless custom-style="{{inputStyle}}" label="API Key" type="password" placeholder="填写服务商提供的密钥" disabled="{{busy}}" value="{{form.apiKey}}" bind:change="onApiKey" /></view>
+        <view class="model-field"><t-input borderless custom-style="{{inputStyle}}" label="模型" placeholder="填写服务商提供的模型名" disabled="{{busy}}" value="{{form.model}}" bind:change="onModel" /></view>
       </view>
 
       <view wx:if="{{recommendedModel}}" class="default-link" bindtap="onUseDefault">恢复默认地址和模型（{{recommendedModel}}）</view>
     </block>
 
     <view class="privacy-note">{{modelHelp}}</view>
-    <view wx:if="{{replay}}" class="privacy-note">演练中填写的配置仅用于这次连接测试，不会保存。进入应用后继续使用原模型配置。</view>
+    <view class="privacy-note">{{replay ? '演练中的改动仅用于测试；确认后继续使用已保存的正式配置。' : '测试连接只验证当前填写内容，确认后才保存配置并进入应用。'}}</view>
+    <view wx:if="{{modelTest === 'success'}}" class="connection-success">连接成功，可以确认并继续。</view>
 
     <view wx:if="{{error}}" class="error">
       <t-icon name="error-circle" size="32rpx" color="#D54941" />
@@ -110,9 +111,8 @@
     </view>
 
     <view class="actions">
-      <t-button theme="primary" size="large" block shape="round" loading="{{busy}}" disabled="{{busy}}" bind:tap="onSaveModel">{{replay ? '测试填写的配置并继续' : '保存并测试连接'}}</t-button>
-      <view wx:if="{{replay && hasSavedModel}}" class="secondary-action"><t-button theme="default" size="large" block shape="round" variant="outline" disabled="{{busy}}" bind:tap="onUseSavedModel">使用现有配置继续</t-button></view>
-      <view wx:if="{{testFailed && !replay}}" class="secondary-action"><t-button theme="default" size="large" block shape="round" variant="outline" disabled="{{busy}}" bind:tap="onSkip">配置已保存，先进入</t-button></view>
+      <t-button theme="default" size="large" block shape="round" variant="outline" loading="{{testingModel}}" disabled="{{busy}}" bind:tap="onTestModel">测试连接</t-button>
+      <view class="secondary-action"><t-button theme="primary" size="large" block shape="round" loading="{{busy && !testingModel}}" disabled="{{busy}}" bind:tap="onConfirmModel">确认并继续</t-button></view>
       <view class="next-note">还没有宠物的话，接下来为小伙伴建个档案</view>
     </view>
   </block>

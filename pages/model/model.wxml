@@ -17,7 +17,7 @@
   </view>
 
   <block wx:if="{{source === 'cloud'}}">
-    <view class="jd-card panel cloud-card">
+    <view class="jd-card model-panel cloud-card">
       <view class="cloud-row"><view class="cloud-key">提供方</view><view class="cloud-val">微信云开发</view></view>
       <view class="cloud-row"><view class="cloud-key">模型</view><view class="cloud-val">{{cloudModel}}</view></view>
       <view class="cloud-row"><view class="cloud-key">额度</view><view class="cloud-val">以当前云环境为准</view></view>
@@ -37,10 +37,10 @@
       >{{item}}</view>
     </view>
 
-    <view class="jd-card panel">
-      <t-input label="Base URL" placeholder="服务商提供的 API 地址" disabled="{{testing}}" value="{{form.baseUrl}}" bind:change="onBaseUrl" />
-      <t-input label="API Key" type="password" placeholder="填写服务商提供的密钥" disabled="{{testing}}" value="{{form.apiKey}}" bind:change="onApiKey" />
-      <t-input label="模型" placeholder="填写服务商提供的模型名" disabled="{{testing}}" value="{{form.model}}" bind:change="onModel" />
+    <view class="jd-card model-panel custom-panel">
+      <view class="model-field"><t-input borderless custom-style="{{inputStyle}}" label="Base URL" placeholder="服务商提供的 API 地址" disabled="{{testing}}" value="{{form.baseUrl}}" bind:change="onBaseUrl" /></view>
+      <view class="model-field"><t-input borderless custom-style="{{inputStyle}}" label="API Key" type="password" placeholder="填写服务商提供的密钥" disabled="{{testing}}" value="{{form.apiKey}}" bind:change="onApiKey" /></view>
+      <view class="model-field"><t-input borderless custom-style="{{inputStyle}}" label="模型" placeholder="填写服务商提供的模型名" disabled="{{testing}}" value="{{form.model}}" bind:change="onModel" /></view>
     </view>
 
     <view wx:if="{{recommendedModel}}" class="default-link" bindtap="onUseDefault">恢复默认地址和模型（{{recommendedModel}}）</view>

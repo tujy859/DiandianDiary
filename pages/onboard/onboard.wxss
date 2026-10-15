@@ -182,6 +182,7 @@
 .secondary-action {
   margin-top: 24rpx;
 }
+.connection-success { margin:24rpx 8rpx 0; color:var(--jd-brand); font-size:var(--jd-fs-sm); }
 .next-note, .privacy-note { font-size:var(--jd-fs-xs); color:var(--jd-text-2); line-height:1.7; }
 .next-note { margin-top:24rpx; text-align:center; }
 .privacy-note { margin:24rpx 8rpx 0; }

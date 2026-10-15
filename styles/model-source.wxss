@@ -36,14 +36,15 @@
   line-height: 1.5;
 }
 
-.cloud-card {
-  padding: 8rpx 24rpx 16rpx;
-}
+.model-panel { margin-top:32rpx; padding:8rpx 24rpx; }
+.model-field + .model-field { border-top:1rpx solid var(--jd-line); }
 
 .cloud-row {
   display: flex;
-  align-items: baseline;
-  padding: 14rpx 0;
+  align-items: center;
+  min-height: 88rpx;
+  box-sizing: border-box;
+  padding: 20rpx 0;
   border-bottom: 1rpx solid var(--jd-line);
 }
 
@@ -52,7 +53,8 @@
 }
 
 .cloud-key {
-  width: 140rpx;
+  width: 132rpx;
+  margin-right:20rpx;
   flex-shrink: 0;
   font-size: var(--jd-fs-sm);
   color: var(--jd-text-2);
@@ -60,7 +62,8 @@
 
 .cloud-val {
   flex: 1;
+  min-width:0;
   font-size: var(--jd-fs-sm);
   color: var(--jd-text-1);
-  font-weight: 600;
+  font-weight: 500;
 }

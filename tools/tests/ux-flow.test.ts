@@ -81,11 +81,14 @@ test('设置页测试云开发不自动保存，显式保存后无密钥，重�
   expect(reopened.data.source).toBe('cloud'); expect(reopened.data.form).toEqual(cloudConfig);
 });
 
-test('初次引导可直接保存并测试云开发，已有云开发配置可进入应用', async () => {
+test('初次引导测试不保存不跳页，确认后才保存云开发，已有配置可进入应用', async () => {
   store.clearModelConfig();
   const onboard = page('onboard'); onboard.onLoad(); onboard.onSelectSource(chooseCloud);
-  await onboard.onSaveModel();
+  await onboard.onTestModel();
   expect(testConnection).toHaveBeenCalledWith(cloudConfig);
+  expect(store.getModelConfig().apiKey).toBe('');
+  expect(wx.switchTab).not.toHaveBeenCalled();
+  await onboard.onConfirmModel();
   expect(store.getModelConfig()).toEqual(cloudConfig);
   expect(wx.switchTab).toHaveBeenCalled();
   const reopened = page('onboard'); await reopened.onLoad();
@@ -96,7 +99,7 @@ test.each(['model', 'onboard'])('%s 不将缺失 AI 能力的配置保存成可�
   enableDeveloperMode();
   const instance = page(name); instance.onLoad({ replay: '1' }); instance.onSelectSource(chooseCloud);
   (wx as any).cloud.extend = {};
-  if (name === 'model') instance.onSave(); else await instance.onSaveModel();
+  if (name === 'model') instance.onSave(); else await instance.onConfirmModel();
   expect(store.getModelConfig()).toEqual(config);
   expect(testConnection).not.toHaveBeenCalled();
 });
@@ -104,10 +107,39 @@ test.each(['model', 'onboard'])('%s 不将缺失 AI 能力的配置保存成可�
 test('引导演练选择云开发仍不覆盖已保存 API，忙碌时不能切换来源', async () => {
   enableDeveloperMode();
   const onboard = page('onboard'); onboard.onLoad({ replay: '1' });
-  onboard.onSelectSource(chooseCloud); await onboard.onSaveModel();
+  onboard.onSelectSource(chooseCloud); await onboard.onTestModel();
   expect(store.getModelConfig()).toEqual(config);
   const model = page('model'); model.onLoad(); model.data.testing = true;
   model.onSelectSource(chooseCloud); expect(model.data.source).toBe('custom');
+});
+
+test('引导演练回显已保存的来源，测试和确认均不覆盖正式配置', async () => {
+  enableDeveloperMode(); store.saveModelConfig(cloudConfig);
+  const onboard = page('onboard'); onboard.onLoad({ replay: '1' });
+  expect(onboard.data.source).toBe('cloud');
+  onboard.onSelectSource({ currentTarget: { dataset: { source: 'custom' } } });
+  onboard.data.form = { ...config };
+  await onboard.onTestModel();
+  expect(onboard.data.modelTest).toBe('success'); expect(wx.switchTab).not.toHaveBeenCalled();
+  expect(store.getModelConfig()).toEqual(cloudConfig);
+  await onboard.onConfirmModel();
+  expect(store.getModelConfig()).toEqual(cloudConfig); expect(wx.switchTab).toHaveBeenCalled();
+});
+
+test('引导连接失败不保存，修改字段令测试结果失效；可单独确认有效配置', async () => {
+  store.clearModelConfig();
+  const onboard = page('onboard'); onboard.onLoad(); onboard.onSelectSource(chooseCloud);
+  (testConnection as jest.Mock).mockRejectedValueOnce(new Error('网络中断'));
+  await onboard.onTestModel();
+  expect(onboard.data).toMatchObject({ modelTest: 'failed', busy: false, error: '网络中断' });
+  expect(store.getModelConfig().source).toBeUndefined(); expect(wx.switchTab).not.toHaveBeenCalled();
+  await onboard.onTestModel(); expect(onboard.data.modelTest).toBe('success');
+  onboard.onSelectSource({ currentTarget: { dataset: { source: 'custom' } } });
+  expect(onboard.data).toMatchObject({ modelTest: 'idle', error: '' });
+  onboard.data.form = { ...config };
+  await onboard.onConfirmModel();
+  expect(store.getModelConfig()).toEqual({ ...config, source: 'custom' });
+  expect(testConnection).toHaveBeenCalledTimes(2);
 });
 
 test('跨年日记详情显示真实年份、星期与天数，不会显示成当年的 14 天前', () => {
@@ -258,12 +290,12 @@ test('新手引导演练强制展示欢迎和模型两步，不清除原登录�
   const onboard = page('onboard');
   onboard.onLoad({ replay: '1' });
   expect(onboard.data).toMatchObject({ replay: true, step: 'login' });
-  expect(onboard.data.form.apiKey).toBe('');
+  expect(onboard.data.form.apiKey).toBe(config.apiKey);
   expect(wx.switchTab).not.toHaveBeenCalled();
   await onboard.onStart();
   expect(onboard.data.step).toBe('model');
   onboard.data.form = { ...config, apiKey: 'different-demo-key' };
-  await onboard.onSaveModel();
+  await onboard.onTestModel();
   expect(store.getModelConfig()).toEqual(config);
   expect(store.getCloudSession()!.familyId).toBe('demo-family');
 });
@@ -276,10 +308,10 @@ test('演练连接失败可使用现有配置继续，普通引导不被测试�
   const replay = page('onboard'); replay.onLoad({ replay: '1' });
   replay.data.form = { ...config, apiKey: 'different-demo-key' };
   (testConnection as jest.Mock).mockRejectedValueOnce(new Error('测试连接失败'));
-  await replay.onSaveModel();
-  expect(replay.data.testFailed).toBe(true);
+  await replay.onTestModel();
+  expect(replay.data.modelTest).toBe('failed');
   expect(store.getModelConfig()).toEqual(config);
-  await replay.onUseSavedModel();
+  await replay.onConfirmModel();
   expect(store.getModelConfig()).toEqual(config);
 });
 
