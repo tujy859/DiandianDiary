@@ -147,8 +147,11 @@ test('JSON 降级等待中停止，迟到草稿不出现，不继续本地兜底
   const pending = page.replyByAI('今天洗澡了', [], a);
   await Promise.resolve();
   const token = page._abort;
-  expect(json.mock.calls[0][3]).toBe(token);
+  const effectiveToken = json.mock.calls[0][3];
+  expect(effectiveToken).toBe(run.mock.calls[0][2].abortToken);
+  expect(effectiveToken.aborted).toBe(false);
   page.onStop();
+  expect(effectiveToken.aborted).toBe(true);
   wait.resolve({ reply: '已经记录', draft: { date: today(), text: '洗澡', tags: ['洗澡'] }, query: null });
   await pending;
   expect(page.data.messages).toHaveLength(1);

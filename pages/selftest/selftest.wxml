@@ -3,6 +3,7 @@
   <block wx:else>
   <view class="sections">
     <view class="section {{section === 'core' ? 'active' : ''}}" data-section="core" bindtap="onSection">核心自检</view>
+    <view class="section {{section === 'flow' ? 'active' : ''}}" data-section="flow" bindtap="onSection">流程测试</view>
     <view class="section {{section === 'logs' ? 'active' : ''}}" data-section="logs" bindtap="onSection">执行日志</view>
   </view>
   <block wx:if="{{section === 'core'}}">
@@ -31,6 +32,28 @@
     </view>
     <view wx:if="{{item.detail}}" class="case-detail">{{item.detail}}</view>
   </view>
+  </block>
+  <block wx:if="{{section === 'flow'}}">
+    <view class="scope-note">在独立测试家庭创建专用宠物，之后在聊聊逐步执行或运行全部。每步会调用已配置的模型，并自动确认日期正确的演示草稿；模型调用可能计费。不会随打开页面自动运行。</view>
+    <view wx:if="{{flowError}}" class="case-detail">{{flowError}}</view>
+    <view wx:if="{{flow}}" class="case">
+      <view class="case-name">{{flow.status}} · 已完成 {{flow.next}} / {{flowSteps.length}}</view>
+      <view class="case-detail">运行 {{flow.id}}</view>
+      <view wx:if="{{flow.error}}" class="case-detail">{{flow.error}}</view>
+    </view>
+    <view class="log-actions">
+      <t-button wx:if="{{!flow || flow.status === 'prepare_failed' || flow.status === 'preparing'}}" theme="primary" size="small" loading="{{flowBusy}}" disabled="{{flowBusy}}" bind:tap="onPrepareFlow">{{flow ? '继续准备' : '准备测试空间'}}</t-button>
+      <t-button wx:if="{{flow.petId}}" theme="primary" size="small" disabled="{{flowBusy}}" bind:tap="onOpenFlow">打开测试聊天</t-button>
+      <t-button wx:if="{{flow}}" size="small" disabled="{{flowBusy}}" bind:tap="onCleanupFlow">清理本轮测试</t-button>
+      <t-button size="small" disabled="{{flowBusy}}" bind:tap="onReturnFamily">返回原家庭</t-button>
+    </view>
+    <view wx:for="{{flow.results}}" wx:key="id" class="case {{item.pass ? 'is-pass' : 'is-fail'}}">
+      <view class="case-name">{{item.pass ? '通过' : '停止'}} · {{item.title}}</view>
+      <view class="case-detail">{{item.detail}}</view>
+    </view>
+    <view wx:if="{{!flow}}" class="scope-note">
+      <view wx:for="{{flowSteps}}" wx:key="id">{{index + 1}}. {{item.title}}</view>
+    </view>
   </block>
   <block wx:if="{{section === 'logs'}}">
     <view class="scope-note">开启后记录当前家庭的聊天执行过程。仅在本机保留最近 12 次请求，每次最多 48 条事件，不采集密钥、聊天正文或照片。</view>

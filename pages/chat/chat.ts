@@ -31,6 +31,7 @@ import { guardReady } from '../../utils/onboard';
 import { openAddPet } from '../../utils/pet-navigation';
 import { isTestFamily } from '../../utils/new-user-test';
 import { beginTrace, traceError, TraceHandle } from '../../utils/debug-trace';
+import { getFlowRun, executeFlow, cancelFlowRun, FlowPage } from '../../utils/flow-test';
 
 /** 欢迎态建议：按当前宠物生成，点一下就能直接开聊 */
 function buildSuggestions(pet: Pet | null) {
@@ -58,6 +59,7 @@ Page({
     currentPet: null as Pet | null,
     petAvatar: '',
     testFamily: false,
+    flowRun: null as any, flowRunning: false,
     messages: [] as ChatMessage[],
     inputValue: '',
     attachments: [] as string[],
@@ -230,7 +232,38 @@ Page({
       }
       Toast({ context: this, selector: '#t-toast', message: err.message || '云端读取失败，请重新进入页面', theme: 'error' });
     }
+    this.syncFlowState();
   },
+
+  syncFlowState() {
+    const run = getFlowRun();
+    this.setData({ flowRun: run && run.familyId === getCloudSession()?.familyId && run.petId === this.data.currentPet?.id ? run : null,
+      flowRunning: !!run && run.status === 'running' && run.petId === this.data.currentPet?.id });
+  },
+  flowAdapter(): FlowPage {
+    return {
+      petId: () => this.data.currentPet?.id || '', visible: () => this._visible && !this._disposed,
+      messages: () => this.data.messages, topicId: () => this._session?.clientId || '',
+      send: async text => {
+        const oldIds = new Set(this.data.messages.map(m => m.id));
+        this.setData({ inputValue: text, attachments: [] }); this._flowAction = true;
+        try { await this.onSend(); await this._syncTail; }
+        finally { this._flowAction = false; }
+        return this.data.messages.filter(m => !oldIds.has(m.id) && m.role === 'ai');
+      },
+      save: async key => {
+        this._flowAction = true;
+        try { await this.onCardSave({ detail: { key } }); await this._syncTail; }
+        finally { this._flowAction = false; }
+      },
+      newTopic: () => { this._flowAction = true; try { this.onNewTopic(); } finally { this._flowAction = false; } },
+      cancel: () => this.cancelGeneration(true), update: () => this.syncFlowState(),
+    };
+  },
+  async onFlowNext() { try { await executeFlow(this.flowAdapter()); } catch (error: any) { this.setData({ flowRun: { ...this.data.flowRun, error: error.message } }); } },
+  async onFlowAll() { try { await executeFlow(this.flowAdapter(), true); } catch (error: any) { this.setData({ flowRun: { ...this.data.flowRun, error: error.message } }); } },
+  onFlowStop() { cancelFlowRun(); },
+  onFlowReport() { wx.navigateTo({ url: '/pages/selftest/selftest?section=flow' }); },
 
   /** 后台同步：会话目录 + 当前会话的最新版本（本机有未同步改动时保留本机） */
   async syncSessions() {
@@ -257,6 +290,7 @@ Page({
   },
 
   onHide() {
+    if (this.data.flowRunning) cancelFlowRun();
     this._visible = false;
     this.clearTopicTimer();
     this.cancelGeneration(true);
@@ -266,6 +300,7 @@ Page({
   },
 
   onUnload() {
+    if (this.data.flowRunning) cancelFlowRun();
     this._disposed = true;
     this._visible = false;
     this.clearTopicTimer();
@@ -316,7 +351,7 @@ Page({
   /** 恢复页面就检查，停留期间用单个定时器更新；发送按钮不再隐式切换超时话题。 */
   refreshTopicBoundary() {
     this.clearTopicTimer();
-    if (!this._visible || !this.data.currentPet || this.data.aiThinking || this.data.editorVisible
+    if (!this._visible || !this.data.currentPet || this.data.aiThinking || this.data.flowRunning || this.data.editorVisible
       || Object.values(this._savingDrafts || {}).some(Boolean)) return;
     const last = this.data.messages.slice().reverse().find((m) => !isDivider(m));
     if (!last || !Number.isFinite(last.time)) return;
@@ -412,6 +447,7 @@ Page({
   },
 
   onNewTopic() {
+    if (this.data.flowRunning && !this._flowAction) return;
     if (this.data.aiThinking) return;
     if (!this.data.messages.some((m) => !isDivider(m))) {
       Toast({ context: this, selector: '#t-toast', message: '已经是新话题啦，直接说就好' });
@@ -423,6 +459,7 @@ Page({
   /* ---------- 会话目录 ---------- */
 
   onToggleSessionList() {
+    if (this.data.flowRunning) return;
     this.setData({ sessionListVisible: !this.data.sessionListVisible });
   },
 
@@ -491,6 +528,7 @@ Page({
   },
 
   onChoosePhoto() {
+    if (this.data.flowRunning) return;
     const petId = this.data.currentPet?.id;
     const remain = 9 - this.data.attachments.length;
     if (remain <= 0) return;
@@ -506,6 +544,7 @@ Page({
   },
 
   onRemoveAttachment(e: WechatMiniprogram.TouchEvent) {
+    if (this.data.flowRunning) return;
     const { index } = e.currentTarget.dataset;
     const attachments = this.data.attachments.slice();
     attachments.splice(index, 1);
@@ -513,6 +552,7 @@ Page({
   },
 
   async onSend() {
+    if (this.data.flowRunning && !this._flowAction) return;
     const originalText = this.data.inputValue;
     const text = originalText.trim();
     const photos = this.data.attachments.slice();
@@ -606,7 +646,11 @@ Page({
 
   /** 两级降级共享请求信号、草稿校验和查询服务：工具调用失败时降级为严格 JSON，再失败只给错误与重试。 */
   async replyByAI(text: string, savedPhotos: string[], pet: Pet, token = new RequestToken(), historyMessages?: ChatMessage[]) {
-    const trace = beginTrace({ path: 'tool', historyCount: (historyMessages || this.data.messages).length });
+    const epoch = getCloudSessionEpoch(), owner = this;
+    const scopedToken = { get aborted() { return token.aborted || epoch !== getCloudSessionEpoch() || owner.data.currentPet?.id !== pet.id; }, onAbort: token.onAbort };
+    const flow = getFlowRun();
+    const trace = beginTrace({ path: 'tool', date: today(), historyCount: (historyMessages || this.data.messages).length,
+      runId: flow?.status === 'running' ? flow.id : undefined, step: flow?.status === 'running' ? flow.next : undefined });
     this._abort = token;
     this.setData({ aiThinking: true });
     this.clearTopicTimer();
@@ -624,7 +668,7 @@ Page({
       .slice(-10).map((m) => ({ text: m.draft!.text, status: m.draft!.status }));
     try {
       const res = await runAgent(cfg, text, {
-        pet, history, conversation, photos: photoPool, abortToken: token,
+        pet, history, conversation, photos: photoPool, abortToken: scopedToken,
         // 记录卡实时状态：用户点了保存/不记录，模型立刻知道，不再反复提醒确认
         draftStatuses,
         onEvent: trace?.emit,
@@ -656,7 +700,7 @@ Page({
         const out = await chatWithModel(cfg, text, {
           petName: pet.name, species: pet.species, today: referenceDate, history, draftStatuses,
           records: getRecords(pet.id).slice(0, 20).map((r) => ({ date: r.date, text: r.text, tags: r.tags })),
-        }, token);
+        }, scopedToken);
         this.assertActive(token, pet.id);
         const msgs: ChatMessage[] = [];
         if (out.draft) {
@@ -704,6 +748,7 @@ Page({
   },
 
   onStop() {
+    if (this.data.flowRunning) cancelFlowRun();
     this.cancelGeneration(true);
   },
 
@@ -838,6 +883,7 @@ Page({
   },
 
   async onCardSave(e: WechatMiniprogram.CustomEvent) {
+    if (this.data.flowRunning && !this._flowAction) return;
     const { key } = e.detail;
     const idx = this.findDraft(key);
     if (idx < 0) return;
@@ -975,6 +1021,7 @@ Page({
   },
 
   onQuick(e: WechatMiniprogram.TouchEvent) {
+    if (this.data.flowRunning) return;
     const { mode, prompt } = e.currentTarget.dataset;
     this.setData({
       ...(prompt ? { inputValue: String(prompt).replace('{pet}', this.data.currentPet?.name || '小家伙') } : {}),
@@ -1003,6 +1050,7 @@ Page({
   /* ---------- 宠物切换 ---------- */
 
   onSwitchPet() {
+    if (this.data.flowRunning) return;
     const pets = this.data.pets;
     if (!pets.length) return;
     /*

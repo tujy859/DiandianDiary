@@ -8,6 +8,7 @@ export function logoutLocal(clearModel = false): void {
   if (session) {
     reconcileFamilyState(session.userId, []);
     wx.removeStorageSync(`jd_new_user_test_${session.userId}`);
+    wx.removeStorageSync(`jd_flow_test_${session.userId}`);
   }
   if (clearModel) clearModelConfig();
 }
@@ -25,6 +26,7 @@ export function reconcileFamilyState(userId: string, familyIds: string[]): void 
     }
   }
   pruneTestState(userId, (id) => familyIds.includes(id));
+  pruneFlowState(userId, (id) => familyIds.includes(id));
 }
 
 /** 明确失去一个家庭权限时仅清该家庭，不动仍可访问的空间。 */
@@ -34,6 +36,12 @@ export function forgetFamilyState(userId: string, familyId: string): void {
     if (prefixes.some((prefix) => key.startsWith(prefix)) || key === `jd_media_${userId}_${familyId}`) wx.removeStorageSync(key);
   }
   pruneTestState(userId, (id) => id !== familyId);
+  pruneFlowState(userId, (id) => id !== familyId);
+}
+
+function pruneFlowState(userId: string, valid: (id: string) => boolean): void {
+  const key = `jd_flow_test_${userId}`, run = wx.getStorageSync(key);
+  if (run?.familyId && !valid(run.familyId)) wx.removeStorageSync(key);
 }
 
 function pruneTestState(userId: string, valid: (id: string) => boolean): void {

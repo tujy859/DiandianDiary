@@ -3,6 +3,7 @@ import { AgentResult, runAgent } from '../../utils/agent';
 import { savePet, addRecord, getRecords, clearAll, Pet } from '../../utils/store';
 import { today, addDays } from '../../utils/date';
 import { ConversationLine } from '../../utils/context';
+import { diaryFlowSteps } from '../../utils/flow-scenarios';
 
 jest.setTimeout(330000);
 const cfg = { provider: 'eval', baseUrl: process.env.DIARY_EVAL_BASE_URL || '',
@@ -33,11 +34,19 @@ beforeEach(() => {
   addRecord({ petId: pet.id, date: addDays(today(), -3), text: '给点点洗了澡，吹干了', tags: ['洗澡'], photos: [] });
   wormId = addRecord({ petId: pet.id, date: addDays(today(), -10), text: '做了驱虫', tags: ['医疗'], photos: [] }).id;
   vaccineId = addRecord({ petId: pet.id, date: addDays(today(), -2), text: '接种疫苗', tags: ['医疗'], photos: [] }).id;
+  addRecord({ petId: pet.id, date: diaryFlowSteps(today())[0].date!, text: '领养了点点', tags: ['领养'], photos: [] });
 });
 
 type Case = { name: string; text: string; history?: ConversationLine[]; conversation?: ConversationLine[];
   check: (r: AgentResult) => void };
 const cases: Case[] = [
+  ...diaryFlowSteps(today()).filter(s => s.kind === 'record').map(step => ({ name: `端侧共用样例：${step.title}`, text: step.text, check: (r: AgentResult) => {
+    expect(r.drafts).toHaveLength(1); expect(r.drafts[0].date).toBe(step.date);
+    expect(r.reply).toBe(''); expect(r.refs).toEqual([]);
+  } })),
+  { name: '新话题领养查询只有对应引用', text: diaryFlowSteps(today())[6].text, history: [], check: (r) => {
+    expect(r.drafts).toHaveLength(0); expect(r.refs).toHaveLength(1); expect(r.reply).toContain(diaryFlowSteps(today())[0].date!);
+  } },
   { name: '自然陈述产生待确认草稿', text: '今天给点点剪了指甲', check: (r) => {
     expect(r.drafts).toHaveLength(1); expect(r.drafts[0].date).toBe(today()); expect(r.drafts[0].text).toContain('指甲');
   } },

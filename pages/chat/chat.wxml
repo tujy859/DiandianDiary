@@ -1,6 +1,16 @@
 <view class="page {{testFamily ? 'is-test-family' : ''}}" bindtap="onTapPageBlank">
   <offline-bar />
   <test-space-bar />
+  <view wx:if="{{flowRun}}" class="flow-banner" catchtap="preventBubble">
+    <view>流程测试 · {{flowRun.status}} · {{flowRun.next}} / 8</view>
+    <view wx:if="{{flowRun.error}}" class="flow-error">{{flowRun.error}}</view>
+    <view class="flow-actions">
+      <t-button wx:if="{{flowRun.status === 'ready' || flowRun.status === 'paused'}}" size="small" bind:tap="onFlowNext">执行下一步</t-button>
+      <t-button wx:if="{{flowRun.status === 'ready' || flowRun.status === 'paused'}}" size="small" theme="primary" bind:tap="onFlowAll">运行全部</t-button>
+      <t-button wx:if="{{flowRunning}}" size="small" bind:tap="onFlowStop">停止测试</t-button>
+      <t-button wx:if="{{!flowRunning}}" size="small" variant="text" bind:tap="onFlowReport">查看结果与管理</t-button>
+    </view>
+  </view>
   <!-- 顶部：当前宠物，点击切换（catchtap 阻止冒泡到根节点的 onTapPageBlank，避免弹窗弹出时布局跳变） -->
   <view wx:if="{{currentPet}}" class="petbar">
     <view class="pet-chip" catchtap="onSwitchPet">
@@ -217,6 +227,7 @@
         </view>
         <textarea
           class="input"
+          disabled="{{flowRunning}}"
           value="{{inputValue}}"
           placeholder="{{placeholder}}"
           placeholder-class="input-placeholder"

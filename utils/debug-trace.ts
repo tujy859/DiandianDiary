@@ -8,7 +8,7 @@ export interface TraceDetail {
   path?: string; round?: number; tool?: string; purpose?: string; eventType?: string;
   keyword?: string; startDate?: string; endDateExclusive?: string; mode?: string; limit?: number; offset?: number;
   matched?: number; records?: Array<{ id: string; date: string }>; date?: string | null; proposedDate?: string | null;
-  drafts?: number; refs?: string[]; error?: string; status?: string; durationMs?: number; historyCount?: number;
+  drafts?: number; refs?: string[]; error?: string; status?: string; durationMs?: number; historyCount?: number; runId?: string; step?: number;
 }
 export type TraceObserver = (phase: string, detail: TraceDetail) => void;
 export interface DebugTrace { id: string; startedAt: number; status: string; durationMs: number; events: Array<{ phase: string; at: number; detail: TraceDetail }> }
@@ -33,7 +33,7 @@ export function traceError(error: any): string {
 }
 function clean(detail: TraceDetail): TraceDetail {
   const out: any = {};
-  for (const field of ['path', 'tool', 'purpose', 'eventType', 'mode', 'status']) {
+  for (const field of ['path', 'tool', 'purpose', 'eventType', 'mode', 'status', 'runId']) {
     const value = detail[field];
     if (typeof value === 'string' && /^[a-zA-Z0-9_.-]{1,48}$/.test(value)) out[field] = value;
   }
@@ -44,7 +44,7 @@ function clean(detail: TraceDetail): TraceDetail {
     const value = detail[field];
     if (value === null || (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value))) out[field] = value;
   }
-  for (const field of ['round', 'limit', 'offset', 'matched', 'drafts', 'durationMs', 'historyCount']) {
+  for (const field of ['round', 'limit', 'offset', 'matched', 'drafts', 'durationMs', 'historyCount', 'step']) {
     const value = detail[field]; if (typeof value === 'number' && Number.isFinite(value)) out[field] = value;
   }
   const safeId = (id: unknown) => typeof id === 'string' && /^[a-zA-Z0-9_-]{1,100}$/.test(id);
