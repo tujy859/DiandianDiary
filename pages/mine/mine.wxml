@@ -72,6 +72,10 @@
         <view class="cell-left"><t-icon name="check-circle" size="36rpx" color="#32694F" /><text class="cell-text">开发自检</text></view>
         <view class="cell-right"><t-icon name="chevron-right" size="32rpx" color="#C9CFCC" /></view>
       </view>
+      <view class="cell" bindtap="onDisableDeveloperMode" aria-role="button">
+        <view class="cell-left"><t-icon name="close-circle" size="36rpx" color="#78837B" /><text class="cell-text">关闭开发者模式</text></view>
+        <view class="cell-right"><t-icon name="chevron-right" size="32rpx" color="#C9CFCC" /></view>
+      </view>
     </view>
   </block>
   <view class="brand-footnote">每一天，都有一点值得记住</view>

@@ -8,3 +8,7 @@ export function isDeveloperMode(): boolean {
 export function enableDeveloperMode(): void {
   wx.setStorageSync(DEVELOPER_KEY, true);
 }
+
+export function disableDeveloperMode(): void {
+  wx.removeStorageSync(DEVELOPER_KEY);
+}

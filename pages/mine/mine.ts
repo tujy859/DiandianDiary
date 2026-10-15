@@ -8,7 +8,8 @@ import { displayDate, fmt } from '../../utils/date';
 import { getLayout, resetViewport } from '../../utils/layout';
 import { guardReady } from '../../utils/onboard';
 import { consumeAddPetRequest } from '../../utils/pet-navigation';
-import { isDeveloperMode, enableDeveloperMode } from '../../utils/developer';
+import { isDeveloperMode, enableDeveloperMode, disableDeveloperMode } from '../../utils/developer';
+import { isTestFamily } from '../../utils/new-user-test';
 
 const SPECIES = ['猫', '狗', '其他'];
 
@@ -174,11 +175,25 @@ Page({
   goFamily() { wx.navigateTo({ url: '/pages/family/family' }); },
 
   goSelftest() {
-    wx.navigateTo({ url: '/pages/selftest/selftest' });
+    if (isDeveloperMode()) wx.navigateTo({ url: '/pages/selftest/selftest' });
   },
 
   goNewUserTest() {
     if (isDeveloperMode()) wx.navigateTo({ url: '/pages/new-user-test/new-user-test' });
+  },
+
+  onDisableDeveloperMode() {
+    if (!isDeveloperMode()) return;
+    return Dialog.confirm({ context: this, selector: '#t-dialog', title: '关闭开发者模式？',
+      content: isTestFamily()
+        ? '关闭后隐藏开发者工具，当前仍在测试家庭。可点测试提示条或在「账号与家庭空间」切换家庭。不会清除测试数据、登录或模型配置。'
+        : '关闭后隐藏开发者工具，登录、家庭和模型配置保留。以后点击 5 次「关于记一下喵」可重新开启。',
+      confirmBtn: '关闭', cancelBtn: '取消',
+    }).then(() => {
+      disableDeveloperMode();
+      this.setData({ devMode: false, aboutTaps: 0 });
+      Toast({ context: this, selector: '#t-toast', message: '开发者模式已关闭', theme: 'success' });
+    }).catch(() => {});
   },
 
   onAbout() {

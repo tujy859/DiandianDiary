@@ -31,6 +31,7 @@ function developerSession() {
   return { ...session, epoch: getCloudSessionEpoch() };
 }
 function assertSession(userId: string, familyId: string, epoch: number) {
+  if (!isDeveloperMode()) throw new Error('开发者模式已关闭，请重新进入测试页');
   const session = getCloudSession();
   if (session?.userId !== userId || session.familyId !== familyId || epoch !== getCloudSessionEpoch()) throw new Error('账号或家庭已切换，请重新进入测试页');
 }

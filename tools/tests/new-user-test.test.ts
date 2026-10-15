@@ -3,6 +3,7 @@ import * as store from '../../utils/store';
 import * as repo from '../../utils/repository';
 import { callCloud, CloudError } from '../../utils/cloud';
 import { enableDeveloperMode } from '../../utils/developer';
+import { disableDeveloperMode } from '../../utils/developer';
 import { enterEmptyTestFamily, returnToOriginalFamily, getNewUserTestState, isTestFamily } from '../../utils/new-user-test';
 import { memoryDatabase } from './helpers/cloud-db';
 const { createService } = require('../../cloudfunctions/diaryApi/service');
@@ -170,4 +171,14 @@ test('返回原家庭后再次进入，最近测试家庭仍为空时继续复�
   expect(store.getCloudSession()!.familyId).toBe(testId);
   expect(db.dump('families')).toHaveLength(2);
   expect(getNewUserTestState()!.originalFamilyId).toBe(original.familyId);
+});
+
+test('创建请求期间关闭开发者模式，迟到响应不能自动切进测试家庭', async () => {
+  rpc.mockImplementation(async (action, data) => {
+    const result = await baseRpc(action, data);
+    if (action === 'family.create') disableDeveloperMode();
+    return result;
+  });
+  await expect(enterEmptyTestFamily()).rejects.toThrow('开发者模式已关闭');
+  expect(store.getCloudSession()).toEqual(original);
 });

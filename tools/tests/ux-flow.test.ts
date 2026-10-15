@@ -4,6 +4,8 @@ import { refreshCloudIfStale, connectCloud } from '../../utils/repository';
 import { testConnection } from '../../utils/llm';
 import { openAddPet, consumeAddPetRequest } from '../../utils/pet-navigation';
 import { enableDeveloperMode } from '../../utils/developer';
+import { isDeveloperMode } from '../../utils/developer';
+import Dialog from 'tdesign-miniprogram/dialog/index';
 
 jest.mock('tdesign-miniprogram/dialog/index', () => ({ __esModule: true, default: { alert: jest.fn(), confirm: jest.fn() } }), { virtual: true });
 jest.mock('tdesign-miniprogram/toast/index', () => ({ __esModule: true, default: jest.fn() }), { virtual: true });
@@ -230,6 +232,44 @@ test('连点关于开启开发者工具，切页后状态仍在；未开启时�
   expect(mine.data.devMode).toBe(true);
   const fresh = page('mine'); await fresh.onShow();
   expect(fresh.data.devMode).toBe(true);
+});
+
+test('关闭开发者模式持久生效、保留账号配置，重新开启必须重新点击五次', async () => {
+  enableDeveloperMode();
+  const mine = page('mine'); await mine.onShow(); mine.data.aboutTaps = 5;
+  const session = store.getCloudSession();
+  (Dialog.confirm as jest.Mock).mockResolvedValueOnce(undefined);
+  await mine.onDisableDeveloperMode();
+  expect(isDeveloperMode()).toBe(false);
+  expect(mine.data).toMatchObject({ devMode: false, aboutTaps: 0 });
+  expect(store.getCloudSession()).toEqual(session);
+  expect(store.getModelConfig()).toEqual(config);
+  const fresh = page('mine'); await fresh.onShow();
+  expect(fresh.data.devMode).toBe(false);
+  const navigate = jest.spyOn(wx, 'navigateTo');
+  fresh.goSelftest(); fresh.goNewUserTest();
+  expect(navigate).not.toHaveBeenCalled();
+  for (let i = 0; i < 4; i++) mine.onAbout();
+  expect(isDeveloperMode()).toBe(false);
+  mine.onAbout(); expect(isDeveloperMode()).toBe(true);
+});
+
+test('取消关闭时保留开关和测试家庭；关闭后测试提示条仍可进入家庭管理', async () => {
+  enableDeveloperMode();
+  wx.setStorageSync('jd_new_user_test_demo-user', { originalFamilyId: 'original-family', originalFamilyName: '原家庭', testFamilyId: 'demo-family' });
+  const mine = page('mine');
+  (Dialog.confirm as jest.Mock).mockRejectedValueOnce(new Error('取消'));
+  await mine.onDisableDeveloperMode();
+  expect(isDeveloperMode()).toBe(true);
+  (Dialog.confirm as jest.Mock).mockResolvedValueOnce(undefined);
+  await mine.onDisableDeveloperMode();
+  expect((Dialog.confirm as jest.Mock).mock.calls[1][0].content).toContain('当前仍在测试家庭');
+  expect(wx.getStorageSync('jd_new_user_test_demo-user').originalFamilyId).toBe('original-family');
+  let component: any;
+  (global as any).Component = (value: any) => { component = value; };
+  require('../../components/test-space-bar/index.ts');
+  const navigate = jest.spyOn(wx, 'navigateTo'); component.methods.onManage();
+  expect(navigate).toHaveBeenCalledWith({ url: '/pages/family/family' });
 });
 
 test('测试页操作等待中防止重复执行，失败后恢复可重试状态', async () => {
