@@ -65,21 +65,45 @@ export function relDay(s: string): string {
 
 /**
  * 从文本中解析明确的日期词。只接受确定日期：
- * 今天/昨天/前天/大前天、带年份日期、当年已经过去的 X月X日。
+ * 今天/昨天/前天/大前天、带年份日期、今年/去年/前年 + 月日、当年已过去的 X月X日。
+ * 两位年份只展开为参考日期所在世纪、且不晚于参考年份的年份；其余需补四位年份。
  * 「上周左右」等模糊说法一律返回 null，交给用户确认，不猜精确日期。
  */
 export function parseDateWords(text: string, referenceDate = today()): string | null {
   const t = referenceDate;
-  const full = text.match(/(\d{4})\s*[-年]\s*(\d{1,2})\s*[-月]\s*(\d{1,2})(?:[日号])?/);
-  if (full) {
-    const value = `${full[1]}-${pad(Number(full[2]))}-${pad(Number(full[3]))}`;
+  if (!isValidDate(t)) return null;
+  const referenceYear = parse(t).getFullYear();
+  const digits = '零一二三四五六七八九';
+  const normalizeYear = (value: string) => value.replace(/[零〇○一二三四五六七八九]/g,
+    (char) => char === '〇' || char === '○' ? '0' : String(digits.indexOf(char)));
+  const full = Array.from(text.matchAll(/(?:^|[^\d零〇○一二三四五六七八九])([\d零〇○一二三四五六七八九]+)\s*(?:年|[-/.])\s*(\d{1,2})\s*(?:月|[-/.])\s*(\d{1,2})(?!\d)(?:[日号])?/g));
+  if (full.length) {
+    const dates: string[] = [];
+    for (const match of full) {
+      const rawYear = normalizeYear(match[1]);
+      if (!/^\d{2}$|^\d{4}$/.test(rawYear)) return null;
+      const year = rawYear.length === 2 ? Math.floor(referenceYear / 100) * 100 + Number(rawYear) : Number(rawYear);
+      if (rawYear.length === 2 && year > referenceYear) return null;
+      const value = `${year}-${pad(Number(match[2]))}-${pad(Number(match[3]))}`;
+      if (!isValidDate(value)) return null;
+      dates.push(value);
+    }
+    const unique = Array.from(new Set(dates));
+    return unique.length === 1 ? unique[0] : null;
+  }
+  const relativeYear = text.match(/(今年|去年|前年|明年|后年)\s*的?\s*(\d{1,2})\s*月\s*(\d{1,2})(?!\d)\s*[日号]?/);
+  if (relativeYear) {
+    const offsets: Record<string, number> = { 今年: 0, 去年: -1, 前年: -2, 明年: 1, 后年: 2 };
+    const value = `${referenceYear + offsets[relativeYear[1]]}-${pad(Number(relativeYear[2]))}-${pad(Number(relativeYear[3]))}`;
     return isValidDate(value) ? value : null;
   }
+  // 已表达年份却不完整 / 不支持时，不能丢掉年份退回当年的月日或「早上」。
+  if (hasYearExpression(text)) return null;
   if (/大前天/.test(text)) return addDays(t, -3);
   if (/前天/.test(text)) return addDays(t, -2);
   if (/昨天|昨晚/.test(text)) return addDays(t, -1);
   if (/今天|今早|今晚|刚刚|刚才|早上|中午|晚上/.test(text)) return t;
-  const m = text.match(/(\d{1,2})\s*月\s*(\d{1,2})\s*[日号]?/);
+  const m = text.match(/(?:^|[^\d])(\d{1,2})\s*月\s*(\d{1,2})(?!\d)\s*[日号]?/);
   if (m) {
     const now = parse(t);
     const d = new Date(now.getFullYear(), Number(m[1]) - 1, Number(m[2]));
@@ -100,4 +124,9 @@ export function parseDateWords(text: string, referenceDate = today()): string | 
     }
   }
   return null;
+}
+
+/** 年份信息解析失败时必须保留不确定性，不能静默变成当年。 */
+export function hasYearExpression(text: string): boolean {
+  return /(?:\d+|[零〇○一二三四五六七八九十两]+)\s*年|今年|去年|前年|明年|后年/.test(text);
 }

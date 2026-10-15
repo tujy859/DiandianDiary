@@ -74,6 +74,17 @@ describe('Agent 工具调用', () => {
     expect(res.reply).toBe('哈哈，它今天真可爱。');
   });
 
+  test('两位年份经真实工具执行进入待确认卡，模型的当年日期不能覆盖原文', async () => {
+    const text = '25年10月1日，领养了小猫';
+    mockModel([{ content: '', tool_calls: [{ id: 'year', function: { name: 'create_draft_record',
+      arguments: JSON.stringify({ text: '领养了小猫', sourceText: '10月1日，领养了小猫', date: '2026-10-01' }) } }] }, { content: '请确认草稿' }]);
+    const before = getRecords(pet.id).length;
+    const result = await runAgent(CFG, text, { pet, history: [], photos: [] });
+    expect(result.drafts).toHaveLength(1);
+    expect(result.drafts[0].date).toBe('2025-10-01');
+    expect(getRecords(pet.id)).toHaveLength(before);
+  });
+
   test('工具执行结果会回灌给模型', async () => {
     const payloads: any[] = [];
     let i = 0;

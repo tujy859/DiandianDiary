@@ -49,6 +49,16 @@ function page(name: string) {
   return instance;
 }
 
+test('跨年日记详情显示真实年份、星期与天数，不会显示成当年的 14 天前', () => {
+  jest.useFakeTimers({ now: new Date('2026-10-15T12:00:00+08:00') });
+  try {
+    store.cacheCloudData([pet], [{ ...record, date: '2025-10-01' }]);
+    const diary = page('diary'); diary.onLoad({ id: record.id }); diary.reload();
+    expect(diary.data.record.dateText).toBe('2025年10月1日 · 周三');
+    expect(diary.data.record.rel).toBe('379天前');
+  } finally { jest.useRealTimers(); }
+});
+
 test('日记缓存无记录时，读取失败保留错误状态；重试成功才展示内容', async () => {
   const diary = page('diary'); diary.onLoad({ id: record.id });
   refresh.mockRejectedValueOnce(new Error('网络不可用'));

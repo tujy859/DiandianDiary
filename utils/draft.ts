@@ -1,8 +1,9 @@
-import { parseDateWords, today } from './date';
+import { hasYearExpression, parseDateWords, today } from './date';
 import { extractTags } from './intent';
 
 /** 工具与 JSON 共用的写作分工，避免把事实出处误当成正文必须照抄的限制。 */
 export const DRAFT_WRITING_GUIDE = `sourceText 是事实出处，必须逐字摘取用户原话；text 是展示给用户的日记正文，允许自然整理、补足语法和去除口头赘词，不必照抄 sourceText。原话已经自然完整时可保留，不为改写而改写。
+sourceText 必须保留该事实的完整日期，包括年份。例如「25年10月1日，领养了小猫」不能只摘「10月1日」或「领养了小猫」。
 日期已有独立字段，正文通常省略「今天/昨天」等相对日期，保留「上午/晚上」等具体时段和用户表达的重要细节，方便以后回看。例如用户说「昨晚和点点玩逗猫棒」，sourceText 保留原话，text 可写「晚上和点点玩了逗猫棒」。不能添加未说过的心情、反应、时长或次数，如「玩得很开心」「追逐了一小时」。
 tags 使用简短自然的中文展示标签，例如「玩耍」「逗猫棒」，不要把 play、feeding 等工具事件标识直接当作中文日记标签。`;
 
@@ -25,9 +26,17 @@ export function validateDraft(args: Record<string, any>, input: { text: string; 
   if (!source || !evidence.trim()) {
     throw new Error('请从当前话题的用户原话中选择事实依据，不能使用助手建议或编造原文');
   }
-  const dates = Array.from(new Set(evidence.split(/[，,。；;！？!?\n]/)
-    .map((part: string) => parseDateWords(part, source.referenceDate || referenceDate)).filter(Boolean)));
-  const date = dates.length === 1 ? dates[0] as string : null;
+  // 补回紧邻证据之前的日期前缀，避免模型摘句时把「25年」或日期标题截掉。
+  // 只接日期字符组成的相邻片段，不从其他事件或其他句子借日期。
+  const prefix = source.content.slice(0, source.content.indexOf(evidence));
+  const fragment = prefix.match(/(?:今年|去年|前年|明年|后年)(?:的)?(?:\s*\d{1,2}\s*月)?\s*$|[\d零〇○一二三四五六七八九年/月日号.\-\s]+[，,:：]?\s*$/)?.[0] || '';
+  const datePrefix = hasYearExpression(fragment) || /月|\d{4}\s*[-/.]/.test(fragment) ? fragment : '';
+  const dateEvidence = datePrefix + evidence;
+  const parts = dateEvidence.split(/[，,。；;！？!?\n]/);
+  const parsed = parts.map((part: string) => parseDateWords(part, source.referenceDate || referenceDate));
+  const unresolvedYear = parts.some((part: string, index: number) => hasYearExpression(part) && !parsed[index]);
+  const dates = Array.from(new Set(parsed.filter(Boolean)));
+  const date = !unresolvedYear && dates.length === 1 ? dates[0] as string : null;
   if (date && date > referenceDate) throw new Error('未来的计划不能记录为已发生事实');
   const tags = Array.isArray(args.tags) && args.tags.length ? (args.tags as string[]) : extractTags(evidence);
   return { petId: input.petId, date, text: args.text.trim(), tags, photos: input.photos.slice(),

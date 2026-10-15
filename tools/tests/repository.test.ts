@@ -2,6 +2,7 @@ import * as local from '../../utils/store';
 import * as repo from '../../utils/repository';
 import { callCloud, CloudError } from '../../utils/cloud';
 import { memoryDatabase } from './helpers/cloud-db';
+import { validateDraft } from '../../utils/draft';
 const { createService } = require('../../cloudfunctions/diaryApi/service');
 jest.mock('../../utils/cloud', () => ({
   ...jest.requireActual('../../utils/cloud'), callCloud: jest.fn(),
@@ -30,6 +31,18 @@ beforeEach(() => {
 });
 const input = (petId: string) => ({ petId, date: '2026-10-12', text: '整理的洗澡记录', tags: ['洗澡'], photos: [],
   rawInput: { text: '今天早上给点点洗澡了，好乖', photos: [] }, clientId: 'draft-one', mode: 'tool' });
+
+test('原文两位年份从草稿到云端保存和重新读取均保留为 2025', async () => {
+  await repo.connectCloud();
+  const pet = await repo.savePet({ name: '测试咪2号', species: '猫' });
+  const text = '25年10月1日，领养了小猫';
+  const draft = validateDraft({ text: '领养了小猫', sourceText: text, date: '2026-10-01' },
+    { text, petId: pet.id, photos: [] }, '2026-10-15');
+  const saved = await repo.addRecord({ ...draft, date: draft.date!, clientId: 'year-regression' });
+  expect(db.dump('diaries')[0].formatted.date).toBe('2025-10-01');
+  local.clearAll(); await repo.refreshCloud();
+  expect(local.getRecord(saved.id)).toMatchObject({ date: '2025-10-01', rawInput: { text } });
+});
 
 test('切换家庭后的节流刷新不复用旧家庭正在等待的请求', async () => {
   await repo.connectCloud();
