@@ -2,8 +2,7 @@ import Dialog from 'tdesign-miniprogram/dialog/index';
 import { getCloudSession, getCloudSessionEpoch, setCloudSession } from '../../utils/store';
 import { connectCloud, selectFamily, refreshCloud, Family } from '../../utils/repository';
 import { callCloud } from '../../utils/cloud';
-import { forgetFamilyState } from '../../utils/family-state';
-import { logoutLocal } from '../../utils/auth';
+import { forgetFamilyState, logoutLocal } from '../../utils/family-state';
 
 Page({
   data: {

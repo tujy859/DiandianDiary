@@ -1,6 +1,6 @@
 /** 本机退出与真实业务服务联测；微信身份、云数据均为内存演示数据。 */
 import Dialog from 'tdesign-miniprogram/dialog/index';
-import { logoutLocal } from '../../utils/auth';
+import { logoutLocal } from '../../utils/family-state';
 import * as store from '../../utils/store';
 import * as repo from '../../utils/repository';
 import { callCloud, CloudError } from '../../utils/cloud';

@@ -1,3 +1,17 @@
+import { getCloudSession, setCloudSession, clearModelConfig } from './store';
+
+/** 本地退出与家庭缓存清理共用入口；不改变云端成员关系或数据。 */
+export function logoutLocal(clearModel = false): void {
+  const session = getCloudSession();
+  // 先失效身份与登录代次，迟到的刷新 / 同步不能恢复登录或缓存。
+  setCloudSession(null);
+  if (session) {
+    reconcileFamilyState(session.userId, []);
+    wx.removeStorageSync(`jd_new_user_test_${session.userId}`);
+  }
+  if (clearModel) clearModelConfig();
+}
+
 /** 仅在云端确认家庭列表后清理失效缓存；网络失败不能冒充退出或解散。 */
 export function reconcileFamilyState(userId: string, familyIds: string[]): void {
   const keys: string[] = wx.getStorageInfoSync().keys;
