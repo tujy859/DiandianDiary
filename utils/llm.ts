@@ -31,6 +31,7 @@ function buildJsonPrompt(ctx: LlmContext): string {
 {"reply":"简短回复","draft":null,"query":null}
 已发生的事实可以把 draft 设为 {"date":"YYYY-MM-DD 或 null","text":"整理后的事实","sourceText":"从本话题用户原话逐字摘取的事实分句，含日期","tags":["标签"]}；日期只来自用户明确描述，模糊用 null。「把刚才的记下来」可以整理前文用户明确陈述的事实；只有助手建议或指向不明时先追问。咨询、计划、否定、闲聊都必须 draft=null。草稿尚未保存，不能说已经记入。
 ${DRAFT_WRITING_GUIDE}
+单纯记录事实时 query=null、reply=""，只生成草稿，卡片会提示确认，不重复说保存说明或回顾其他事情。用户同时提问时才给 query。领养 / 收养查询用 eventType=adoption。
 历史查询必须设置 query 对象，允许 eventType、keyword、startDate、endDateExclusive、mode、limit；不适用的字段省略。
 eventType 可选 ${EVENT_TYPES.join(', ')}，驱虫用 deworming，疫苗用 vaccination，不能用宽泛医疗替代。
 mode 是 latest/count/list。日期 YYYY-MM-DD，startDate 包含，endDateExclusive 不包含；limit 是 1 到 50 整数。

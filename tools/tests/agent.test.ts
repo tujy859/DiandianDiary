@@ -4,6 +4,52 @@ import { today, addDays } from '../../utils/date';
 
 const CFG = { provider: 'test', baseUrl: 'https://example.test', apiKey: 'k', model: 'm' };
 
+describe('可见答案与内部取证隔离', () => {
+  const call = (id: string, name: string, args: any) => ({ id, function: { name, arguments: JSON.stringify(args) } });
+  let pet: Pet;
+  beforeEach(() => { clearAll(); pet = savePet({ name: '点点', species: '猫' }); });
+  afterEach(() => clearAll());
+
+  test.each(['context', 'answer', 'evidence'])('纯记录时不展示 %s 背景查询、旧事或重复待确认说明', async purpose => {
+    const text = '25年10月1号领养了点点';
+    mockModel([{ content: '', tool_calls: [call('q', 'query_records', { keyword: '领养', purpose }),
+      call('d', 'create_draft_record', { sourceText: text, text: '领养了点点', tags: ['领养'] })] },
+    { content: '之前玩耍已保存，另外请确认领养草稿。' }]);
+    const res = await runAgent(CFG, text, { pet, history: [], photos: [] });
+    expect(res.drafts[0].date).toBe('2025-10-01');
+    expect(res.reply).toBe(''); expect(res.refs).toEqual([]);
+    expect(getRecords(pet.id)).toHaveLength(0);
+  });
+
+  test('新话题精确答案只附带对应引用，不累加后续宽泛背景查询', async () => {
+    const adoption = addRecord({ petId: pet.id, date: '2025-01-01', text: '领养了点点', tags: ['领养'], photos: [] });
+    addRecord({ petId: pet.id, date: '2026-06-01', text: '驱虫了', tags: ['驱虫'], photos: [] });
+    addRecord({ petId: pet.id, date: today(), text: '和点点玩了', tags: ['玩耍'], photos: [] });
+    mockModel([{ content: '', tool_calls: [call('a', 'query_records', { eventType: 'adoption', mode: 'latest' })] },
+      { content: '', tool_calls: [call('b', 'query_records', { purpose: 'context' })] }, { content: '查到了' }]);
+    const res = await runAgent(CFG, '我什么时候领养的点点', { pet, history: [], photos: [] });
+    expect(res.reply).toContain('共 1 条'); expect(res.reply).toContain('2025-01-01');
+    expect(res.refs.map(r => r.recordId)).toEqual([adoption.id]);
+  });
+
+  test('明确混合请求保留草稿与相关事实答案，不附加流程说明', async () => {
+    const worm = addRecord({ petId: pet.id, date: '2026-06-01', text: '驱虫了', tags: ['驱虫'], photos: [] });
+    const text = '昨天和点点玩了，上次驱虫什么时候？';
+    mockModel([{ content: '', tool_calls: [call('d', 'create_draft_record', { sourceText: '昨天和点点玩了', text: '和点点玩了', tags: ['玩耍'] }),
+      call('q', 'query_records', { eventType: 'deworming', mode: 'latest' })] }, { content: '整理好了' }]);
+    const res = await runAgent(CFG, text, { pet, history: [], photos: [] });
+    expect(res.drafts).toHaveLength(1); expect(res.reply).toContain('2026-06-01');
+    expect(res.reply).not.toContain('待确认'); expect(res.refs.map(r => r.recordId)).toEqual([worm.id]);
+  });
+
+  test('领养漏用工具时也能从已保存记录查询，不猜日期', async () => {
+    const record = addRecord({ petId: pet.id, date: '2025-01-01', text: '领养了点点', tags: ['领养'], photos: [] });
+    mockModel([{ content: '应该是昨天。' }]);
+    const res = await runAgent(CFG, '我哪天领养的点点', { pet, history: [], photos: [] });
+    expect(res.reply).toContain('2025-01-01'); expect(res.refs[0].recordId).toBe(record.id);
+  });
+});
+
 /** 模拟模型的多轮返回：每一轮给一个 assistant message */
 function mockModel(turns: any[]) {
   let i = 0;

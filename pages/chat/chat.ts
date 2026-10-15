@@ -18,7 +18,7 @@ import { chatWithModel } from '../../utils/llm';
 import { runAgent, AbortedError } from '../../utils/agent';
 import { today, isValidDate } from '../../utils/date';
 import { RequestToken } from '../../utils/cancellation';
-import { isHistoryQuery, queryRecords, resolveQueryOptions } from '../../utils/query';
+import { isHistoryQuery, hasExplicitQuestion, queryRecords, resolveQueryOptions } from '../../utils/query';
 import { validateDraft } from '../../utils/draft';
 import {
   SESSION_GAP_MS, unclaimedPhotos, buildHistory, isDivider, makeDivider,
@@ -660,15 +660,14 @@ Page({
           msgs.push(this.toMessage({ kind: 'draft', draft, sourceText: originalText, sourcePhotos: savedPhotos }, 'model'));
         }
         const historical = isHistoryQuery(text);
-        const querying = !!out.query || historical;
+        const querying = (!!out.query || historical) && (!out.draft || hasExplicitQuestion(text));
         if (querying) {
           const options = out.query || resolveQueryOptions(text, {}, referenceDate);
           if (!out.query && !options.eventType && !options.keyword && !/记录|日记/.test(text)) throw new Error('请补充要查询的事件关键词');
           const result = queryRecords({ ...options, petId: pet.id });
           msgs.push(this.toMessage({ kind: 'query', text: result.summary, refs: result.refs }, 'model'));
         }
-        if (out.draft) msgs.push(this.toMessage({ kind: 'text', text: '已整理为待确认草稿，点击「保存这条」后才会记进时光册。' }, 'model'));
-        else if (!historical && out.reply) msgs.push(this.toMessage({ kind: 'text', text: out.reply }, 'model'));
+        if (!out.draft && !querying && out.reply) msgs.push(this.toMessage({ kind: 'text', text: out.reply }, 'model'));
         if (!msgs.length) msgs.push(this.toMessage({ kind: 'text', text: '我在呢，继续说～' }, 'model'));
         this.appendMessages(msgs);
       } catch (error: any) {

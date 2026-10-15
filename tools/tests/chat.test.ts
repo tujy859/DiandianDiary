@@ -33,6 +33,16 @@ const result = (reply: string) => ({ reply, drafts: [], refs: [], toolsUsed: [] 
 const deferred = () => { let resolve!: (value: any) => void; let reject!: (value: any) => void;
   return { promise: new Promise<any>((ok, fail) => { resolve = ok; reject = fail; }), resolve: (value: any) => resolve(value), reject: (value: any) => reject(value) }; };
 
+test('JSON 降级的纯记录只显示草稿，不展示背景查询或待确认文本', async () => {
+  run.mockRejectedValueOnce(new Error('工具不可用'));
+  json.mockResolvedValueOnce({ reply: '旧事情已经记过，请确认这条。',
+    draft: { date: '2025-01-01', sourceText: '2025年1月1号领养了点点', text: '领养了点点', tags: ['领养'] },
+    query: { keyword: '领养' } });
+  await page.replyByAI('2025年1月1号领养了点点', [], a);
+  expect(page.data.messages).toHaveLength(1);
+  expect(page.data.messages[0].kind).toBe('draft');
+});
+
 beforeAll(() => {
   (global as any).Page = (options: any) => { definition = options; };
   require('../../pages/chat/chat.ts'); // 明确加载 TS，不能误测同名历史 JS 模板

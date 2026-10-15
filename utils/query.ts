@@ -13,6 +13,7 @@ const EVENTS = {
   outing: { label: '外出', words: ['外出', '散步', '出门', '遛'] },
   elimination: { label: '排泄', words: ['排泄', '便便', '尿了', '拉屎', '猫砂'] },
   sleep: { label: '睡眠', words: ['睡眠', '睡着了', '睡觉'] },
+  adoption: { label: '领养', words: ['领养', '收养'] },
 };
 export type EventType = keyof typeof EVENTS;
 export const EVENT_TYPES = Object.keys(EVENTS) as EventType[];
@@ -46,7 +47,12 @@ export function queryPart(text: string): string {
 }
 
 export function isHistoryQuery(text: string): boolean {
-  return /上次|什么时候|啥时候|多久|多少天|几次|多少次|多少条|列出|查查|查一下|查询|查下|(?:查|看).*(?:记录|日记)|(?:最近|本月|这个月|上个月|上周|这周).*(?:记录|日记)/.test(text);
+  return /上次|什么时候|啥时候|哪天|哪年|何时|多久|多少天|几次|多少次|多少条|列出|查查|查一下|查询|查下|(?:查|看).*(?:记录|日记)|(?:最近|本月|这个月|上个月|上周|这周).*(?:记录|日记)/.test(text);
+}
+
+/** 只用于草稿与答复的展示边界，不替代模型理解意图或生成查询参数。 */
+export function hasExplicitQuestion(text: string): boolean {
+  return isHistoryQuery(text) || /[?？]|该不该|要不要|怎么办|如何|建议|为什么/.test(text);
 }
 
 export function inferEvent(text: string): EventType | undefined {

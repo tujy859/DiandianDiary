@@ -2,7 +2,7 @@
 import { ModelConfig, Pet, RefInfo, RawInput } from './store';
 import { chatTurn } from './llm';
 import { today } from './date';
-import { EVENT_TYPES, isHistoryQuery, queryRecords, resolveQueryOptions } from './query';
+import { EVENT_TYPES, isHistoryQuery, hasExplicitQuestion, queryRecords, resolveQueryOptions, RecordQueryResult } from './query';
 import { validateDraft, DRAFT_WRITING_GUIDE } from './draft';
 import { AbortToken, throwIfAborted } from './cancellation';
 import { ConversationLine } from './context';
@@ -25,7 +25,7 @@ const queryProperties = {
   mode: { type: 'string', enum: ['latest', 'count', 'list'] },
   limit: { type: 'integer', minimum: 1, maximum: 50, description: '仅限制展示条数，不影响 totalMatched' },
   offset: { type: 'integer', minimum: 0, description: '分页偏移，默认 0；按 nextOffset 继续读取' },
-  purpose: { type: 'string', enum: ['answer', 'context'], description: 'answer 直接展示确定性事实（默认）；context 为回顾、比较或咨询提供依据，由模型结合结果回复' },
+  purpose: { type: 'string', enum: ['answer', 'context', 'evidence'], description: 'answer 回答用户明确的事实问题；context 回答咨询或回顾；evidence 仅内部取证或背景核对，不向用户展示' },
 };
 export const TOOLS: any[] = [
   { type: 'function', function: {
@@ -67,14 +67,14 @@ export async function runAgent(cfg: ModelConfig, userText: string, opts: {
   const conversation = opts.conversation || history;
   const referenceDate = today();
   const drafts: AgentDraft[] = [];
-  const refs: RefInfo[] = [];
   const toolsUsed: string[] = [];
-  const factReplies: string[] = [];
-  const contextFacts: string[] = [];
+  const queries: Array<{ purpose: string; result: RecordQueryResult }> = [];
+  let fallbackError = '';
   let draftRejected = false;
   const messages: Array<Record<string, any>> = [
     { role: 'system', content: `你是「记一下喵」的宠物陪伴助手。当前宠物是「${pet.name}」（${pet.species}），今天是 ${referenceDate}。
 由你理解用户意图，必要时查询记录辅助回答，包括追问、咨询、回顾；闲聊不必查询。查询参数由你结合上下文填写，代码不会用本句关键词覆盖。明确事实查询用 purpose=answer；需要结合事实给出建议、比较或回顾用 purpose=context。没有记录就明确说没有。不能根据对话历史推断已保存事实。
+单纯陈述事实时只生成记录卡，不主动查历史、回顾旧事或重复确认说明。内部背景查询用 purpose=evidence，不能把它当成用户答案。比如「25年10月1号领养了点点」只生成草稿；「什么时候领养的」用 adoption 或关键词领养查询；「昨天玩了，上次驱虫什么时候」才同时生成草稿与驱虫答案。
 用户明确说出已发生的事实才调用 create_draft_record，它只生成待确认卡，绝不能声称已经保存。计划、咨询、否定、闲聊不创建草稿。混合消息只整理事实分句。
 用户说「把刚才的记下来」时，结合本话题用户原话整理最近明确的事实，sourceText 必须逐字摘取对应事实分句。只有助手建议、多个事件指向不明或找不到事实时才追问。正文可以整理，但不得增添用户没说过的动作、药名和数字。日期从所选事实分句解析，模糊则留给用户确认。
 ${DRAFT_WRITING_GUIDE}
@@ -109,10 +109,9 @@ ${DRAFT_WRITING_GUIDE}
         const args = call.arguments;
         if (!args || typeof args !== 'object' || Array.isArray(args)) throw new Error('工具参数必须为对象');
         if (call.name === 'query_records') {
-          if (args.purpose !== undefined && !['answer', 'context'].includes(args.purpose)) throw new Error('未知查询用途');
+          if (args.purpose !== undefined && !['answer', 'context', 'evidence'].includes(args.purpose)) throw new Error('未知查询用途');
           result = queryRecords({ ...args, referenceDate, petId: pet.id });
-          (args.purpose === 'context' ? contextFacts : factReplies).push(result.summary);
-          refs.push(...result.refs);
+          queries.push({ purpose: args.purpose || 'answer', result });
         } else if (call.name === 'create_draft_record') {
           if (typeof args.sourceText !== 'string') throw new Error('请提供从用户原话摘取的 sourceText');
           const draft = validateDraft(args, { text: userText, petId: pet.id, photos,
@@ -151,18 +150,19 @@ ${DRAFT_WRITING_GUIDE}
       const options = resolveQueryOptions(userText, {}, referenceDate);
       if (!options.eventType && !options.keyword && !/记录|日记/.test(userText)) throw new Error('想查哪类事情？请补充事件关键词。');
       const result = queryRecords({ ...options, petId: pet.id });
-      factReplies.push(result.summary);
-      refs.push(...result.refs);
-    } catch (error: any) { factReplies.push(error.message); }
+      queries.push({ purpose: 'answer', result });
+    } catch (error: any) { fallbackError = error.message; }
   }
-  // 用途由工具参数表达：直接事实展示确定性摘要，咨询/回顾保留模型推理。
-  // 读取对话只作为上下文，不把整段历史原文自动外显。
-  let reply = factReplies.length ? Array.from(new Set(factReplies)).join('\n\n')
-    : contextFacts.length
-      ? [Array.from(new Set(contextFacts)).join('\n\n'), final].filter(Boolean).join('\n\n')
-      : final;
-  if (drafts.length) reply = ((factReplies.length || contextFacts.length) ? reply + '\n\n' : '') + '已整理为待确认草稿，点击「保存这条」后才会记进时光册。';
-  else if (draftRejected) reply = (reply ? reply + '\n\n' : '') + '这次没有生成记录卡，请补充事实原文或确认日期。';
+  // 正文与引用从同一组可见查询生成；内部取证不能附到其他答案下面。
+  const answers = queries.filter(q => q.purpose === 'answer');
+  const visible = drafts.length && !hasExplicitQuestion(userText) ? []
+    : answers.length ? answers : queries.filter(q => q.purpose === 'context');
+  const summaries = Array.from(new Set(visible.map(q => q.result.summary))).join('\n\n');
+  let reply = drafts.length && !visible.length ? '' : summaries
+    ? [summaries, !answers.length ? final : ''].filter(Boolean).join('\n\n')
+    : fallbackError || final;
+  if (draftRejected && !drafts.length) reply = (reply ? reply + '\n\n' : '') + '这次没有生成记录卡，请补充事实原文或确认日期。';
+  const refs = visible.flatMap(q => q.result.refs);
   return { reply, drafts, refs: refs.filter((ref, i) => refs.findIndex((r) => r.recordId === ref.recordId) === i), toolsUsed };
 }
 

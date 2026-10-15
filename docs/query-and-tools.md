@@ -39,7 +39,7 @@ interface RecordQueryOptions {
 }
 ```
 
-事件类型：bath、deworming、vaccination、vet_visit、feeding、cleaning、play、outing、elimination、sleep。
+事件类型：bath、deworming、vaccination、vet_visit、feeding、cleaning、play、outing、elimination、sleep、adoption（领养 / 收养）。
 
 处理顺序：宠物隔离 → 事件/关键词及日期筛选 → 按发生日期倒序 → 统计全部匹配 → 分页返回。`latest` 每页一条；其他模式每页最多 limit 条。返回 summary、totalMatched、latestDate、daysElapsed、records、refs、nextOffset。没有下一页时 nextOffset 为 null。
 
@@ -47,6 +47,9 @@ interface RecordQueryOptions {
 
 - `answer`（默认）：直接展示程序生成的事实摘要与引用，不采用模型另写的日期或数字。
 - `context`：适合咨询、比较、回顾；展示事实摘要，同时保留模型结合工具结果生成的自然回复。推理与建议仍需真实模型评测。
+- `evidence`：仅内部背景取证，摘要和引用不直接展示。存在 answer 查询时，context 引用也不附到 answer 答案下；正文与引用始终使用同一组结果。
+
+单纯记录事实只展示草稿卡，不重复追加保存说明或展示背景查询。明确同时提问时可保留相关查询答复。工具与 JSON 模式共用展示边界；这里的有限问题识别只决定草稿旁是否显示答复，不代替模型生成查询参数。旧话题中已经保存的文字不会被自动改写。
 
 模型可以依据上下文查询，例如「那疫苗呢？」无需命中本句查询关键词。一次查驱虫和疫苗时，两次工具调用保留各自的参数，程序不再用用户原话中的第一个事件覆盖所有调用。日期表达由模型转换为日期参数，再由程序校验真实日历日期与起止顺序。
 
