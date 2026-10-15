@@ -10,5 +10,5 @@
     "skipLibCheck": true,
     "types": ["jest", "node"]
   },
-  "include": ["tests/**/*.ts", "types/**/*.d.ts", "../utils/**/*.ts", "../pages/chat/chat.ts", "../pages/album/album.ts", "../pages/mine/mine.ts", "../pages/diary/diary.ts", "../pages/family/family.ts", "../pages/onboard/onboard.ts", "../pages/model/model.ts", "../pages/new-user-test/new-user-test.ts", "../components/draft-editor/index.ts", "../components/offline-bar/index.ts", "../components/test-space-bar/index.ts"]
+  "include": ["tests/**/*.ts", "types/**/*.d.ts", "../utils/**/*.ts", "../pages/chat/chat.ts", "../pages/album/album.ts", "../pages/mine/mine.ts", "../pages/diary/diary.ts", "../pages/family/family.ts", "../pages/onboard/onboard.ts", "../pages/model/model.ts", "../pages/new-user-test/new-user-test.ts", "../pages/selftest/selftest.ts", "../components/draft-editor/index.ts", "../components/offline-bar/index.ts", "../components/test-space-bar/index.ts"]
 }

@@ -141,6 +141,11 @@ function matches(record: DiaryRecord, opts: RecordQueryOptions): boolean {
 }
 
 export function queryRecords(opts: RecordQueryOptions): RecordQueryResult {
+  return queryRecordList(opts, getRecords(opts.petId));
+}
+
+/** 同一查询核心可在独立内存数据上运行；不读写 Storage，也不修改传入记录。 */
+export function queryRecordList(opts: RecordQueryOptions, input: readonly DiaryRecord[]): RecordQueryResult {
   if (!opts.petId) throw new Error('查询缺少宠物');
   if (opts.eventType !== undefined && !EVENT_TYPES.includes(opts.eventType)) throw new Error('未知事件类型');
   if (opts.keyword !== undefined && (typeof opts.keyword !== 'string' || opts.keyword.length > 100)) throw new Error('查询关键词无效');
@@ -153,9 +158,10 @@ export function queryRecords(opts: RecordQueryOptions): RecordQueryResult {
   const offset = opts.offset === undefined ? 0 : opts.offset;
   if (!Number.isInteger(offset) || offset < 0) throw new Error('分页偏移需为非负整数');
   if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new Error('返回条数需为 1 到 50 的整数');
-  const matched = getRecords(opts.petId).filter((r) => isValidDate(r.date)
+  const matched = input.filter((r) => r.petId === opts.petId && isValidDate(r.date)
     && (!opts.startDate || r.date >= opts.startDate)
-    && (!opts.endDateExclusive || r.date < opts.endDateExclusive) && matches(r, opts));
+    && (!opts.endDateExclusive || r.date < opts.endDateExclusive) && matches(r, opts))
+    .sort((a, b) => a.date === b.date ? b.createdAt - a.createdAt : a.date < b.date ? 1 : -1);
   const reference = opts.referenceDate || today();
   const pageSize = opts.mode === 'latest' ? 1 : limit;
   const records = matched.slice(offset, offset + pageSize).map(({ id, date, text, tags }) => ({ id, date, text, tags }));

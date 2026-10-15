@@ -23,6 +23,8 @@ UI 已采用统一的暖白/深绿样式，宠物档案支持内置头像选择�
 
 开发者可在「我的」点击 5 次「关于记一下喵」，开启「开发者工具 → 新手流程测试」，重走引导或在独立空白测试家庭中验证首只宠物与首条记录，并可返回原家庭。在同一分组点击「关闭开发者模式」可隐藏工具，登录、家庭与模型配置保留。入口、数据边界与验证状态见 [新手流程测试说明](docs/new-user-testing.md)。
 
+同一分组的「开发自检」只使用内存演示数据验证少量核心逻辑，不读写业务缓存或调用云端 / 模型；页面与默认自动化测试共用用例，维护规则见 [开发自检](docs/developer-self-check.md)。
+
 1. 使用微信开发者工具导入仓库根目录，项目类型选择小程序。
 2. 仓库的 `project.config.json` 使用 `touristappid` 占位。在本机 `project.private.config.json` 中填写自己有权限的真实 `appid`；新环境可复制 `project.private.config.json.example`，已有文件只添加 `appid` 字段，保留其他设置。云开发和真机预览需要真实 AppID。
 3. 项目使用原生 WXML / WXSS / TypeScript 和 WebView 渲染；TypeScript 由开发者工具编译。

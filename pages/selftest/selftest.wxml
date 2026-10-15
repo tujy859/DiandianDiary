@@ -1,4 +1,8 @@
 <view class="page">
+  <view wx:if="{{!allowed}}" class="scope-note">开发者模式已关闭。请在「我的」点击 5 次「关于记一下喵」重新开启。</view>
+  <block wx:else>
+  <view class="scope-note">仅使用内存演示数据检查核心逻辑，不读写本机缓存，也不请求云端或模型。相同用例同时在自动化测试中运行。</view>
+  <view class="lastrun">固定演示参考日期：{{referenceDate}}。通过不代表云端权限、真实模型或真机流程已验收。</view>
   <view class="summary">
     <view class="sum-item">
       <text class="sum-num is-pass">{{passed}}</text>
@@ -8,18 +12,19 @@
       <text class="sum-num is-fail">{{failed}}</text>
       <text class="sum-label">失败</text>
     </view>
-    <t-button theme="primary" size="small" shape="round" loading="{{running}}" bind:tap="onRerun">重新运行</t-button>
+    <t-button theme="primary" size="small" shape="round" loading="{{running}}" disabled="{{running}}" bind:tap="onRerun">重新运行</t-button>
   </view>
 
   <view wx:if="{{lastRunAt}}" class="lastrun">上次运行：{{lastRunAt}}（共 {{results.length}} 项）</view>
   <view wx:if="{{running}}" class="lastrun">运行中…</view>
   <view wx:if="{{!results.length && !running}}" class="lastrun">暂无结果</view>
 
-  <view wx:for="{{results}}" wx:key="name" class="case {{item.pass ? 'is-pass' : 'is-fail'}}">
+  <view wx:for="{{results}}" wx:key="id" class="case {{item.pass ? 'is-pass' : 'is-fail'}}">
     <view class="case-head">
       <t-icon name="{{item.pass ? 'check-circle-filled' : 'close-circle-filled'}}" size="32rpx" color="{{item.pass ? '#2F6B4F' : '#D54941'}}" />
       <text class="case-name">{{item.name}}</text>
     </view>
     <view wx:if="{{item.detail}}" class="case-detail">{{item.detail}}</view>
   </view>
+  </block>
 </view>

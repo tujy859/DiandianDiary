@@ -1,0 +1,115 @@
+{
+  "basis": "current compiled WXML + current WXSS; approximate TDesign browser adapters; demo data only",
+  "results": [
+    {
+      "name": "mine-tools",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 845,
+      "buttons": [
+        {
+          "text": "添加宠物",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "mine-hidden",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "添加宠物",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "selftest-pass",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 1119,
+      "buttons": [
+        {
+          "text": "重新运行",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "selftest-fail",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": [
+        {
+          "text": "重新运行",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "selftest-blocked",
+      "width": 375,
+      "overflow": false,
+      "bodyHeight": 730,
+      "buttons": []
+    },
+    {
+      "name": "mine-tools",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 729,
+      "buttons": [
+        {
+          "text": "添加宠物",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "mine-hidden",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": [
+        {
+          "text": "添加宠物",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "selftest-pass",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 959,
+      "buttons": [
+        {
+          "text": "重新运行",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "selftest-fail",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": [
+        {
+          "text": "重新运行",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "selftest-blocked",
+      "width": 320,
+      "overflow": false,
+      "bodyHeight": 568,
+      "buttons": []
+    }
+  ]
+}

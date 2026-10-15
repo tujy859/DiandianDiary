@@ -3,6 +3,7 @@
   padding: 24rpx;
   box-sizing: border-box;
 }
+.scope-note { padding:24rpx; margin-bottom:20rpx; border-radius:16rpx; background:var(--jd-tint); color:var(--jd-text-2); font-size:24rpx; line-height:1.7; }
 
 .summary {
   display: flex;
