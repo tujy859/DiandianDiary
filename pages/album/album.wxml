@@ -30,7 +30,9 @@
       <t-button theme="primary" size="medium" shape="round" loading="{{refreshing}}" disabled="{{refreshing}}" bindtap="onRetry">重新加载</t-button>
     </view>
     <view wx:elif="{{!currentPet}}" class="empty">
-      <image class="empty-illustration" src="/assets/brand/app-icon.png" mode="aspectFit" />
+      <view class="empty-brand">
+        <image class="empty-brand-image" src="/assets/brand/app-icon.png" mode="aspectFill" />
+      </view>
       <view class="empty-text">还没有小伙伴</view>
       <view class="empty-sub">先建个档案，再慢慢收集它的日常</view>
       <t-button theme="primary" size="medium" shape="round" bindtap="goAddPet">添加宠物</t-button>
