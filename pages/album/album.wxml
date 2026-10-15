@@ -37,7 +37,7 @@
       <view class="empty-sub">先建个档案，再慢慢收集它的日常</view>
       <t-button theme="primary" size="medium" shape="round" bindtap="goAddPet">添加宠物</t-button>
     </view>
-    <view wx:elif="{{!records.length}}" class="empty">
+    <view wx:elif="{{view === 'timeline' && !records.length}}" class="empty">
       <image class="empty-illustration" src="/assets/illustrations/empty-album.png" mode="aspectFit" />
       <view class="empty-text">还没有{{currentPet.name}}的日记</view>
       <view class="empty-sub">去「聊聊」记下第一件小事吧</view>
