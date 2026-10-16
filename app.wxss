@@ -8,6 +8,7 @@ page {
 
   /* 自定义 tabBar 内容高度（rpx），与 utils/layout.ts 的测量口径保持一致 */
   --jd-tabbar-content: 112;
+  --jd-tabbar-label-size: 12px;
 
   /* ---- 设计令牌：全app统一的字号/字色/圆角/线色，新增样式只允许从这里取值 ---- */
   /* 字号六级：标注 / 辅助 / 列表 / 正文 / 标题 / 大标题 */

@@ -1,4 +1,4 @@
-<view wx:if="{{!hidden}}" class="tabbar" style="{{tabHeightStyle}} padding-bottom: {{safeBottom}}px;">
+<view wx:if="{{!hidden}}" class="tabbar" style="height: {{tabHeightStyle}}; padding-bottom: {{safeBottom}}px;">
   <view
     wx:for="{{list}}"
     wx:key="pagePath"
@@ -6,8 +6,10 @@
     data-path="{{item.pagePath}}"
     data-index="{{index}}"
     bindtap="onSwitch"
+    aria-role="button"
+    aria-label="{{item.text}}"
   >
-    <view class="tabbar-icon"><t-icon name="{{item.icon}}" size="42rpx" color="{{selected === index ? '#32694F' : '#78837B'}}" /></view>
+    <view class="tabbar-icon"><t-icon name="{{item.icon}}" size="48rpx" color="{{selected === index ? '#32694F' : '#78837B'}}" /></view>
     <text class="tabbar-text">{{item.text}}</text>
   </view>
 </view>
