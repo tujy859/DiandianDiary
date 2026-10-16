@@ -87,13 +87,18 @@
     <view class="log-actions">
       <t-button size="small" theme="primary" bind:tap="onToggleTrace">{{tracing ? '停止记录' : '开始记录'}}</t-button>
       <t-button size="small" bind:tap="onRefreshLogs">刷新日志</t-button>
-      <t-button size="small" bind:tap="onCopyLogs">复制脱敏报告</t-button>
+      <t-button size="small" bind:tap="onCopyLogs">复制全部日志</t-button>
       <t-button size="small" variant="text" bind:tap="onClearLogs">清空日志</t-button>
     </view>
     <view wx:if="{{!traceRows.length}}" class="scope-note">暂无日志。开启记录后去「聊聊」发送消息，再回到这里查看。</view>
     <view wx:for="{{traceRows}}" wx:key="id" class="case">
-      <view class="case-name">{{item.status}} · {{item.durationMs}}ms</view>
-      <view class="case-detail">请求 {{item.id}}</view>
+      <view class="trace-head">
+        <view class="trace-heading">
+          <view class="case-name">{{item.status}} · {{item.durationMs}}ms</view>
+          <view class="case-detail">请求 {{item.id}}</view>
+        </view>
+        <view class="trace-copy"><t-button size="small" variant="outline" data-id="{{item.id}}" bind:tap="onCopyTraceLogs">复制本条</t-button></view>
+      </view>
       <text class="trace-detail" selectable>{{item.detail}}</text>
     </view>
   </block>

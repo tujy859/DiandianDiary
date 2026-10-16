@@ -100,7 +100,10 @@ export function getDebugTraces(): DebugTrace[] {
 export function clearDebugTraces(): void {
   const s = getCloudSession(); if (isDeveloperMode() && s) wx.removeStorageSync(key(s.userId, s.familyId));
 }
-export function debugReport(): string { return JSON.stringify({ version: 1, traces: getDebugTraces() }, null, 2); }
+export function debugReport(traceId?: string): string {
+  const traces = getDebugTraces();
+  return JSON.stringify({ version: 1, traces: traceId === undefined ? traces : traces.filter(row => row.id === traceId) }, null, 2);
+}
 export function beginTrace(detail: TraceDetail = {}): TraceHandle | undefined {
   const s = getCloudSession();
   if (!isTraceEnabled() || !s?.familyId) return undefined;

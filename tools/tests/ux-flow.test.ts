@@ -3,7 +3,8 @@ import * as store from '../../utils/store';
 import { refreshCloudIfStale, connectCloud } from '../../utils/repository';
 import { testConnection } from '../../utils/llm';
 import { openAddPet, consumeAddPetRequest } from '../../utils/pet-navigation';
-import { enableDeveloperMode } from '../../utils/developer';
+import { enableDeveloperMode, disableDeveloperMode } from '../../utils/developer';
+import { beginTrace, setTraceEnabled, clearDebugTraces } from '../../utils/debug-trace';
 import { isDeveloperMode } from '../../utils/developer';
 import Dialog from 'tdesign-miniprogram/dialog/index';
 import { callCloud } from '../../utils/cloud';
@@ -58,6 +59,48 @@ function page(name: string) {
 
 const cloudConfig = { source: 'cloud' as const, provider: '微信云开发 AI', baseUrl: '', apiKey: '', model: 'hy3' };
 const chooseCloud = { currentTarget: { dataset: { source: 'cloud' } } };
+
+test('请求日志单独复制只导出选中请求，复制全部保留其他请求且均脱敏', () => {
+  enableDeveloperMode(); setTraceEnabled(true);
+  const first = beginTrace({ path: 'tool' })!;
+  first.emit('photo.failure', { path: 'upload', error: 'private-token', sourceText: 'private-text' } as any);
+  first.finish('save_failed');
+  const second = beginTrace({ path: 'manual' })!;
+  second.finish('saved');
+  const instance = page('selftest'); instance.refreshLogs();
+  expect(instance.data.traceRows.map((row: any) => row.id)).toEqual([second.id, first.id]);
+  const copy = jest.fn(), original = (wx as any).setClipboardData;
+  (wx as any).setClipboardData = copy;
+  try {
+    instance.onCopyTraceLogs({ currentTarget: { dataset: { id: first.id } } });
+    const single = copy.mock.calls[0][0].data;
+    expect(JSON.parse(single).traces.map((row: any) => row.id)).toEqual([first.id]);
+    expect(single).not.toMatch(/private|sourceText/);
+    instance.onCopyLogs();
+    expect(JSON.parse(copy.mock.calls[1][0].data).traces.map((row: any) => row.id)).toEqual([first.id, second.id]);
+  } finally { (wx as any).setClipboardData = original; }
+});
+
+test('日志清除、切换家庭、关闭开发者模式后，旧卡片不能复制旧请求', () => {
+  enableDeveloperMode(); setTraceEnabled(true);
+  const trace = beginTrace()!;
+  const instance = page('selftest'); instance.refreshLogs();
+  const event = { currentTarget: { dataset: { id: trace.id } } };
+  const copy = jest.fn(), original = (wx as any).setClipboardData;
+  const toast = jest.spyOn(wx, 'showToast');
+  (wx as any).setClipboardData = copy;
+  try {
+    store.setCloudSession({ userId: 'demo-user', familyId: 'other-family' });
+    instance.onCopyTraceLogs(event);
+    expect(copy).not.toHaveBeenCalled(); expect(instance.data.traceRows).toEqual([]);
+    expect(toast).toHaveBeenCalledWith({ title: '日志已清除或过期，请刷新', icon: 'none' });
+    store.setCloudSession({ userId: 'demo-user', familyId: 'demo-family' });
+    instance.refreshLogs(); clearDebugTraces(); instance.onCopyTraceLogs(event);
+    expect(copy).not.toHaveBeenCalled(); expect(instance.data.traceRows).toEqual([]);
+    disableDeveloperMode(); instance.onCopyTraceLogs(event); instance.onCopyLogs();
+    expect(copy).not.toHaveBeenCalled();
+  } finally { (wx as any).setClipboardData = original; }
+});
 
 test.each(['model', 'onboard'])('%s 可选云开发，切换不保存且不混用自定义凭证', name => {
   enableDeveloperMode();

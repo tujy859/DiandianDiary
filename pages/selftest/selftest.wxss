@@ -19,6 +19,9 @@
 .section.active { color:var(--jd-brand); background:var(--jd-tint); font-weight:600; }
 .log-actions { display:flex; flex-wrap:wrap; gap:16rpx; margin:24rpx 0; }
 .trace-detail { display:block; white-space:pre-wrap; overflow-wrap:anywhere; font-size:22rpx; color:var(--jd-text-2); margin-top:16rpx; }
+.trace-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16rpx; }
+.trace-heading { flex:1; min-width:0; overflow-wrap:anywhere; }
+.trace-copy { flex-shrink:0; }
 
 .summary {
   display: flex;

@@ -139,6 +139,17 @@ Page({
   onRefreshLogs() { this.refreshLogs(); },
   onClearLogs() { clearDebugTraces(); this.refreshLogs(); },
   onCopyLogs() { if (isDeveloperMode()) wx.setClipboardData({ data: debugReport() }); },
+  onCopyTraceLogs(e: WechatMiniprogram.TouchEvent) {
+    if (!isDeveloperMode()) return;
+    const id = e.currentTarget.dataset.id;
+    if (typeof id !== 'string' || !id) return;
+    if (!getDebugTraces().some(row => row.id === id)) {
+      wx.showToast({ title: '日志已清除或过期，请刷新', icon: 'none' });
+      this.refreshLogs();
+      return;
+    }
+    wx.setClipboardData({ data: debugReport(id) });
+  },
 
   onRerun() { this.run(); },
 
