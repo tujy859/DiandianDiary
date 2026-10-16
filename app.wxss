@@ -126,11 +126,14 @@ scroll-view {
 }
 
 .pet-chip .pet-avatar {
+  box-sizing: border-box;
   display: block;
   width: var(--jd-pet-chip-size);
   height: var(--jd-pet-chip-size);
-  padding: 0;
-  background: #f2eee5;
+  padding: 3px;
+  border: 1rpx solid #e9ece6;
+  border-radius: 50%;
+  background: #ffffff;
   flex-shrink: 0;
 }
 
