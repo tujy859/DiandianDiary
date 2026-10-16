@@ -53,6 +53,30 @@ test('普通进入家庭页不显示继续入口；无返回栈时保留可继�
   expect(wx.reLaunch).toHaveBeenCalledWith({ url: '/pages/mine/mine' });
 });
 
+test('家庭设置按需展开，不发起写入；同一分组可收起，忙碌时保持状态', async () => {
+  const family = page(); await family.onShow();
+  expect(family.data.expandedSection).toBe('');
+  rpc.mockClear();
+  const toggle = (section: string) => family.onToggleSection({ currentTarget: { dataset: { section } } });
+  toggle('management'); expect(family.data.expandedSection).toBe('management');
+  toggle('account'); expect(family.data.expandedSection).toBe('account');
+  toggle('account'); expect(family.data.expandedSection).toBe('');
+  toggle('unknown'); expect(family.data.expandedSection).toBe('');
+  family.data.busy = true; toggle('spaces'); expect(family.data.expandedSection).toBe('');
+  expect(rpc).not.toHaveBeenCalled();
+});
+
+test('切换家庭后收起旧家庭管理区；创建家庭后收起加入或创建表单', async () => {
+  const other = await callCloud<repo.Family>('family.create', { name: '演示家庭', clientId: 'disclosure-switch' });
+  const family = page(); await family.onShow();
+  family.data.expandedSection = 'management';
+  await family.onSwitch({ currentTarget: { dataset: { id: other.id } } });
+  expect(family.data).toMatchObject({ familyId: other.id, expandedSection: '' });
+  family.data.expandedSection = 'spaces'; family.data.familyName = '新演示家庭';
+  await family.onCreate();
+  expect(family.data).toMatchObject({ selectedFamilyName: '新演示家庭', familyName: '', expandedSection: '' });
+});
+
 test('无家庭时不跳出管理页，创建家庭后可从单页栈继续使用', async () => {
   jest.spyOn(global, 'getCurrentPages').mockReturnValue([{ route: 'pages/family/family' }]);
   const family = page(); await family.onShow(); await family.onDissolve();

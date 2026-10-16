@@ -280,3 +280,18 @@
 .logout-panel { margin-top:32rpx; }
 .logout-option { display:flex; align-items:center; justify-content:space-between; gap:16rpx; margin-top:24rpx; font-size:var(--jd-fs-sm); color:var(--jd-text-2); }
 .logout-option switch { flex-shrink:0; }
+.settings-panel { margin-top:24rpx; padding:12rpx 24rpx; }
+.family-heading { display:flex; align-items:center; gap:16rpx; }
+.family-heading-main, .disclosure-main { flex:1; min-width:0; }
+.family-title { font-size:var(--jd-fs-lg); font-weight:600; color:var(--jd-text-1); overflow-wrap:anywhere; }
+.family-caption, .disclosure-sub { color:var(--jd-text-2); font-size:var(--jd-fs-xs); line-height:1.6; margin-top:6rpx; }
+.text-entry { color:var(--jd-brand); font-size:var(--jd-fs-sm); min-height:44px; display:flex; align-items:center; flex-shrink:0; }
+.member-preview { margin-top:20rpx; }
+.disclosure-row { display:flex; align-items:center; justify-content:space-between; gap:16rpx; min-height:44px; padding:12rpx 0; }
+.disclosure-title { font-size:var(--jd-fs-sm); font-weight:600; color:var(--jd-text-1); }
+.disclosure-content { padding:8rpx 0 20rpx; border-top:1rpx solid var(--jd-line); }
+.management-entry { margin-top:20rpx; border-top:1rpx solid var(--jd-line); }
+.management-content .family-management { margin-top:12rpx; }
+.logout-content { margin-top:24rpx; }
+.member-del { min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; }
+.fam-name { min-width:0; overflow-wrap:anywhere; }

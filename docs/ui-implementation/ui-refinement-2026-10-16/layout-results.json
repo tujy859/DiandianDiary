@@ -1,0 +1,806 @@
+[
+  {
+    "name": "model-custom",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "保存配置",
+        "inside": true
+      },
+      {
+        "text": "清除模型配置",
+        "inside": true
+      }
+    ],
+    "rows": [
+      44,
+      45,
+      45
+    ]
+  },
+  {
+    "name": "model-cloud",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "保存配置",
+        "inside": true
+      },
+      {
+        "text": "清除模型配置",
+        "inside": true
+      }
+    ],
+    "rows": [
+      44,
+      44,
+      44
+    ]
+  },
+  {
+    "name": "model-busy",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "保存配置",
+        "inside": true
+      },
+      {
+        "text": "清除模型配置",
+        "inside": true
+      }
+    ],
+    "rows": [
+      44,
+      45,
+      45
+    ]
+  },
+  {
+    "name": "model-unsupported",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "保存配置",
+        "inside": true
+      },
+      {
+        "text": "清除模型配置",
+        "inside": true
+      }
+    ],
+    "rows": [
+      44,
+      44,
+      44
+    ]
+  },
+  {
+    "name": "onboard-custom",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "确认并继续",
+        "inside": true
+      }
+    ],
+    "rows": [
+      44,
+      45,
+      45
+    ]
+  },
+  {
+    "name": "onboard-cloud",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "确认并继续",
+        "inside": true
+      }
+    ],
+    "rows": [
+      44,
+      44,
+      44
+    ]
+  },
+  {
+    "name": "onboard-busy",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "确认并继续",
+        "inside": true
+      }
+    ],
+    "rows": [
+      44,
+      45,
+      45
+    ]
+  },
+  {
+    "name": "onboard-unsupported",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "确认并继续",
+        "inside": true
+      }
+    ],
+    "rows": [
+      44,
+      44,
+      44
+    ]
+  },
+  {
+    "name": "chat-welcome",
+    "width": 375,
+    "overflow": false,
+    "buttons": [],
+    "navigation": {
+      "height": 90,
+      "padding": "34px",
+      "bottom": 730,
+      "itemBottom": 696
+    }
+  },
+  {
+    "name": "chat-long-name",
+    "width": 375,
+    "overflow": false,
+    "buttons": [],
+    "navigation": {
+      "height": 90,
+      "padding": "34px",
+      "bottom": 730,
+      "itemBottom": 696
+    }
+  },
+  {
+    "name": "chat-empty-history",
+    "width": 375,
+    "overflow": false,
+    "buttons": [],
+    "navigation": {
+      "height": 90,
+      "padding": "34px",
+      "bottom": 730,
+      "itemBottom": 696
+    }
+  },
+  {
+    "name": "chat-test-family",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "执行下一步",
+        "inside": true
+      },
+      {
+        "text": "运行全部",
+        "inside": true
+      },
+      {
+        "text": "查看结果与管理",
+        "inside": true
+      }
+    ],
+    "navigation": {
+      "height": 90,
+      "padding": "34px",
+      "bottom": 730,
+      "itemBottom": 696
+    }
+  },
+  {
+    "name": "chat-keyboard",
+    "width": 375,
+    "overflow": false,
+    "buttons": []
+  },
+  {
+    "name": "family-default",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "邀请家人",
+        "inside": true
+      },
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-member",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-management",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "邀请家人",
+        "inside": true
+      },
+      {
+        "text": "解散家庭",
+        "inside": true
+      },
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-switch",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "邀请家人",
+        "inside": true
+      },
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-spaces",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "邀请家人",
+        "inside": true
+      },
+      {
+        "text": "加入家庭",
+        "inside": true
+      },
+      {
+        "text": "创建家庭空间",
+        "inside": true
+      },
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-account",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "邀请家人",
+        "inside": true
+      },
+      {
+        "text": "保存昵称",
+        "inside": true
+      },
+      {
+        "text": "退出登录",
+        "inside": true
+      },
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-no-family",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "加入家庭",
+        "inside": true
+      },
+      {
+        "text": "创建家庭空间",
+        "inside": true
+      },
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-offline",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "重新连接云端",
+        "inside": true
+      },
+      {
+        "text": "退出登录",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-invite",
+    "width": 375,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "复制邀请码",
+        "inside": true
+      },
+      {
+        "text": "撤销",
+        "inside": true
+      },
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "model-custom",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "保存配置",
+        "inside": true
+      },
+      {
+        "text": "清除模型配置",
+        "inside": true
+      }
+    ],
+    "rows": [
+      37.546875,
+      38.546875,
+      38.546875
+    ]
+  },
+  {
+    "name": "model-cloud",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "保存配置",
+        "inside": true
+      },
+      {
+        "text": "清除模型配置",
+        "inside": true
+      }
+    ],
+    "rows": [
+      37.53125,
+      37.53125,
+      37.53125
+    ]
+  },
+  {
+    "name": "model-busy",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "保存配置",
+        "inside": true
+      },
+      {
+        "text": "清除模型配置",
+        "inside": true
+      }
+    ],
+    "rows": [
+      37.546875,
+      38.546875,
+      38.546875
+    ]
+  },
+  {
+    "name": "model-unsupported",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "保存配置",
+        "inside": true
+      },
+      {
+        "text": "清除模型配置",
+        "inside": true
+      }
+    ],
+    "rows": [
+      37.53125,
+      37.53125,
+      37.53125
+    ]
+  },
+  {
+    "name": "onboard-custom",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "确认并继续",
+        "inside": true
+      }
+    ],
+    "rows": [
+      37.546875,
+      38.546875,
+      38.546875
+    ]
+  },
+  {
+    "name": "onboard-cloud",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "确认并继续",
+        "inside": true
+      }
+    ],
+    "rows": [
+      37.53125,
+      37.53125,
+      37.53125
+    ]
+  },
+  {
+    "name": "onboard-busy",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "确认并继续",
+        "inside": true
+      }
+    ],
+    "rows": [
+      37.546875,
+      38.546875,
+      38.546875
+    ]
+  },
+  {
+    "name": "onboard-unsupported",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "测试连接",
+        "inside": true
+      },
+      {
+        "text": "确认并继续",
+        "inside": true
+      }
+    ],
+    "rows": [
+      37.53125,
+      37.53125,
+      37.53125
+    ]
+  },
+  {
+    "name": "chat-welcome",
+    "width": 320,
+    "overflow": false,
+    "buttons": [],
+    "navigation": {
+      "height": 90,
+      "padding": "34px",
+      "bottom": 730,
+      "itemBottom": 696
+    }
+  },
+  {
+    "name": "chat-long-name",
+    "width": 320,
+    "overflow": false,
+    "buttons": [],
+    "navigation": {
+      "height": 90,
+      "padding": "34px",
+      "bottom": 730,
+      "itemBottom": 696
+    }
+  },
+  {
+    "name": "chat-empty-history",
+    "width": 320,
+    "overflow": false,
+    "buttons": [],
+    "navigation": {
+      "height": 90,
+      "padding": "34px",
+      "bottom": 730,
+      "itemBottom": 696
+    }
+  },
+  {
+    "name": "chat-test-family",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "执行下一步",
+        "inside": true
+      },
+      {
+        "text": "运行全部",
+        "inside": true
+      },
+      {
+        "text": "查看结果与管理",
+        "inside": true
+      }
+    ],
+    "navigation": {
+      "height": 90,
+      "padding": "34px",
+      "bottom": 730,
+      "itemBottom": 696
+    }
+  },
+  {
+    "name": "chat-keyboard",
+    "width": 320,
+    "overflow": false,
+    "buttons": []
+  },
+  {
+    "name": "family-default",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "邀请家人",
+        "inside": true
+      },
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-member",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-management",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "邀请家人",
+        "inside": true
+      },
+      {
+        "text": "解散家庭",
+        "inside": true
+      },
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-switch",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "邀请家人",
+        "inside": true
+      },
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-spaces",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "邀请家人",
+        "inside": true
+      },
+      {
+        "text": "加入家庭",
+        "inside": true
+      },
+      {
+        "text": "创建家庭空间",
+        "inside": true
+      },
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-account",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "邀请家人",
+        "inside": true
+      },
+      {
+        "text": "保存昵称",
+        "inside": true
+      },
+      {
+        "text": "退出登录",
+        "inside": true
+      },
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-no-family",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "加入家庭",
+        "inside": true
+      },
+      {
+        "text": "创建家庭空间",
+        "inside": true
+      },
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-offline",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "重新连接云端",
+        "inside": true
+      },
+      {
+        "text": "退出登录",
+        "inside": true
+      }
+    ]
+  },
+  {
+    "name": "family-invite",
+    "width": 320,
+    "overflow": false,
+    "buttons": [
+      {
+        "text": "复制邀请码",
+        "inside": true
+      },
+      {
+        "text": "撤销",
+        "inside": true
+      },
+      {
+        "text": "刷新云端数据",
+        "inside": true
+      }
+    ]
+  }
+]

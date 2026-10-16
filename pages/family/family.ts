@@ -9,9 +9,10 @@ Page({
     connected: false, loggedIn: false, clearModelOnLogout: false, needsContinue: false, busy: false, error: '', userId: '', nickname: '', familyId: '',
     families: [] as Family[], members: [] as Array<{ userId: string; role: string; label: string; nickname?: string }>,
     owner: false, selectedFamilyName: '', familyName: '', inviteInput: '', inviteToken: '', inviteExpiry: '',
+    expandedSection: '',
   },
   async onShow() {
-    this.setData({ connected: false, loggedIn: !!getCloudSession(), needsContinue: getCurrentPages().length <= 1, families: [], members: [], userId: '', familyId: '', nickname: '', inviteToken: '', owner: false, selectedFamilyName: '' });
+    this.setData({ connected: false, loggedIn: !!getCloudSession(), needsContinue: getCurrentPages().length <= 1, families: [], members: [], userId: '', familyId: '', nickname: '', inviteToken: '', owner: false, selectedFamilyName: '', expandedSection: '' });
     if (getCloudSession()) await this.run(() => this.load());
   },
   async run(work: () => Promise<void>) {
@@ -43,6 +44,12 @@ Page({
     if (selected) await refreshCloud();
   },
   onConnect() { return this.run(() => this.load()); },
+  onToggleSection(e: WechatMiniprogram.TouchEvent) {
+    if (this.data.busy) return;
+    const section = e.currentTarget.dataset.section;
+    if (!['account', 'spaces', 'management', 'families'].includes(section)) return;
+    this.setData({ expandedSection: this.data.expandedSection === section ? '' : section });
+  },
   onNickname(e: WechatMiniprogram.CustomEvent) { this.setData({ nickname: e.detail.value }); },
   onSaveProfile() { return this.run(async () => { await callCloud('user.profile', { nickname: this.data.nickname }); }); },
   onFamilyName(e: WechatMiniprogram.CustomEvent) { this.setData({ familyName: e.detail.value }); },
@@ -53,14 +60,14 @@ Page({
       const f = await callCloud<Family>('family.create', { name: this.data.familyName, clientId: this._createId });
       this._createId = '';
       await selectFamily(f.id);
-      this.setData({ familyName: '', inviteToken: '' });
+      this.setData({ familyName: '', inviteToken: '', expandedSection: '' });
       await this.load();
     });
   },
   onSwitch(e: WechatMiniprogram.TouchEvent) {
     const id = e.currentTarget.dataset.id;
     if (!id || id === this.data.familyId) return;
-    return this.run(async () => { await selectFamily(id); this.setData({ inviteToken: '' }); await this.load(); });
+    return this.run(async () => { await selectFamily(id); this.setData({ inviteToken: '', expandedSection: '' }); await this.load(); });
   },
   onInvite() {
     return this.run(async () => {
@@ -79,7 +86,7 @@ Page({
     return this.run(async () => {
       const f = await callCloud<Family>('invite.accept', { token: this.data.inviteInput });
       await selectFamily(f.id);
-      this.setData({ inviteInput: '', inviteToken: '' });
+      this.setData({ inviteInput: '', inviteToken: '', expandedSection: '' });
       await this.load();
     });
   },
