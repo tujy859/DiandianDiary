@@ -18,10 +18,15 @@
       <text class="pet-name">{{currentPet.name}}</text>
       <t-icon name="chevron-down" size="30rpx" color="#2F6B4F" />
     </view>
-    <!-- 历史会话目录：点开可回到任意话题继续聊 -->
-    <view wx:if="{{sessions.length}}" class="history-chip" catchtap="onToggleSessionList">
-      <t-icon name="time" size="28rpx" color="#2F6B4F" />
-      <text>话题</text>
+    <view class="topic-actions">
+      <view class="topic-action {{flowRunning || aiThinking ? 'is-disabled' : ''}}" catchtap="onNewTopic" aria-role="button" aria-label="开启新话题">
+        <t-icon name="add" size="30rpx" color="#2F6B4F" />
+        <text>新话题</text>
+      </view>
+      <view class="topic-action {{flowRunning ? 'is-disabled' : ''}}" catchtap="onToggleSessionList" aria-role="button" aria-label="历史话题">
+        <t-icon name="time" size="30rpx" color="#2F6B4F" />
+        <text>历史话题</text>
+      </view>
     </view>
   </view>
 
@@ -33,6 +38,7 @@
         <text class="session-hint">点一个可以继续聊</text>
       </view>
       <scroll-view scroll-y class="session-list">
+        <view wx:if="{{!sessions.length}}" class="session-empty">还没有历史话题，聊过的话题会出现在这里。</view>
         <view
           wx:for="{{sessions}}"
           wx:key="id"
@@ -203,10 +209,6 @@
       <view class="quick-chip" data-mode="query" bindtap="onQuick">
         <t-icon name="search" size="24rpx" color="#2F6B4F" />
         <text>查查上次</text>
-      </view>
-      <view class="quick-chip" bindtap="onNewTopic">
-        <t-icon name="refresh" size="24rpx" color="#2F6B4F" />
-        <text>新话题</text>
       </view>
     </view>
 
