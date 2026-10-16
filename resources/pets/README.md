@@ -12,7 +12,7 @@
 
 `avatar-options.json` 记录资源 ID、名称、物种和小程序内路径，供后续头像选择功能使用；小程序的添加/编辑宠物表单已接入头像选择；实际运行时目录由 `utils/pet-avatars.ts` 提供。
 
-新增头像通过内置 ImageGen 生成；完整提示词见 `generation-prompts.json`。真实猫照片仅作为生成参考，未复制到项目资源。
+新增头像通过内置 ImageGen 生成；完整提示词见 `generation-prompts.json`。头像生成阶段的真实猫照片仅作为参考，未作为运行时头像入包。用户后续授权的点点照片保存在本机、被 Git 忽略的 `resources/document-assets/private/diandian/`，用于[参赛说明文档](../../docs/deliverables/contest/README.md)；原图不覆盖生成头像。
 
 ## default-cat-v1.png
 

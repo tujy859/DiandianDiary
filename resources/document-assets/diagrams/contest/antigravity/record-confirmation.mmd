@@ -1,0 +1,21 @@
+flowchart LR
+    A["<b>1. 用户输入</b><br/>发送文字原话或照片"] --> B["<b>2. 待确认草稿</b><br/>AI 辅助整理正文与标签<br/>核对原文出处与真实日期<br/>纯照片直接成稿免出处"]
+    B --> C["<b>3. 展示草稿卡片</b><br/>日期 · 正文 · 标签 · 照片"]
+    C --> D{"用户选择"}
+
+    D -->|保存这条| E["<b>4. 鉴权保存与呈现</b><br/>通过 diaryApi 鉴权保存<br/>存入整理正文与原始输入<br/>更新缓存并在时光册展示"]
+
+    D -->|修改| F["<b>编辑草稿</b><br/>编辑日期、正文、标签、照片"]
+    F --> C
+
+    D -->|不记录| G["<b>丢弃草稿</b><br/>不写入正式日记"]
+
+    classDef stepNode fill:#FFFFFF,stroke:#365846,stroke-width:1.5px,color:#1D382A,font-size:13px;
+    classDef choiceNode fill:#FFF5EB,stroke:#D97336,stroke-width:2px,color:#8F4212,font-size:13px;
+    classDef saveNode fill:#EBF3EE,stroke:#2F6048,stroke-width:2px,color:#1D382A,font-size:13px;
+    classDef discardNode fill:#FAF8F3,stroke:#999999,stroke-width:1px,color:#666666,font-size:13px;
+
+    class A,B,C,F stepNode;
+    class D choiceNode;
+    class E saveNode;
+    class G discardNode;

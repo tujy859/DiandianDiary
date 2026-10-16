@@ -1,0 +1,16 @@
+flowchart TD
+    APP["<b>记一下喵 · 产品结构</b><br/>以聊天为交互界面的宠物生活陪伴与成长记录空间"]
+
+    APP --> CHAT["<b>聊聊（表达与查询）</b><br/>· 文字与照片输入<br/>· 待确认草稿与出处校验<br/>· 当前宠物日记查询<br/>· 话题上下文与历史回看"]
+
+    APP --> TIMELINE["<b>时光册（浏览与回看）</b><br/>· 时间轴与连续陪伴<br/>· 照片画廊集中展示<br/>· 日记详情查阅与编辑<br/>· 保留整理正文与原始输入"]
+
+    APP --> MINE["<b>我的（档案与设置）</b><br/>· 宠物成长档案与头像<br/>· 家庭空间与成员共享<br/>· 模型服务接入配置<br/>· 本机缓存与安全保管"]
+
+    CHAT ~~~ TIMELINE ~~~ MINE
+
+    classDef topNode fill:#2F6048,stroke:#1D382A,stroke-width:2px,color:#FFFFFF,font-size:15px;
+    classDef colNode fill:#FFFFFF,stroke:#365846,stroke-width:1.5px,color:#1D382A,font-size:13px;
+
+    class APP topNode;
+    class CHAT,TIMELINE,MINE colNode;

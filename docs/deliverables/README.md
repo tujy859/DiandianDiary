@@ -1,6 +1,10 @@
 # 项目交付文档
 
-用于后续项目说明书、演示 PPT 和导出 PDF。目前仅建立目录约定，尚未生成正式说明书或 PPT。
+用于项目说明书、演示 PPT 和导出 PDF。
+
+## 已有交付
+
+- [记一下喵参赛作品说明](contest/README.md)：2026-10-15 初稿，2026-10-16 修订；包含可编辑 Markdown、本机 PDF、视觉系列、图示与素材来源说明。
 
 按主题建立子目录，例如 `project-overview/`、`project-specification/`。同一目录保存可编辑源文件（Markdown、DOCX、PPTX 等）及对应 PDF；需留多版时按日期或明确版本号命名。
 

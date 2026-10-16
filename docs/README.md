@@ -8,6 +8,7 @@
 | --- | --- |
 | [项目协作说明](../AGENTS.md) | 背景、设计、资源位置及开发约定 |
 | [交付文档](deliverables/README.md) | 后续项目说明书、PPT 与 PDF |
+| [参赛作品说明](deliverables/contest/README.md) | 点点创作背景、产品体验、Mermaid 图示、工程实践与验证状态 |
 | [文档素材](../resources/document-assets/README.md) | 参考资料、脱敏截图及图表源稿 |
 | [开发记录](development-log.md) | 当前进度、按日期记录的重要改动、部署和待办 |
 | [UX 整合记录](ux-integration-2026-10-15.md) | 本地改动快照、合并取舍、回退基线与验证 |

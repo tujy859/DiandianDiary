@@ -28,6 +28,8 @@ apiclient_key.*
 # Local exports, database dumps and user media backups
 local-data/
 backups/
+resources/document-assets/private/
+docs/deliverables/contest/exports/
 
 # Local assistant working notes (shared history belongs in docs/)
 .workbuddy/

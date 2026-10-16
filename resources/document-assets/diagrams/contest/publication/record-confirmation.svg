@@ -1,0 +1,330 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="508.34375" viewBox="0 0 1040 508.34375"><foreignObject width="100%" height="100%"><html xmlns="http://www.w3.org/1999/xhtml"><head>
+  <meta charset="utf-8" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #FAF8F3;
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+      color: #1C2E24;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+    #canvas-container {
+      width: 980px;
+      background: #FAF8F3;
+      border: 1px solid #DFD9CE;
+      border-radius: 16px;
+      padding: 24px 24px 20px 24px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .badge {
+      display: inline-block;
+      background: #EBF3EE;
+      color: #2F6048;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 12px;
+      border-radius: 12px;
+      border: 1px solid #B8D0C2;
+      margin-bottom: 6px;
+    }
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1D382A;
+      letter-spacing: 0.8px;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #647269;
+    }
+    .pipeline {
+      display: grid;
+      grid-template-columns: 1fr 24px 1.15fr 24px 1.25fr 24px 1.15fr;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+    .arrow {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #8CA595;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .card {
+      background: #FFFFFF;
+      border: 1.5px solid #D6E2DB;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+    .card.highlight {
+      border: 1.5px solid #E2884D;
+      box-shadow: 0 3px 12px rgba(217, 115, 54, 0.08);
+    }
+    .card-header {
+      padding: 10px 12px;
+      background: #EBF3EE;
+      border-bottom: 1.5px solid #D6E2DB;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-header.orange {
+      background: #FFF5EB;
+      border-bottom: 1.5px solid #F3C9A5;
+    }
+    .card-header.green {
+      background: #E2ECE5;
+      border-bottom: 1.5px solid #B4CFC0;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1D382A;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .step-num {
+      width: 19px;
+      height: 19px;
+      background: #2F6048;
+      color: #FFF;
+      border-radius: 50%;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .step-num.orange {
+      background: #D97336;
+    }
+    .card-tag {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #2F6048;
+      background: #FFF;
+      border: 1px solid #B8D0C2;
+      padding: 1px 6px;
+      border-radius: 6px;
+    }
+    .card-tag.orange {
+      color: #8F4212;
+      border: 1px solid #F3C9A5;
+    }
+    .card-body {
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+    .box {
+      background: #FAF8F3;
+      border: 1px solid #E6E0D5;
+      border-radius: 8px;
+      padding: 8px 9px;
+    }
+    .box h5 {
+      font-size: 12px;
+      font-weight: 700;
+      color: #243E30;
+      margin-bottom: 3px;
+    }
+    .box p {
+      font-size: 11px;
+      color: #4C5D53;
+      line-height: 1.45;
+    }
+    .branch-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .branch-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 6px 7px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+    }
+    .branch-card.save {
+      background: #EEF6F1;
+      border-color: #B4DEC6;
+    }
+    .branch-card.edit {
+      background: #FFF5EB;
+      border-color: #F8D3B4;
+    }
+    .branch-card.cancel {
+      background: #F7F7F7;
+      border-color: #E2E2E2;
+    }
+    .b-tag {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .b-tag.save { background: #2F6048; color: #FFF; }
+    .b-tag.edit { background: #D97336; color: #FFF; }
+    .b-tag.cancel { background: #7A8780; color: #FFF; }
+    .b-desc {
+      font-size: 11px;
+      color: #2D3D34;
+      line-height: 1.4;
+    }
+    .footer-bar {
+      background: #F4F8F5;
+      border: 1px solid #CCE0D5;
+      border-radius: 10px;
+      padding: 9px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .footer-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #2F4D3C;
+      white-space: nowrap;
+    }
+    .footer-pill {
+      background: #2F6048;
+      color: #FFFFFF;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .footer-pill.orange {
+      background: #D97336;
+    }
+  </style>
+<style>body{padding:0;display:block}#canvas-container{width:1040px;padding:24px}.header{margin-bottom:22px}.title{font-size:25px;letter-spacing:0}.grid{gap:18px}.col-title,.card-title,.zone-title{font-size:22px}.col-role{font-size:18px;margin-top:5px}.col-header,.card-header,.zone-header{padding:13px}.col-body,.card-body,.zone-body{padding:13px;gap:10px}.item-card{padding:11px}.item-card h4,.box h5,.node-box h5{font-size:19px;line-height:1.4;margin-bottom:6px}.item-card p,.box p,.node-box p{font-size:18px;line-height:1.55}.card-body .box,.node-box{padding:11px}.b-tag,.b-desc{font-size:17px;line-height:1.4}.b-tag{white-space:nowrap;padding:3px 6px}.branch-card{padding:8px;gap:8px}.step-num{font-size:18px}.arch-grid{grid-template-columns:1.15fr 1fr;gap:18px}.dot{display:none}.col-icon{font-size:18px}.branch-group{gap:10px}</style></head>
+<body>
+  <div id="canvas-container">
+    <div class="header">
+
+      <h1 class="title">用户确认后才成为正式记录</h1>
+
+    </div>
+
+    <div class="pipeline">
+      <!-- Step 1 -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="step-num ">1</span> 输入</div>
+
+        </div>
+        <div class="card-body">
+          <div class="box">
+            <h5>文字原话</h5>
+            <p>明确发生的事实</p>
+          </div>
+          <div class="box">
+            <h5>生活照片</h5>
+            <p>可单独形成草稿</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="arrow">➜</div>
+
+      <!-- Step 2 -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="step-num ">2</span> 草稿</div>
+
+        </div>
+        <div class="card-body">
+          <div class="box">
+            <h5>AI 辅助整理</h5>
+            <p>整理正文与标签</p>
+          </div>
+          <div class="box">
+            <h5>程序核对</h5>
+            <p>原文出处与日期</p>
+          </div>
+          <div class="box">
+            <h5>纯照片草稿</h5>
+            <p>无需文字摘取<br />记录日期由用户确认</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="arrow">➜</div>
+
+      <!-- Step 3 -->
+      <div class="card highlight">
+        <div class="card-header orange">
+          <div class="card-title"><span class="step-num orange">3</span> 用户确认</div>
+
+        </div>
+        <div class="card-body">
+          <div class="box" style="background:#FFF9F5; border-color:#F5D5BE;">
+            <h5 style="color:#8F4212;">检查这条记录</h5>
+            <p style="color:#6E3C1B;">日期 正文<br />标签 照片</p>
+          </div>
+          <div class="branch-group">
+            <div class="branch-card save">
+              <span class="b-tag save">保存这条</span>
+              <div class="b-desc">写入云端</div>
+            </div>
+            <div class="branch-card edit">
+              <span class="b-tag edit">修改草稿</span>
+              <div class="b-desc">重新核对</div>
+            </div>
+            <div class="branch-card cancel">
+              <span class="b-tag cancel">不记录</span>
+              <div class="b-desc">丢弃草稿</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arrow">➜</div>
+
+      <!-- Step 4 -->
+      <div class="card">
+        <div class="card-header green">
+          <div class="card-title"><span class="step-num ">4</span> 保存</div>
+
+        </div>
+        <div class="card-body">
+          <div class="box">
+            <h5>身份与家庭鉴权</h5>
+            <p>通过 diaryApi 接口</p>
+          </div>
+          <div class="box">
+            <h5>保存两份内容</h5>
+            <p>整理结果与原始输入</p>
+          </div>
+          <div class="box">
+            <h5>进入时光册</h5>
+            <p>可以查询与回看</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+
+</body></html></foreignObject></svg>

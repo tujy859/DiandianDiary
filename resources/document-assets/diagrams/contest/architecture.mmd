@@ -1,0 +1,12 @@
+flowchart TD
+    UI["小程序页面<br/>聊聊 时光册 我的"] --> AG["客户端 Agent 编排"]
+    AG <-->|模型请求与工具选择| MODEL["模型服务<br/>微信云开发 AI<br/>或自定义 API"]
+    AG --> TOOLS["四项工具<br/>查询记录 生成草稿<br/>读取当前与历史话题"]
+    TOOLS --> CHECK["程序校验与计算<br/>原文 日期 宠物范围<br/>条数与引用"]
+    CHECK --> CARD["待确认草稿"]
+    CHECK --> ANSWER["查询摘要与原记录入口"]
+    CARD -->|用户确认保存| REPO["数据访问层"]
+    REPO <-->|鉴权业务接口| API["云函数 diaryApi<br/>微信身份与家庭权限"]
+    API <--> CLOUD["家庭云端<br/>数据库与私有照片"]
+    REPO -->|同步记录| CACHE["本机账号与家庭缓存"]
+    CACHE -->|供查询工具读取| TOOLS

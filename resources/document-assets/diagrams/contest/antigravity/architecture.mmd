@@ -1,0 +1,42 @@
+flowchart TD
+    subgraph MODEL["大模型服务（外部服务）"]
+        M1["<b>大模型服务</b><br/>微信云开发 AI / 自定义 API<br/>· 意图理解、工具选择与文字整理<br/>· <b>无直接保存工具，不能直接写库</b>"]
+    end
+
+    subgraph CLIENT["客户端 Agent 与程序校验（运行于小程序端）"]
+        direction TB
+        UI["<b>小程序交互界面</b><br/>聊聊 · 时光册 · 我的"]
+        AG["<b>客户端 Agent 编排引擎</b><br/>12000 字符预算 · 单次上限 6 轮 · JSON 降级"]
+        TOOLS["<b>四项客户端工具</b><br/>query_records · create_draft_record<br/>read_conversation · read_session"]
+        VAL["<b>程序确定性校验</b><br/>逐字原文出处核对 · 真实日历日期校验<br/>宠物范围隔离 · 纯照片无需文字出处"]
+        UI --> AG
+        AG <-->|请求参数与工具调用| M1
+        AG --> TOOLS
+        TOOLS --> VAL
+    end
+
+    subgraph CACHE["本机已同步缓存（微信持久化存储）"]
+        C1["<b>本机已同步缓存</b><br/>· 当前家庭已同步日记与当前会话<br/>· <b>query_records 直接读取本地缓存</b><br/>· 支持离线与毫秒级快速响应"]
+    end
+
+    subgraph CLOUD["家庭云端（微信 CloudBase）"]
+        direction TB
+        API["<b>业务鉴权云函数 diaryApi</b><br/>· 微信身份鉴权与家庭权限审查<br/>· <b>纯业务接口，绝非模型代理</b>"]
+        DB["<b>家庭云端数据库与存储</b><br/>· 私有家庭日记库与成长档案<br/>· 私有照片安全云存储"]
+        API <--> DB
+    end
+
+    VAL -->|待确认草稿卡片| UI
+    UI -->|用户确认点击保存| API
+    API -->|同步已保存记录| C1
+    C1 -.->|供查询工具读取| TOOLS
+
+    classDef modelNode fill:#FFF5EB,stroke:#D97336,stroke-width:1.5px,color:#8F4212,font-size:12.5px;
+    classDef clientNode fill:#EBF3EE,stroke:#2F6048,stroke-width:1.5px,color:#1D382A,font-size:12.5px;
+    classDef cacheNode fill:#FAF8F3,stroke:#436854,stroke-width:1.5px,color:#253D31,font-size:12.5px;
+    classDef cloudNode fill:#FAF8F3,stroke:#2F6048,stroke-width:1.5px,color:#1D382A,font-size:12.5px;
+
+    class M1 modelNode;
+    class UI,AG,TOOLS,VAL clientNode;
+    class C1 cacheNode;
+    class API,DB cloudNode;

@@ -1,0 +1,288 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="712.0625" viewBox="0 0 1040 712.0625">
+  <foreignObject width="100%" height="100%">
+    <!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #FAF8F3;
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+      color: #1C2E24;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+    #canvas-container {
+      width: 1040px;
+      background: #FAF8F3;
+      border: 1px solid #DFD9CE;
+      border-radius: 16px;
+      padding: 24px 26px 20px 26px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .badge {
+      display: inline-block;
+      background: #EBF3EE;
+      color: #2F6048;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 12px;
+      border-radius: 12px;
+      border: 1px solid #B8D0C2;
+      margin-bottom: 6px;
+    }
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1D382A;
+      letter-spacing: 0.8px;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #647269;
+    }
+    .arch-grid {
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .zone {
+      background: #FFFFFF;
+      border: 1.5px solid #D6E2DB;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+    .zone.orange {
+      border-color: #F3C9A5;
+      background: #FFFDFC;
+    }
+    .zone-header {
+      padding: 10px 14px;
+      background: #EBF3EE;
+      border-bottom: 1.5px solid #D6E2DB;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .zone-header.orange {
+      background: #FFF5EB;
+      border-bottom: 1.5px solid #F3C9A5;
+    }
+    .zone-header.green {
+      background: #E2ECE5;
+      border-bottom: 1.5px solid #B4CFC0;
+    }
+    .zone-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #1D382A;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .zone-title.orange {
+      color: #8F4212;
+    }
+    .zone-tag {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #2F6048;
+      background: #FFF;
+      border: 1px solid #B8D0C2;
+      padding: 1px 6px;
+      border-radius: 6px;
+    }
+    .zone-tag.orange {
+      color: #8F4212;
+      border: 1px solid #F3C9A5;
+    }
+    .zone-body {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+    .node-box {
+      background: #FAF8F3;
+      border: 1px solid #E6E0D5;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .node-box.orange {
+      background: #FFF8F2;
+      border: 1px solid #F5D5BE;
+    }
+    .node-box.green {
+      background: #F2F8F4;
+      border: 1px solid #C5DFD0;
+    }
+    .node-box h5 {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #243E30;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .node-box h5.orange {
+      color: #8F4212;
+    }
+    .node-box p {
+      font-size: 11.5px;
+      color: #4C5D53;
+      line-height: 1.45;
+    }
+    .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #2F6048;
+    }
+    .dot.orange {
+      background: #D97336;
+    }
+    .footer-bar {
+      background: #F4F8F5;
+      border: 1px solid #CCE0D5;
+      border-radius: 10px;
+      padding: 9px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .footer-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #2F4D3C;
+      white-space: nowrap;
+    }
+    .footer-pill {
+      background: #2F6048;
+      color: #FFFFFF;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .footer-pill.orange {
+      background: #D97336;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container">
+    <div class="header">
+      <div class="badge">记一下喵 · 系统架构</div>
+      <h1 class="title">客户端 Agent 与家庭云端架构分工</h1>
+      <p class="subtitle">模型服务、客户端工具与校验、本机已同步缓存、家庭云端四方协作</p>
+    </div>
+
+    <div class="arch-grid">
+      <!-- Zone 1: 客户端 Agent 与校验 -->
+      <div class="zone" style="grid-row: span 2;">
+        <div class="zone-header">
+          <div class="zone-title">① 客户端 Agent 与校验</div>
+          <span class="zone-tag">运行于小程序端</span>
+        </div>
+        <div class="zone-body">
+          <div class="node-box">
+            <h5><span class="dot"></span> 小程序交互界面</h5>
+            <p>聊聊（对话与草稿卡片） · 时光册（时间轴与画廊） · 我的（档案与配置）</p>
+          </div>
+          <div class="node-box">
+            <h5><span class="dot"></span> 客户端 Agent 编排引擎</h5>
+            <p>12000 字符预算上下文调度；单次请求上限 6 轮工具调用；支持严格 JSON 模式降级。</p>
+          </div>
+          <div class="node-box">
+            <h5><span class="dot orange"></span> 四项客户端工具</h5>
+            <p>· <b>query_records</b>：查询日记（直接读取本机已同步缓存）<br>
+            · <b>create_draft_record</b>：摘取事实整理草稿（不写正式日记）<br>
+            · <b>read_conversation</b>：分页取回当前话题较早消息<br>
+            · <b>read_session</b>：按目录分页读取历史话题（只读不切当前会话）</p>
+          </div>
+          <div class="node-box green">
+            <h5><span class="dot"></span> 程序确定性校验与计算</h5>
+            <p>· <b>逐字出处核对</b>：sourceText 严格源自用户消息；纯照片免文字出处<br>
+            · <b>真实日历校验</b>：日历有效性与时序校验；日期不明留空由用户确认<br>
+            · <b>宠物范围隔离</b>：锁定当前宠物；条数统计与引用数字由程序计算</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zone 2: 模型服务 -->
+      <div class="zone orange">
+        <div class="zone-header orange">
+          <div class="zone-title orange">② 大模型服务</div>
+          <span class="zone-tag orange">外部服务</span>
+        </div>
+        <div class="zone-body">
+          <div class="node-box orange">
+            <h5 class="orange"><span class="dot orange"></span> 微信云开发 AI / 自定义 API</h5>
+            <p>· <b>核心职责</b>：自然语言意图理解、工具选择与参数生成、正文整理与标签提炼。<br>
+            · <b>事实红线</b>：大模型无直接写库工具，不能直接保存、修改或删除正式日记；不承诺无限记忆或消除幻觉。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zone 3 & 4 Right Column: 本机已同步缓存 & 家庭云端 -->
+      <div class="zone">
+        <div class="zone-header green">
+          <div class="zone-title">③ 本机缓存 与 ④ 家庭云端</div>
+          <span class="zone-tag">数据与存储</span>
+        </div>
+        <div class="zone-body">
+          <div class="node-box green">
+            <h5><span class="dot"></span> 本机已同步缓存（微信持久化 Storage）</h5>
+            <p>· 保存当前家庭已同步日记、当前会话与宠物信息。<br>
+            · <b>核心分工：query_records 直接读取本地缓存</b>，离线可用且毫秒级响应，隔离模型直接访问云端数据库。</p>
+          </div>
+          <div class="node-box">
+            <h5><span class="dot"></span> 云函数 diaryApi 业务鉴权</h5>
+            <p>· 负责微信 OpenID 身份鉴权与家庭成员权限审查；管理日记写库与私有照片访问凭证。<br>
+            · <b>事实边界：diaryApi 是纯业务鉴权接口，绝非模型代理。</b></p>
+          </div>
+          <div class="node-box">
+            <h5><span class="dot"></span> 家庭云端数据库与存储（CloudBase）</h5>
+            <p>· 云数据库：家庭宠物日记、宠物档案与家庭成员表。<br>
+            · 云存储：私有照片安全存储；双重视角留存整理正文与原始输入。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <div class="footer-item">
+        <span class="footer-pill">模型不直写</span>
+        <span>大模型不能直接保存日记，正式记录由用户确认写入</span>
+      </div>
+      <div class="footer-item">
+        <span class="footer-pill orange">缓存检索</span>
+        <span>查询工具读取已同步缓存，非模型直接读库</span>
+      </div>
+      <div class="footer-item">
+        <span class="footer-pill">业务鉴权</span>
+        <span>云函数 diaryApi 负责身份鉴权，绝非模型代理</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  </foreignObject>
+</svg>
