@@ -267,6 +267,27 @@ test('日记缓存无记录时，读取失败保留错误状态；重试成功�
   expect(diary.data.record.text).toBe('散步');
 });
 
+test('原始输入默认折叠，展开 / 收起仅改变页面状态，完整更正依据与照片数量数据保留', async () => {
+  const source={text:'演示原话\n\n用户更正原话：\n日期改成2025年12月27日',photos:['demo-photo'],provenance:'direct' as const};
+  store.cacheCloudData([pet],[{...record,rawInput:source}]);
+  const diary=page('diary'); diary.onLoad({id:record.id}); await diary.onShow();
+  const before=JSON.stringify(store.getRecord(record.id));
+  expect(diary.data.originalExpanded).toBe(false);
+  diary.onToggleOriginal(); expect(diary.data.originalExpanded).toBe(true);
+  expect(diary.data.record.rawInput).toEqual(source);
+  diary.onToggleOriginal(); expect(diary.data.originalExpanded).toBe(false);
+  expect(JSON.stringify(store.getRecord(record.id))).toBe(before);
+});
+
+test('新记录 / 记录消失时重置原文展开状态，没有原文时不产生空展开', () => {
+  store.cacheCloudData([pet],[{...record,rawInput:{text:'演示',photos:[]}}]);
+  const diary=page('diary'); diary.onLoad({id:record.id}); diary.reload(); diary.onToggleOriginal();
+  expect(diary.data.originalExpanded).toBe(true);
+  diary.onLoad({id:'other'}); expect(diary.data.originalExpanded).toBe(false);
+  diary.reload(); diary.onToggleOriginal(); expect(diary.data.originalExpanded).toBe(false);
+  expect(diary.data.record).toBeNull();
+});
+
 test('日记读取成功但无记录才显示缺失；必须绕过刷新节流确认', async () => {
   const diary = page('diary'); diary.onLoad({ id: record.id });
   await diary.onShow();

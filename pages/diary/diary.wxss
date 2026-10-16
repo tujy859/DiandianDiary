@@ -82,8 +82,11 @@
   margin-top: 48rpx;
 }
 
-.original { margin-top: 32rpx; padding-top: 24rpx; border-top: 1rpx solid var(--jd-line); font-size: var(--jd-fs-sm); color: var(--jd-text-2); white-space: pre-wrap; }
-.original-title { margin-bottom: 12rpx; font-weight: 600; }
+.original { margin-top:32rpx; border-top:1rpx solid var(--jd-line); font-size:var(--jd-fs-sm); color:var(--jd-text-2); }
+.original-toggle { display:flex; align-items:center; justify-content:space-between; gap:16rpx; min-height:44px; }
+.original-toggle:active { color:var(--jd-brand); }
+.original-content { padding-top:8rpx; white-space:pre-wrap; overflow-wrap:anywhere; }
+.original-note { margin-bottom:12rpx; font-size:var(--jd-fs-xs); }
 
 .delete-btn {
   display: flex;

@@ -21,15 +21,16 @@ Page({
     pets: [] as Pet[],
     editorVisible: false,
     editorValue: {} as any,
+    originalExpanded: false,
   },
 
   onLoad(options: Record<string, string>) {
-    this.setData({ id: options.id || '', pets: getPets() });
+    this.setData({ id: options.id || '', pets: getPets(), originalExpanded: false });
   },
 
   onShow() {
     if (getCloudSession() && !getCloudSession()!.familyId) {
-      this.setData({ record: null, pets: [], loading: false, loadError: '请先创建或加入家庭空间' });
+      this.setData({ record: null, pets: [], loading: false, originalExpanded: false, loadError: '请先创建或加入家庭空间' });
       guardReady();
       return;
     }
@@ -75,7 +76,7 @@ Page({
   reload() {
     const rec = this.data.id ? getRecord(this.data.id) : null;
     if (!rec) {
-      this.setData({ record: null, loading: false });
+      this.setData({ record: null, loading: false, originalExpanded: false });
       return;
     }
     const pet = this.data.pets.find((p) => p.id === rec.petId);
@@ -94,6 +95,10 @@ Page({
   onPreview(e: WechatMiniprogram.TouchEvent) {
     const { current } = e.currentTarget.dataset;
     wx.previewImage({ urls: this.data.record!.photos, current });
+  },
+
+  onToggleOriginal() {
+    if (this.data.record?.rawInput) this.setData({ originalExpanded: !this.data.originalExpanded });
   },
 
   onEdit() {

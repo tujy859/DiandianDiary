@@ -32,9 +32,15 @@
       <t-tag wx:for="{{record.tags}}" wx:key="*this" size="small" theme="primary" variant="light">{{item}}</t-tag>
     </view>
     <view wx:if="{{record.rawInput}}" class="original">
-      <view class="original-title">{{record.rawInput.provenance === 'legacy' ? '旧记录导入内容（原始输入未留存）' : '原始输入'}}</view>
-      <text selectable>{{record.rawInput.text || '（仅照片）'}}</text>
-      <view wx:if="{{record.rawInput.photos.length}}">原始照片 {{record.rawInput.photos.length}} 张</view>
+      <view class="original-toggle" bindtap="onToggleOriginal" aria-role="button" aria-expanded="{{originalExpanded}}">
+        <text>{{originalExpanded ? '收起' : '查看'}}{{record.rawInput.provenance === 'legacy' ? '导入内容' : '原始输入'}}</text>
+        <t-icon name="{{originalExpanded ? 'chevron-up' : 'chevron-down'}}" size="28rpx" color="#78837B" />
+      </view>
+      <view wx:if="{{originalExpanded}}" class="original-content">
+        <view wx:if="{{record.rawInput.provenance === 'legacy'}}" class="original-note">旧记录导入内容（原始输入未留存）</view>
+        <text selectable>{{record.rawInput.text || '（仅照片）'}}</text>
+        <view wx:if="{{record.rawInput.photos.length}}">原始照片 {{record.rawInput.photos.length}} 张</view>
+      </view>
     </view>
   </view>
 
