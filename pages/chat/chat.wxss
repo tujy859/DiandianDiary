@@ -28,8 +28,6 @@
   justify-content: space-between;
   gap: 16rpx;
 }
-.petbar .pet-chip { display:inline-flex; min-width:0; max-width:100%; min-height:44px; padding:8rpx 12rpx 8rpx 8rpx; }
-.petbar .pet-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .is-test-family .petbar { position:relative; top:auto; left:auto; right:auto; padding:16rpx 28rpx 0; flex-shrink:0; }
 .is-test-family .msgs { padding-top:24rpx; }
 
@@ -717,7 +715,6 @@
 }
 
 /* UX welcome and image assets; keyboard/session layout remains above. */
-.pet-avatar { display:block; width:64rpx; height:64rpx; padding:3rpx; border-radius:22rpx; background:#f2eee5; flex-shrink:0; }
 .welcome { padding:38rpx 0 24rpx; }
 .welcome-brand { width:144rpx; height:144rpx; border-radius:40rpx; margin-bottom:28rpx; }
 .welcome-greeting { color:#78837b; font-size:24rpx; margin-bottom:8rpx; }

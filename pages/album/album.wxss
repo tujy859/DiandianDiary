@@ -1,8 +1,5 @@
 .page { display:flex; flex-direction:column; overflow:hidden; }
 .header { display:flex; align-items:center; justify-content:space-between; gap:16rpx; padding:24rpx 36rpx 16rpx; flex-shrink:0; }
-.pet-chip { display:flex; align-items:center; gap:12rpx; min-width:0; padding:8rpx 0; }
-.pet-avatar { width:64rpx; height:64rpx; border-radius:22rpx; background:#f2eee5; flex-shrink:0; padding:3rpx; }
-.pet-name { font-size:28rpx; font-weight:600; color:#253a30; max-width:210rpx; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .seg { display:flex; flex-shrink:0; background:#efeee8; padding:6rpx; border-radius:24rpx; }
 .seg-item { color:#78837b; font-size:24rpx; padding:8rpx 20rpx; border-radius:18rpx; }
 .seg-item.is-active { background:#ffffff; color:#32694f; font-weight:600; }
