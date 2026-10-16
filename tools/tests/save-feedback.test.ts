@@ -4,6 +4,7 @@ import { traceError, beginTrace, debugReport, setTraceEnabled } from '../../util
 import { enableDeveloperMode } from '../../utils/developer';
 import { setCloudSession } from '../../utils/store';
 import { updateRecord } from '../../utils/repository';
+import { saveProgressView } from '../../utils/save-progress';
 import Dialog from 'tdesign-miniprogram/dialog/index';
 
 jest.mock('../../utils/repository', () => ({ updateRecord: jest.fn() }));
@@ -58,6 +59,15 @@ test('记录卡组件在保存中阻止修改与重复操作，失败后恢复�
   expect(card.triggerEvent).toHaveBeenCalledWith('save', { key: 'demo' });
 });
 
+test('保存反馈只在多照片上传时显示真实张数，准备 / 确认阶段保留分类但不外显技术详情', () => {
+  expect(saveProgressView({ stage: 'upload', photoIndex: 0, photoTotal: 1 }).label).toBe('正在上传照片…');
+  expect(saveProgressView({ stage: 'upload', photoIndex: 1, photoTotal: 3 }).label).toBe('正在上传照片 2/3…');
+  expect(saveProgressView({ stage: 'upload', photoIndex: 3, photoTotal: 3 }).label).toBe('正在上传照片…');
+  for (const stage of ['local', 'read', 'authorize', 'confirm', 'photo-done', 'save', 'refresh'] as const) {
+    expect(saveProgressView({ stage })).toEqual({ busy: true, stage, label: '正在保存日记…', detail: '' });
+  }
+});
+
 test('日记编辑保存使用简短阶段标题，超时给分类弹窗并保留编辑内容', async () => {
   let definition: any; const previous = (global as any).Page;
   try {
@@ -73,7 +83,7 @@ test('日记编辑保存使用简短阶段标题，超时给分类弹窗并保�
   const loading = jest.spyOn(wx, 'showLoading');
   try {
     await page.onEditorConfirm({ detail: { petId: 'demo', date: '2026-10-13', text: '演示', photos: [] } });
-    expect(loading).toHaveBeenCalledWith({ title: '上传照片…', mask: true });
+    expect(loading).toHaveBeenCalledWith({ title: '上传照片 1/2…', mask: true });
     expect(Dialog.alert).toHaveBeenCalledWith(expect.objectContaining({ title: '照片上传超时' }));
     expect(page.data.editorVisible).toBe(true); expect(page._saving).toBe(false);
   } finally { loading.mockRestore(); }

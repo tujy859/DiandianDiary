@@ -343,12 +343,12 @@ test('保存阶段实时可见，上传与云端确认期间不能重复保存�
   });
   const saving = page.onCardSave({ detail: { key: 'progress' } });
   await Promise.resolve(); await Promise.resolve();
-  expect(page.data.saveStates.progress).toMatchObject({ busy: true, label: '正在上传第 1 / 2 张照片' });
+  expect(page.data.saveStates.progress).toMatchObject({ busy: true, label: '正在上传照片 1/2…' });
   await page.onCardSave({ detail: { key: 'progress' } });
   page.onCardEdit({ detail: { key: 'progress' } }); page.onCardDiscard({ detail: { key: 'progress' } });
   expect(page.data.editorVisible).toBe(false); expect(page.data.messages[0].draft.status).toBe('pending');
   uploading.resolve(null); await Promise.resolve(); await Promise.resolve();
-  expect(page.data.saveStates.progress.label).toContain('云端确认');
+  expect(page.data.saveStates.progress).toMatchObject({ label: '正在保存日记…', stage: 'confirm' });
   expect(store.getRecords(a.id)).toHaveLength(0);
   confirming.resolve(null); await saving;
   expect(page.data.messages[0].draft.status).toBe('saved');

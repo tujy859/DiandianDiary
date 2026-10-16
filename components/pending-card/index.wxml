@@ -2,15 +2,13 @@
   <!-- 头部状态：精致微光徽章 -->
   <view class="pcard-head">
     <block wx:if="{{saveState.busy}}">
-      <view class="pcard-badge is-saved"><view class="save-spinner"></view><text>正在保存</text></view>
-      <text class="pcard-title">请稍候</text>
+      <view class="pcard-progress" aria-role="status"><view class="save-spinner"></view><text>{{saveState.label || '正在保存日记…'}}</text></view>
     </block>
     <block wx:elif="{{draft.status === 'pending'}}">
       <view class="pcard-badge is-pending">
         <text class="badge-sparkle">✦</text>
         <text>待确认日记</text>
       </view>
-      <text class="pcard-title">确认后自动记入时光册</text>
     </block>
     <block wx:elif="{{draft.status === 'saved'}}">
       <view class="pcard-badge is-saved">
@@ -36,32 +34,27 @@
     </block>
   </view>
 
-  <view wx:if="{{saveState.busy || (draft.status === 'failed' && saveState.detail)}}" class="save-feedback {{saveState.busy ? '' : 'is-failed'}}" aria-role="status">
+  <view wx:if="{{!saveState.busy && draft.status === 'failed' && saveState.detail}}" class="save-feedback is-failed" aria-role="status">
     <view class="save-label">{{saveState.label}}</view>
     <view class="save-detail">{{saveState.detail}}</view>
   </view>
 
   <view class="pcard-body {{draft.status === 'discarded' ? 'is-muted' : ''}}">
-    <!-- 元信息轻盈条目 -->
-    <view class="pcard-meta-box">
-      <view class="pcard-meta-row">
-        <view class="meta-label"><image class="meta-icon" src="/assets/icons/paw.png" mode="aspectFit" /><text>宠物</text></view>
-        <text class="meta-value">{{petName}}</text>
-      </view>
-      <view class="pcard-meta-row">
-        <view class="meta-label"><t-icon name="calendar" size="26rpx" /><text>日期</text></view>
-        <text wx:if="{{draft.date}}" class="meta-value is-date">{{dateText}}</text>
-        <view wx:else class="pcard-chips">
-          <text
-            wx:for="{{chips}}"
-            wx:key="value"
-            class="pcard-chip"
-            data-value="{{item.value}}"
-            catchtap="onChip"
-          >{{item.label}}</text>
-          <text class="pcard-chip is-more" catchtap="onEdit">选择日期</text>
-        </view>
-      </view>
+    <view class="pcard-meta">
+      <text class="pcard-pet-name">{{petName}}</text>
+      <text class="pcard-meta-dot">·</text>
+      <text wx:if="{{draft.date}}" class="pcard-date">{{dateText}}</text>
+      <text wx:else class="pcard-date-placeholder">日期待补充</text>
+    </view>
+    <view wx:if="{{!draft.date}}" class="pcard-chips">
+      <text
+        wx:for="{{chips}}"
+        wx:key="value"
+        class="pcard-chip"
+        data-value="{{item.value}}"
+        catchtap="onChip"
+      >{{item.label}}</text>
+      <text class="pcard-chip is-more" catchtap="onEdit">选择日期</text>
     </view>
 
     <!-- 记录正文 -->
@@ -69,7 +62,7 @@
 
     <!-- 标签 -->
     <view wx:if="{{draft.tags.length}}" class="pcard-tags">
-      <view wx:for="{{draft.tags}}" wx:key="*this" class="pcard-tag-pill"># {{item}}</view>
+      <view wx:for="{{draft.tags}}" wx:key="*this" class="pcard-tag-pill">{{item}}</view>
     </view>
 
     <!-- 照片 -->
@@ -87,14 +80,15 @@
   </view>
 
   <!-- 底部操作按钮 -->
-  <view wx:if="{{!saveState.busy && draft.status === 'pending'}}" class="pcard-actions">
-    <view class="pcard-btn is-primary" bindtap="onSave">
-      <text>保存这条</text>
+  <view wx:if="{{saveState.busy || draft.status === 'pending'}}" class="pcard-actions {{saveState.busy ? 'is-busy' : ''}}">
+    <view class="pcard-btn is-primary" bindtap="onSave" aria-role="button" aria-disabled="{{saveState.busy}}">
+      <view wx:if="{{saveState.busy}}" class="save-spinner is-button"></view>
+      <text>{{saveState.busy ? '保存中' : '保存这条'}}</text>
     </view>
-    <view class="pcard-btn is-outline" bindtap="onEdit">
+    <view class="pcard-btn is-outline" bindtap="onEdit" aria-role="button" aria-disabled="{{saveState.busy}}">
       <text>修改</text>
     </view>
-    <view class="pcard-btn is-ghost" bindtap="onDiscard">
+    <view class="pcard-btn is-ghost" bindtap="onDiscard" aria-role="button" aria-disabled="{{saveState.busy}}">
       <text>不记录</text>
     </view>
   </view>

@@ -7,23 +7,16 @@ export function notifySaveProgress(observer: SaveProgressObserver | undefined, p
 }
 export interface SaveViewState { busy: boolean; label: string; detail: string; stage?: SaveStage; failureTitle?: string }
 
-/** 原生 loading 标题空间有限；完整说明放在记录卡或错误弹窗。 */
+/** 日记编辑沿用同一份简短阶段文案，详细故障仍由错误弹窗说明。 */
 export function saveLoadingTitle(progress: SaveProgress): string {
-  return ({ local: '准备保存…', read: '读取照片…', authorize: '准备上传…', upload: '上传照片…',
-    confirm: '云端确认…', 'photo-done': '照片已就绪', save: '保存日记…', refresh: '确认显示…' })[progress.stage];
+  return saveProgressView(progress).label.replace(/^正在/, '');
 }
 
 export function saveProgressView(progress: SaveProgress): SaveViewState {
-  const number = Number.isInteger(progress.photoIndex) && progress.photoTotal > 0
-    ? `第 ${progress.photoIndex + 1} / ${progress.photoTotal} 张照片` : '照片';
-  const labels: Record<SaveStage, string> = {
-    local: '正在准备保存', read: `正在读取${number}`, authorize: `正在准备上传${number}`,
-    upload: `正在上传${number}`, confirm: `正在云端确认${number}`,
-    'photo-done': `${number}已就绪`, save: progress.photoTotal ? '照片已就绪，正在保存日记' : '正在保存日记', refresh: '日记已写入，正在确认显示',
-  };
-  return { busy: true, stage: progress.stage, label: labels[progress.stage],
-    detail: progress.stage === 'confirm' ? '照片已上传，正在由云端校验。日记尚未保存。'
-      : progress.stage === 'save' ? '正在写入时光册，请稍候。'
-      : progress.stage === 'refresh' ? '即将完成，请稍候。'
-      : '完成后会显示“已记入时光册”，请稍候。' };
+  const count = Number.isInteger(progress.photoIndex) && progress.photoIndex >= 0
+    && Number.isInteger(progress.photoTotal) && progress.photoTotal > 1 && progress.photoIndex < progress.photoTotal
+    ? ` ${progress.photoIndex + 1}/${progress.photoTotal}` : '';
+  // 保留原阶段给日志与失败分类，界面合并短暂的准备 / 校验步骤，不显示技术细节或模拟百分比。
+  const label = progress.stage === 'upload' ? `正在上传照片${count}…` : '正在保存日记…';
+  return { busy: true, stage: progress.stage, label, detail: '' };
 }
