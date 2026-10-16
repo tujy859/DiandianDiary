@@ -36,3 +36,12 @@ export function normalizeModelForm(config: ModelConfig): ModelConfig {
   }
   return { ...config, source: 'custom', baseUrl: config.baseUrl.trim(), apiKey: config.apiKey.trim(), model: config.model.trim() };
 }
+
+/** 页面内保留自定义草稿；云开发表单始终不携带自定义凭证。 */
+export function switchModelSource(current: ModelConfig, source: 'custom' | 'cloud', customDraft?: ModelConfig) {
+  const draft = current.source === 'cloud' ? customDraft : { ...current, source: 'custom' as const };
+  const form = source === 'custom' && draft
+    ? { ...draft }
+    : modelForm({ source, provider: '', baseUrl: '', apiKey: '', model: '' });
+  return { form, customDraft: draft };
+}

@@ -67,8 +67,43 @@ test.each(['model', 'onboard'])('%s 可选云开发，切换不保存且不混�
   expect(instance.data.modelHelp).toContain('聊天文字');
   expect(store.getModelConfig()).toEqual(config);
   instance.onSelectSource({ currentTarget: { dataset: { source: 'custom' } } });
-  expect(instance.data.form.apiKey).toBe(''); expect(instance.data.form.model).not.toBe('hy3');
+  expect(instance.data.form).toEqual({ ...config, source: 'custom' });
   expect(store.getModelConfig()).toEqual(config);
+});
+
+test.each(['model', 'onboard'])('%s 来回切换保留最新输入，测试云开发不发送自定义密钥', async name => {
+  enableDeveloperMode();
+  const instance = page(name); instance.onLoad({ replay: '1' });
+  instance.onSelectProvider({ currentTarget: { dataset: { value: 'OpenAI 兼容' } } });
+  instance.onBaseUrl({ detail: { value: 'https://edited.example/v1' } });
+  instance.onApiKey({ detail: { value: 'edited-demo-key' } });
+  instance.onModel({ detail: { value: 'edited-model' } });
+  const edited = { ...instance.data.form };
+  instance.onSelectSource(chooseCloud);
+  if (name === 'model') await instance.onTest(); else await instance.onTestModel();
+  expect(testConnection).toHaveBeenLastCalledWith(cloudConfig);
+  instance.onSelectSource({ currentTarget: { dataset: { source: 'custom' } } });
+  expect(instance.data.form).toEqual(edited);
+  instance.onSelectSource(chooseCloud);
+  instance.onSelectSource({ currentTarget: { dataset: { source: 'custom' } } });
+  expect(instance.data.form).toEqual(edited);
+  if (name === 'model') await instance.onTest(); else await instance.onTestModel();
+  expect(testConnection).toHaveBeenLastCalledWith(edited);
+  expect(store.getModelConfig()).toEqual(config);
+});
+
+test('清除配置后不能通过切换来源恢复旧密钥，离开页面释放草稿', async () => {
+  const model = page('model'); model.onLoad(); model.onSelectSource(chooseCloud);
+  (Dialog.confirm as jest.Mock).mockResolvedValueOnce(undefined);
+  model.onClear(); await Promise.resolve();
+  model.onSelectSource(chooseCloud);
+  model.onSelectSource({ currentTarget: { dataset: { source: 'custom' } } });
+  expect(model.data.form.apiKey).toBe(''); expect(store.getModelConfig().apiKey).toBe('');
+  model.onApiKey({ detail: { value: 'temporary-demo-key' } });
+  model.onSelectSource(chooseCloud); model.onUnload();
+  expect(model._customModelDraft).toBeUndefined();
+  const reopened = page('model'); reopened.onLoad();
+  expect(reopened.data.form.apiKey).toBe('');
 });
 
 test('设置页测试云开发不自动保存，显式保存后无密钥，重新进入保留来源', async () => {

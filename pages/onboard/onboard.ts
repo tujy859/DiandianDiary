@@ -1,14 +1,15 @@
 import Toast from 'tdesign-miniprogram/toast/index';
-import { getModelConfig, saveModelConfig, getPets, getCloudSession } from '../../utils/store';
+import { getModelConfig, saveModelConfig, getPets, getCloudSession, ModelConfig } from '../../utils/store';
 import { connectCloud, refreshCloudIfStale } from '../../utils/repository';
 import { isModelReady, testConnection } from '../../utils/llm';
 import { pendingStep } from '../../utils/onboard';
 import { openAddPet } from '../../utils/pet-navigation';
-import { MODEL_PRESETS, MODEL_HELP, CLOUD_HELP, CLOUD_MODEL, MODEL_INPUT_STYLE, modelPreset, modelForm, normalizeModelForm } from '../../utils/model-presets';
+import { MODEL_PRESETS, MODEL_HELP, CLOUD_HELP, CLOUD_MODEL, MODEL_INPUT_STYLE, modelPreset, modelForm, normalizeModelForm, switchModelSource } from '../../utils/model-presets';
 import { isCloudAiSupported, assertCloudAiAvailable, CLOUD_AI_MIN_SDK } from '../../utils/cloud-ai';
 import { isDeveloperMode } from '../../utils/developer';
 
 Page({
+  _customModelDraft: undefined as ModelConfig | undefined,
   data: {
     step: 'login' as 'login' | 'model',
     busy: false,
@@ -29,6 +30,7 @@ Page({
   },
 
   onLoad(options: Record<string, string> = {}) {
+    this._customModelDraft = undefined;
     const saved = getModelConfig();
     const hasSavedModel = isModelReady(saved);
     // 演练必须有正常账号和配置；不借测试参数绕过真实使用前提。
@@ -43,6 +45,8 @@ Page({
       return this.finish();
     }
   },
+
+  onUnload() { this._customModelDraft = undefined; },
 
   /** 第一步：微信身份静默登录，成功后根据是否已有模型配置决定下一步 */
   async onStart() {
@@ -64,7 +68,9 @@ Page({
     if (this.data.busy) return;
     const source = e.currentTarget.dataset.source === 'cloud' ? 'cloud' : 'custom';
     if (source === this.data.source) return;
-    const form = modelForm({ source, provider: '', baseUrl: '', apiKey: '', model: '' });
+    const switched = switchModelSource(this.data.form, source, this._customModelDraft);
+    const form = switched.form;
+    this._customModelDraft = switched.customDraft;
     this.setData({ source, form, modelHelp: source === 'cloud' ? CLOUD_HELP : MODEL_HELP,
       recommendedModel: source === 'cloud' ? '' : modelPreset(form.provider).model,
       error: '', modelTest: 'idle' });

@@ -1,11 +1,12 @@
 import Toast from 'tdesign-miniprogram/toast/index';
 import Dialog from 'tdesign-miniprogram/dialog/index';
-import { getModelConfig, saveModelConfig, clearModelConfig } from '../../utils/store';
+import { getModelConfig, saveModelConfig, clearModelConfig, ModelConfig } from '../../utils/store';
 import { testConnection, isModelReady } from '../../utils/llm';
-import { MODEL_PRESETS, MODEL_HELP, CLOUD_HELP, CLOUD_MODEL, MODEL_INPUT_STYLE, modelPreset, modelForm, normalizeModelForm } from '../../utils/model-presets';
+import { MODEL_PRESETS, MODEL_HELP, CLOUD_HELP, CLOUD_MODEL, MODEL_INPUT_STYLE, modelPreset, modelForm, normalizeModelForm, switchModelSource } from '../../utils/model-presets';
 import { isCloudAiSupported, assertCloudAiAvailable, CLOUD_AI_MIN_SDK } from '../../utils/cloud-ai';
 
 Page({
+  _customModelDraft: undefined as ModelConfig | undefined,
   data: {
     providers: Object.keys(MODEL_PRESETS),
     modelHelp: MODEL_HELP,
@@ -22,6 +23,7 @@ Page({
   },
 
   onLoad() {
+    this._customModelDraft = undefined;
     const cfg = getModelConfig();
     const form = modelForm(cfg);
     this.setData({
@@ -33,12 +35,16 @@ Page({
     });
   },
 
-  /** 切换来源时不保留另一来源的凭证与模型名，两套模型标识不能混用 */
+  onUnload() { this._customModelDraft = undefined; },
+
+  /** 切换来源保留当前页面草稿，两套模型标识与请求凭证仍隔离。 */
   onSelectSource(e: WechatMiniprogram.TouchEvent) {
     if (this.data.testing) return;
     const source = e.currentTarget.dataset.source === 'cloud' ? 'cloud' : 'custom';
     if (source === this.data.source) return;
-    const form = modelForm({ provider: '', baseUrl: '', apiKey: '', model: '', source });
+    const switched = switchModelSource(this.data.form, source, this._customModelDraft);
+    const form = switched.form;
+    this._customModelDraft = switched.customDraft;
     this.setData({
       source,
       form,
@@ -119,6 +125,7 @@ Page({
       confirmBtn: { content: '清除', theme: 'danger' },
     }).then(() => {
       clearModelConfig();
+      this._customModelDraft = undefined;
       this.setData({
         source: 'custom',
         modelHelp: MODEL_HELP,
