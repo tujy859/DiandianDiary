@@ -1,4 +1,4 @@
-<view wx:if="{{!hidden}}" class="tabbar" style="height: {{tabHeightStyle}}; padding-bottom: {{safeBottom}}px;">
+<view wx:if="{{!hidden}}" class="tabbar" style="height: {{tabHeightStyle}}; padding-bottom: {{bottomPadding}}px;">
   <view
     wx:for="{{list}}"
     wx:key="pagePath"

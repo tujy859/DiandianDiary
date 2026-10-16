@@ -14,12 +14,16 @@ export interface LayoutMetrics {
     tabbarHeight: number;
     /** 底部安全区高度（px） */
     safeBottom: number;
+    /** 导航底部留白（px，系统安全区 + 额外视觉间距） */
+    tabbarBottomPadding: number;
     /** rpx → px 换算比例 */
     rpxRatio: number;
 }
 
 /** tabBar 内容高度（rpx），与 custom-tab-bar/index.wxss 保持一致 */
 const TABBAR_CONTENT_RPX = 112;
+/** 在系统安全区之外额外留白，让导航内容离屏幕底边更远。 */
+const TABBAR_BOTTOM_GAP_PX = 16;
 
 let cache: LayoutMetrics | null = null;
 
@@ -52,11 +56,13 @@ export function measureLayout(): LayoutMetrics {
         ? screenHeight - safeArea.bottom
         : 0;
     const safeBottom = Math.max(0, Math.min(60, rawBottom));
+    const tabbarBottomPadding = safeBottom + TABBAR_BOTTOM_GAP_PX;
     const rpxRatio = windowWidth / 750;
     return {
         viewportHeight: win.windowHeight || screenHeight,
-        tabbarHeight: Math.ceil(TABBAR_CONTENT_RPX * rpxRatio + safeBottom),
+        tabbarHeight: Math.ceil(TABBAR_CONTENT_RPX * rpxRatio + tabbarBottomPadding),
         safeBottom,
+        tabbarBottomPadding,
         rpxRatio,
     };
 }

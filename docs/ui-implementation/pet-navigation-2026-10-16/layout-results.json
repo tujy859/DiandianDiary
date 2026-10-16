@@ -1,0 +1,488 @@
+[
+  {
+    "name": "chat",
+    "width": 320,
+    "safe": 0,
+    "long": false,
+    "overflow": false,
+    "chip": {
+      "width": 76.203125,
+      "height": 36.109375,
+      "padding": "3.41333px 0px",
+      "borderRadius": "10.24px",
+      "font": "11.9467px"
+    },
+    "overlap": false,
+    "barHeight": 64,
+    "bottomPadding": 16,
+    "itemGap": 16,
+    "pagePadding": 0,
+    "tailHeight": 64
+  },
+  {
+    "name": "album",
+    "width": 320,
+    "safe": 0,
+    "long": false,
+    "overflow": false,
+    "chip": {
+      "width": 76.203125,
+      "height": 36.109375,
+      "padding": "3.41333px 0px",
+      "borderRadius": "10.24px",
+      "font": "11.9467px"
+    },
+    "overlap": false,
+    "barHeight": 64,
+    "bottomPadding": 16,
+    "itemGap": 16,
+    "pagePadding": 64
+  },
+  {
+    "name": "chat",
+    "width": 320,
+    "safe": 0,
+    "long": true,
+    "overflow": false,
+    "chip": {
+      "width": 141.90625,
+      "height": 36.109375,
+      "padding": "3.41333px 0px",
+      "borderRadius": "10.24px",
+      "font": "11.9467px"
+    },
+    "overlap": false,
+    "barHeight": 64,
+    "bottomPadding": 16,
+    "itemGap": 16,
+    "pagePadding": 0,
+    "tailHeight": 64
+  },
+  {
+    "name": "album",
+    "width": 320,
+    "safe": 0,
+    "long": true,
+    "overflow": false,
+    "chip": {
+      "width": 141.90625,
+      "height": 36.109375,
+      "padding": "3.41333px 0px",
+      "borderRadius": "10.24px",
+      "font": "11.9467px"
+    },
+    "overlap": false,
+    "barHeight": 64,
+    "bottomPadding": 16,
+    "itemGap": 16,
+    "pagePadding": 64
+  },
+  {
+    "name": "chat",
+    "width": 320,
+    "safe": 34,
+    "long": false,
+    "overflow": false,
+    "chip": {
+      "width": 76.203125,
+      "height": 36.109375,
+      "padding": "3.41333px 0px",
+      "borderRadius": "10.24px",
+      "font": "11.9467px"
+    },
+    "overlap": false,
+    "barHeight": 98,
+    "bottomPadding": 50,
+    "itemGap": 50,
+    "pagePadding": 0,
+    "tailHeight": 98
+  },
+  {
+    "name": "album",
+    "width": 320,
+    "safe": 34,
+    "long": false,
+    "overflow": false,
+    "chip": {
+      "width": 76.203125,
+      "height": 36.109375,
+      "padding": "3.41333px 0px",
+      "borderRadius": "10.24px",
+      "font": "11.9467px"
+    },
+    "overlap": false,
+    "barHeight": 98,
+    "bottomPadding": 50,
+    "itemGap": 50,
+    "pagePadding": 98
+  },
+  {
+    "name": "chat",
+    "width": 320,
+    "safe": 34,
+    "long": true,
+    "overflow": false,
+    "chip": {
+      "width": 141.90625,
+      "height": 36.109375,
+      "padding": "3.41333px 0px",
+      "borderRadius": "10.24px",
+      "font": "11.9467px"
+    },
+    "overlap": false,
+    "barHeight": 98,
+    "bottomPadding": 50,
+    "itemGap": 50,
+    "pagePadding": 0,
+    "tailHeight": 98
+  },
+  {
+    "name": "album",
+    "width": 320,
+    "safe": 34,
+    "long": true,
+    "overflow": false,
+    "chip": {
+      "width": 141.90625,
+      "height": 36.109375,
+      "padding": "3.41333px 0px",
+      "borderRadius": "10.24px",
+      "font": "11.9467px"
+    },
+    "overlap": false,
+    "barHeight": 98,
+    "bottomPadding": 50,
+    "itemGap": 50,
+    "pagePadding": 98
+  },
+  {
+    "name": "chat",
+    "width": 375,
+    "safe": 0,
+    "long": false,
+    "overflow": false,
+    "chip": {
+      "width": 89,
+      "height": 42,
+      "padding": "4px 0px",
+      "borderRadius": "12px",
+      "font": "14px"
+    },
+    "overlap": false,
+    "barHeight": 72,
+    "bottomPadding": 16,
+    "itemGap": 16,
+    "pagePadding": 0,
+    "tailHeight": 72
+  },
+  {
+    "name": "album",
+    "width": 375,
+    "safe": 0,
+    "long": false,
+    "overflow": false,
+    "chip": {
+      "width": 89,
+      "height": 42,
+      "padding": "4px 0px",
+      "borderRadius": "12px",
+      "font": "14px"
+    },
+    "overlap": false,
+    "barHeight": 72,
+    "bottomPadding": 16,
+    "itemGap": 16,
+    "pagePadding": 72
+  },
+  {
+    "name": "chat",
+    "width": 375,
+    "safe": 0,
+    "long": true,
+    "overflow": false,
+    "chip": {
+      "width": 166,
+      "height": 42,
+      "padding": "4px 0px",
+      "borderRadius": "12px",
+      "font": "14px"
+    },
+    "overlap": false,
+    "barHeight": 72,
+    "bottomPadding": 16,
+    "itemGap": 16,
+    "pagePadding": 0,
+    "tailHeight": 72
+  },
+  {
+    "name": "album",
+    "width": 375,
+    "safe": 0,
+    "long": true,
+    "overflow": false,
+    "chip": {
+      "width": 166,
+      "height": 42,
+      "padding": "4px 0px",
+      "borderRadius": "12px",
+      "font": "14px"
+    },
+    "overlap": false,
+    "barHeight": 72,
+    "bottomPadding": 16,
+    "itemGap": 16,
+    "pagePadding": 72
+  },
+  {
+    "name": "chat",
+    "width": 375,
+    "safe": 34,
+    "long": false,
+    "overflow": false,
+    "chip": {
+      "width": 89,
+      "height": 42,
+      "padding": "4px 0px",
+      "borderRadius": "12px",
+      "font": "14px"
+    },
+    "overlap": false,
+    "barHeight": 106,
+    "bottomPadding": 50,
+    "itemGap": 50,
+    "pagePadding": 0,
+    "tailHeight": 106
+  },
+  {
+    "name": "album",
+    "width": 375,
+    "safe": 34,
+    "long": false,
+    "overflow": false,
+    "chip": {
+      "width": 89,
+      "height": 42,
+      "padding": "4px 0px",
+      "borderRadius": "12px",
+      "font": "14px"
+    },
+    "overlap": false,
+    "barHeight": 106,
+    "bottomPadding": 50,
+    "itemGap": 50,
+    "pagePadding": 106
+  },
+  {
+    "name": "chat",
+    "width": 375,
+    "safe": 34,
+    "long": true,
+    "overflow": false,
+    "chip": {
+      "width": 166,
+      "height": 42,
+      "padding": "4px 0px",
+      "borderRadius": "12px",
+      "font": "14px"
+    },
+    "overlap": false,
+    "barHeight": 106,
+    "bottomPadding": 50,
+    "itemGap": 50,
+    "pagePadding": 0,
+    "tailHeight": 106
+  },
+  {
+    "name": "album",
+    "width": 375,
+    "safe": 34,
+    "long": true,
+    "overflow": false,
+    "chip": {
+      "width": 166,
+      "height": 42,
+      "padding": "4px 0px",
+      "borderRadius": "12px",
+      "font": "14px"
+    },
+    "overlap": false,
+    "barHeight": 106,
+    "bottomPadding": 50,
+    "itemGap": 50,
+    "pagePadding": 106
+  },
+  {
+    "name": "chat",
+    "width": 414,
+    "safe": 0,
+    "long": false,
+    "overflow": false,
+    "chip": {
+      "width": 97.984375,
+      "height": 46.125,
+      "padding": "4.416px 0px",
+      "borderRadius": "13.248px",
+      "font": "15.456px"
+    },
+    "overlap": false,
+    "barHeight": 78,
+    "bottomPadding": 16,
+    "itemGap": 16,
+    "pagePadding": 0,
+    "tailHeight": 78
+  },
+  {
+    "name": "album",
+    "width": 414,
+    "safe": 0,
+    "long": false,
+    "overflow": false,
+    "chip": {
+      "width": 97.984375,
+      "height": 46.125,
+      "padding": "4.416px 0px",
+      "borderRadius": "13.248px",
+      "font": "15.456px"
+    },
+    "overlap": false,
+    "barHeight": 78,
+    "bottomPadding": 16,
+    "itemGap": 16,
+    "pagePadding": 78
+  },
+  {
+    "name": "chat",
+    "width": 414,
+    "safe": 0,
+    "long": true,
+    "overflow": false,
+    "chip": {
+      "width": 182.984375,
+      "height": 46.125,
+      "padding": "4.416px 0px",
+      "borderRadius": "13.248px",
+      "font": "15.456px"
+    },
+    "overlap": false,
+    "barHeight": 78,
+    "bottomPadding": 16,
+    "itemGap": 16,
+    "pagePadding": 0,
+    "tailHeight": 78
+  },
+  {
+    "name": "album",
+    "width": 414,
+    "safe": 0,
+    "long": true,
+    "overflow": false,
+    "chip": {
+      "width": 182.984375,
+      "height": 46.125,
+      "padding": "4.416px 0px",
+      "borderRadius": "13.248px",
+      "font": "15.456px"
+    },
+    "overlap": false,
+    "barHeight": 78,
+    "bottomPadding": 16,
+    "itemGap": 16,
+    "pagePadding": 78
+  },
+  {
+    "name": "chat",
+    "width": 414,
+    "safe": 34,
+    "long": false,
+    "overflow": false,
+    "chip": {
+      "width": 97.984375,
+      "height": 46.125,
+      "padding": "4.416px 0px",
+      "borderRadius": "13.248px",
+      "font": "15.456px"
+    },
+    "overlap": false,
+    "barHeight": 112,
+    "bottomPadding": 50,
+    "itemGap": 50,
+    "pagePadding": 0,
+    "tailHeight": 112
+  },
+  {
+    "name": "album",
+    "width": 414,
+    "safe": 34,
+    "long": false,
+    "overflow": false,
+    "chip": {
+      "width": 97.984375,
+      "height": 46.125,
+      "padding": "4.416px 0px",
+      "borderRadius": "13.248px",
+      "font": "15.456px"
+    },
+    "overlap": false,
+    "barHeight": 112,
+    "bottomPadding": 50,
+    "itemGap": 50,
+    "pagePadding": 112
+  },
+  {
+    "name": "chat",
+    "width": 414,
+    "safe": 34,
+    "long": true,
+    "overflow": false,
+    "chip": {
+      "width": 182.984375,
+      "height": 46.125,
+      "padding": "4.416px 0px",
+      "borderRadius": "13.248px",
+      "font": "15.456px"
+    },
+    "overlap": false,
+    "barHeight": 112,
+    "bottomPadding": 50,
+    "itemGap": 50,
+    "pagePadding": 0,
+    "tailHeight": 112
+  },
+  {
+    "name": "album",
+    "width": 414,
+    "safe": 34,
+    "long": true,
+    "overflow": false,
+    "chip": {
+      "width": 182.984375,
+      "height": 46.125,
+      "padding": "4.416px 0px",
+      "borderRadius": "13.248px",
+      "font": "15.456px"
+    },
+    "overlap": false,
+    "barHeight": 112,
+    "bottomPadding": 50,
+    "itemGap": 50,
+    "pagePadding": 112
+  },
+  {
+    "name": "chat-keyboard",
+    "width": 320,
+    "tailHeight": 0,
+    "dockBottom": 430
+  },
+  {
+    "name": "chat-keyboard",
+    "width": 375,
+    "tailHeight": 0,
+    "dockBottom": 430
+  },
+  {
+    "name": "chat-keyboard",
+    "width": 414,
+    "tailHeight": 0,
+    "dockBottom": 430
+  }
+]

@@ -34,7 +34,7 @@
 - 时光册保留竖线、圆点时间轴和画廊切换；突出照片、正文，弱化辅助日期与标签。
 - 聊聊保持简洁欢迎区与短标题快捷入口；保留话题历史、停止生成和草稿确认等功能。
 - UI 修改须配套核对 WXML 字段与事件、TypeScript 数据与方法、WXSS 布局；图片路径不能直接塞入原 emoji 文本节点。
-- 键盘避让、切页视口恢复及底部安全区是重点回归项。公共度量在 `utils/layout.ts`，须与 `custom-tab-bar/` 一致；当前导航内容高度为 112rpx。
+- 键盘避让、切页视口恢复及底部安全区是重点回归项。公共度量在 `utils/layout.ts`，须与 `custom-tab-bar/` 一致；当前导航内容高度为 112rpx，底部另加系统安全区与 16px 视觉留白，页面占位同步计算。
 - 头像入口为 `utils/pet-avatars.ts`，显式内置选择优先，否则保留上传照片。变更需兼顾云端校验、持久化和旧记录兼容。
 - 参考 [UX 探索](docs/ui-exploration/README.md)、[UI 实现与验证](docs/ui-implementation/README.md)及 [UX 整合取舍](docs/ux-integration-2026-10-15.md)。
 

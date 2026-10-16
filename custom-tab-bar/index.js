@@ -11,10 +11,10 @@ Component({
         /** 键盘弹起时由页面置为 true，把底部让给输入台 */
         hidden: false,
         tabbarHeight: 0,
-        /** 内联高度：测不到时留空，回落到 wxss 的 112rpx */
-        tabHeightStyle: '',
-        /** 内联底部安全区：不再依赖 env()，安卓上它经常解析成 0 */
-        safeBottom: 0,
+        /** 初始值与样式兜底一致；挂载后替换为公共测量结果。 */
+        tabHeightStyle: 'calc(112rpx + 16px)',
+        /** 系统安全区与额外留白共用公共度量，不依赖 env()。 */
+        bottomPadding: 16,
         list: [
             { pagePath: '/pages/album/album', text: '时光册', icon: 'image' },
             { pagePath: '/pages/chat/chat', text: '聊聊', icon: 'chat' },
@@ -49,14 +49,14 @@ Component({
     methods: {
         applyLayout() {
             const metrics = layout.getLayout(true);
-            const style = metrics.tabbarHeight ? metrics.tabbarHeight + 'px' : '';
+            const style = metrics.tabbarHeight ? metrics.tabbarHeight + 'px' : 'calc(112rpx + 16px)';
             if (style !== this.data.tabHeightStyle
-                || metrics.safeBottom !== this.data.safeBottom
+                || metrics.tabbarBottomPadding !== this.data.bottomPadding
                 || metrics.tabbarHeight !== this.data.tabbarHeight) {
                 this.setData({
                     tabbarHeight: metrics.tabbarHeight,
                     tabHeightStyle: style,
-                    safeBottom: metrics.safeBottom,
+                    bottomPadding: metrics.tabbarBottomPadding,
                 });
             }
         },
