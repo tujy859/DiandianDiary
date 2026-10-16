@@ -87,12 +87,13 @@ def figure(filename, max_width, max_height):
 
 
 class ImageRow(Flowable):
-    def __init__(self, paths, labels, height=240, gap=16, show_labels=True):
+    def __init__(self, paths, labels, height=240, gap=16, show_labels=True, framed=False):
         super().__init__()
         self.width = CONTENT_WIDTH
         self.height = height + (26 if show_labels else 10)
         self.gap = gap
         self.labels = labels if show_labels else []
+        self.framed = framed
         self.figures = [figure(p, (CONTENT_WIDTH - gap * (len(paths) - 1)) / len(paths), height) for p in paths]
         self.spaceBefore = 5
         self.spaceAfter = 10
@@ -101,7 +102,18 @@ class ImageRow(Flowable):
         cell_width = (self.width - self.gap * (len(self.figures) - 1)) / len(self.figures)
         for n, item in enumerate(self.figures):
             x = n * (cell_width + self.gap) + (cell_width - item.drawWidth) / 2
-            item.drawOn(self.canv, x, self.height - item.drawHeight - 4)
+            y = self.height - item.drawHeight - (6 if self.framed else 4)
+            if self.framed:
+                padding = 4
+                self.canv.saveState()
+                self.canv.setStrokeColor(colors.HexColor('#B7C7BD'))
+                self.canv.setFillColor(colors.white)
+                self.canv.setLineWidth(.8)
+                self.canv.roundRect(x - padding, y - padding,
+                    item.drawWidth + padding * 2, item.drawHeight + padding * 2,
+                    radius=8, stroke=1, fill=1)
+                self.canv.restoreState()
+            item.drawOn(self.canv, x, y)
             if self.labels:
                 self.canv.setFont('BodyCJK', 8.2)
                 self.canv.setFillColor(GRAY)
@@ -184,7 +196,7 @@ def build(output):
                     is_ux = 'contest-ux' in str(matches[0])
                     is_pet_art = 'resources\\pets' in str(matches[0]) or 'resources/pets' in str(matches[0])
                     height = 330 if is_ux else 105 if is_pet_art else 125 if len(matches) == 3 else 240
-                    flowables.append(ImageRow(matches, labels, height=height, gap=24 if is_ux else 16))
+                    flowables.append(ImageRow(matches, labels, height=height, gap=24 if is_ux else 16, framed=is_ux))
                 else:
                     height = 210 if page_number == 0 else 170
                     flowables.append(figure(matches[0], CONTENT_WIDTH, height))
