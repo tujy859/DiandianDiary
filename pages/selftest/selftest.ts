@@ -137,6 +137,14 @@ Page({
   },
   onToggleTrace() { setTraceEnabled(!isTraceEnabled()); this.refreshLogs(); },
   onRefreshLogs() { this.refreshLogs(); },
+  onLogMore() {
+    if (!isDeveloperMode() || this.data.section !== 'logs') return;
+    const epoch = getCloudSessionEpoch(), viewEpoch = this._viewEpoch;
+    wx.showActionSheet({ itemList: ['清空日志'], success: (result: any) => {
+      if (result.tapIndex === 0 && isDeveloperMode() && this.data.section === 'logs'
+        && getCloudSessionEpoch() === epoch && this._viewEpoch === viewEpoch) this.onClearLogs();
+    } });
+  },
   onClearLogs() { clearDebugTraces(); this.refreshLogs(); },
   onCopyLogs() { if (isDeveloperMode()) wx.setClipboardData({ data: debugReport() }); },
   onCopyTraceLogs(e: WechatMiniprogram.TouchEvent) {

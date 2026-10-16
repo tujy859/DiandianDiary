@@ -84,11 +84,13 @@
   </block>
   <block wx:if="{{section === 'logs'}}">
     <view class="scope-note">开启后记录当前家庭的聊天执行过程。仅在本机保留最近 12 次请求，每次最多 48 条事件，不采集密钥、聊天正文或照片。</view>
-    <view class="log-actions">
+    <view class="trace-toolbar">
       <t-button size="small" theme="primary" bind:tap="onToggleTrace">{{tracing ? '停止记录' : '开始记录'}}</t-button>
-      <t-button size="small" bind:tap="onRefreshLogs">刷新日志</t-button>
-      <t-button size="small" bind:tap="onCopyLogs">复制全部日志</t-button>
-      <t-button size="small" variant="text" bind:tap="onClearLogs">清空日志</t-button>
+      <view class="trace-toolbar-actions">
+        <t-button size="small" variant="text" bind:tap="onCopyLogs">复制全部日志</t-button>
+        <view class="trace-icon-action" bindtap="onRefreshLogs" aria-role="button" aria-label="刷新日志"><t-icon name="refresh" size="36rpx" color="#32694F" /></view>
+        <view class="trace-icon-action" bindtap="onLogMore" aria-role="button" aria-label="更多日志操作"><t-icon name="ellipsis" size="36rpx" color="#78837B" /></view>
+      </view>
     </view>
     <view wx:if="{{!traceRows.length}}" class="scope-note">暂无日志。开启记录后去「聊聊」发送消息，再回到这里查看。</view>
     <view wx:for="{{traceRows}}" wx:key="id" class="case">
@@ -97,7 +99,7 @@
           <view class="case-name">{{item.status}} · {{item.durationMs}}ms</view>
           <view class="case-detail">请求 {{item.id}}</view>
         </view>
-        <view class="trace-copy"><t-button size="small" variant="outline" data-id="{{item.id}}" bind:tap="onCopyTraceLogs">复制本条</t-button></view>
+        <view class="trace-icon-action" data-id="{{item.id}}" bindtap="onCopyTraceLogs" aria-role="button" aria-label="复制本条日志"><t-icon name="copy" size="36rpx" color="#32694F" /></view>
       </view>
       <text class="trace-detail" selectable>{{item.detail}}</text>
     </view>

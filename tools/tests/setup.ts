@@ -37,6 +37,7 @@ const wxStub: any = {
   request: (opts: any) => {
     opts && opts.fail && opts.fail({ errMsg: 'request:fail 测试环境默认不发起网络请求' });
   },
+  showActionSheet: (_opts: any) => {},
 
   compressImage: (opts: any) => {
     opts && opts.fail && opts.fail({ errMsg: 'compressImage:fail' });

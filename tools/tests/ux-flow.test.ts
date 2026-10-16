@@ -4,7 +4,7 @@ import { refreshCloudIfStale, connectCloud } from '../../utils/repository';
 import { testConnection } from '../../utils/llm';
 import { openAddPet, consumeAddPetRequest } from '../../utils/pet-navigation';
 import { enableDeveloperMode, disableDeveloperMode } from '../../utils/developer';
-import { beginTrace, setTraceEnabled, clearDebugTraces } from '../../utils/debug-trace';
+import { beginTrace, setTraceEnabled, clearDebugTraces, getDebugTraces } from '../../utils/debug-trace';
 import { isDeveloperMode } from '../../utils/developer';
 import Dialog from 'tdesign-miniprogram/dialog/index';
 import { callCloud } from '../../utils/cloud';
@@ -101,6 +101,30 @@ test('日志清除、切换家庭、关闭开发者模式后，旧卡片不能�
     disableDeveloperMode(); instance.onCopyTraceLogs(event); instance.onCopyLogs();
     expect(copy).not.toHaveBeenCalled();
   } finally { (wx as any).setClipboardData = original; }
+});
+
+test('日志更多菜单只在选择清空后操作，刷新与复制仍保留原范围', () => {
+  enableDeveloperMode(); setTraceEnabled(true); beginTrace();
+  const instance = page('selftest'); instance.onLoad({section:'logs'}); instance.onShow();
+  const menu = jest.spyOn(wx, 'showActionSheet').mockImplementation(() => {});
+  instance.onLogMore(); expect(getDebugTraces()).toHaveLength(1);
+  const options: any = menu.mock.calls[0][0];
+  expect(options.itemList).toEqual(['清空日志']);
+  options.success({tapIndex:0}); expect(getDebugTraces()).toEqual([]); expect(instance.data.traceRows).toEqual([]);
+});
+
+test.each(['family', 'hidden', 'disabled', 'section'])('打开日志菜单后 %s，迟到的选择不会清空当前日志', change => {
+  enableDeveloperMode(); setTraceEnabled(true); beginTrace();
+  const instance = page('selftest'); instance.onLoad({section:'logs'}); instance.onShow();
+  const menu = jest.spyOn(wx, 'showActionSheet').mockImplementation(() => {});
+  instance.onLogMore(); const options: any = menu.mock.calls[0][0];
+  if(change==='family') { store.setCloudSession({userId:'demo-user',familyId:'other-family'}); beginTrace(); }
+  else if(change==='hidden') instance.onHide();
+  else if(change==='disabled') disableDeveloperMode();
+  else instance.onSection({currentTarget:{dataset:{section:'core'}}});
+  const clear=jest.spyOn(instance,'onClearLogs'); options.success({tapIndex:0});
+  expect(clear).not.toHaveBeenCalled();
+  if(change!=='disabled') expect(getDebugTraces()).toHaveLength(1);
 });
 
 test.each(['model', 'onboard'])('%s 可选云开发，切换不保存且不混用自定义凭证', name => {
