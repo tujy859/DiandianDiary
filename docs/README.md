@@ -11,6 +11,7 @@
 | [参赛作品说明](deliverables/contest/README.md) | 点点创作背景、产品体验、Mermaid 图示、工程实践与验证状态 |
 | [文档素材](../resources/document-assets/README.md) | 参考资料、脱敏截图及图表源稿 |
 | [开发记录](development-log.md) | 当前进度、按日期记录的重要改动、部署和待办 |
+| [项目审计（2026-10-17）](project-audit-2026-10-17.md) | 会话与编辑一致性、架构复杂度、体验及文档偏差；含四项隔离复现 |
 | [UX 整合记录](ux-integration-2026-10-15.md) | 本地改动快照、合并取舍、回退基线与验证 |
 | [UX 连贯性核查](ux-audit-2026-10-15.md) | 首次使用、插画覆盖、流程断点、旧文案与状态问题 |
 | [开发测试：首次使用](new-user-testing.md) | 开发者入口、引导演练、空白测试家庭与返回 |
