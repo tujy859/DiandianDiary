@@ -1,3 +1,16 @@
+/* templates/model-form.wxml 的完整共享样式，页面仅保留各自的步骤与动作。 */
+.model-head { display:flex; align-items:center; gap:24rpx; padding:8rpx 0 16rpx; }
+.model-brand { width:104rpx; height:104rpx; border-radius:30rpx; flex-shrink:0; }
+.model-title { font-size:var(--jd-fs-xl); font-weight:600; color:var(--jd-text-1); }
+.model-sub { font-size:var(--jd-fs-sm); color:var(--jd-text-2); margin-top:4rpx; line-height:1.7; }
+.label { font-size:var(--jd-fs-sm); font-weight:600; color:var(--jd-text-2); margin:32rpx 8rpx 16rpx; }
+.provider-row { display:flex; gap:16rpx; flex-wrap:wrap; }
+.provider-chip { font-size:var(--jd-fs-sm); padding:12rpx 34rpx; border-radius:999rpx; background:#ffffff; border:1rpx solid var(--jd-line); color:var(--jd-text-1); }
+.provider-chip:active { transform:scale(0.97); }
+.provider-chip.is-active { background:var(--jd-brand); color:#ffffff; border-color:var(--jd-brand); font-weight:600; }
+.default-link { margin-top:24rpx; text-align:center; font-size:var(--jd-fs-sm); color:var(--jd-brand-deep); }
+.privacy-note { font-size:var(--jd-fs-xs); color:var(--jd-text-2); line-height:1.7; margin:24rpx 8rpx 0; }
+
 /* 来源选择：等宽双卡片，选中态品牌绿描边 */
 .source-row {
   display: flex;
