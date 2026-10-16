@@ -4,7 +4,7 @@ import { callCloud, CloudError } from '../../utils/cloud';
 import { memoryDatabase } from './helpers/cloud-db';
 import { validateDraft } from '../../utils/draft';
 import { enableDeveloperMode } from '../../utils/developer';
-import { setTraceEnabled, getDebugTraces } from '../../utils/debug-trace';
+import { setTraceEnabled, getDebugTraces, beginTrace } from '../../utils/debug-trace';
 const { createService } = require('../../cloudfunctions/diaryApi/service');
 jest.mock('tdesign-miniprogram/action-sheet/index', () => ({ __esModule: true, default: { show: jest.fn() } }), { virtual: true });
 jest.mock('tdesign-miniprogram/toast/index', () => ({ __esModule: true, default: jest.fn() }), { virtual: true });
@@ -90,7 +90,7 @@ describe('从聊天选图到确认保存', () => {
     expect(compress).not.toHaveBeenCalled();
     expect(save).toHaveBeenCalledTimes(1);
     const events = getDebugTraces()[0].events;
-    expect(events.find(event => event.phase === 'photo.upload')!.detail).toEqual({ photoIndex: 0, sourceBytes: size, uploadBytes: size });
+    expect(events.find(event => event.phase === 'photo.upload')!.detail).toEqual({ photoIndex: 0, sourceBytes: size, uploadBytes: size, uploadHost: 'upload.example' });
     expect(events.some(event => event.phase === 'photo.complete')).toBe(true);
     expect(JSON.stringify(events)).not.toContain('private-photo');
   });
@@ -291,6 +291,19 @@ test('照片直传失败时不确认上传、不写日记，重试可以完成',
     expect(db.dump('media')).toHaveLength(0);
     await expect(repo.addRecord(data)).resolves.toHaveProperty('id');
   } finally { fs.mockRestore(); }
+});
+
+test('域名被拦截时日志直接给出实际上传主机，不泄漏文件路径或授权', async () => {
+  jest.spyOn(wx, 'getFileSystemManager').mockReturnValue({ readFile: ({ success }: any) => success({ data: new Uint8Array([255, 216, 255]).buffer }) });
+  await repo.connectCloud(); const pet = await repo.savePet({ name: '演示猫', species: '猫' });
+  enableDeveloperMode(); setTraceEnabled(true);
+  const trace = beginTrace()!;
+  (wx.request as jest.Mock).mockImplementationOnce(options => options.fail({ errMsg: 'request:fail url not in domain list https://upload.example/private-photo?token=private-token' }));
+  await expect(repo.addRecord({ ...input(pet.id), photos: ['/local/private-photo.jpg'], observe: trace.emit })).rejects.toMatchObject({ code: 'PHOTO_DOMAIN' });
+  const events = getDebugTraces()[0].events;
+  expect(events.find(event => event.phase === 'photo.failure')!.detail).toMatchObject({ path: 'upload', error: '照片上传域名未配置', uploadHost: 'upload.example' });
+  expect(JSON.stringify(events)).not.toMatch(/https:|private-photo|private-token/);
+  expect(db.dump('diaries')).toHaveLength(0);
 });
 
 test('原始输入与整理结果的照片合并计数、只上传一次，确认完成后才写日记', async () => {

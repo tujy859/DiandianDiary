@@ -1,4 +1,4 @@
-import { beginTrace, getDebugTraces, debugReport, setTraceEnabled, MAX_TRACES, MAX_TRACE_EVENTS } from '../../utils/debug-trace';
+import { beginTrace, getDebugTraces, debugReport, setTraceEnabled, MAX_TRACES, MAX_TRACE_EVENTS, photoUploadHost } from '../../utils/debug-trace';
 import { enableDeveloperMode, disableDeveloperMode } from '../../utils/developer';
 import { setCloudSession } from '../../utils/store';
 import { logoutLocal } from '../../utils/family-state';
@@ -57,4 +57,21 @@ test('存储额度失败不影响业务；日志观察器抛错也不影响 agen
   enableDeveloperMode(); setTraceEnabled(true);
   jest.spyOn(wx, 'setStorageSync').mockImplementation(() => { throw new Error('quota'); });
   expect(beginTrace()).toBeUndefined();
+});
+
+test('上传诊断只提取主机名，清洗时拒绝完整地址、端口、账号及授权回显', () => {
+  const url = 'https://UPLOAD.EXAMPLE/pending/private-photo.jpg?token=private-token#private-signature';
+  expect(photoUploadHost(url)).toBe('upload.example');
+  for (const invalid of ['http://upload.example/path', 'https://user:password@upload.example/path',
+    'https://upload.example:443/path', 'https://bad..example/path', 'https://bad_host.example/path']) {
+    expect(photoUploadHost(invalid)).toBeUndefined();
+  }
+  enableDeveloperMode(); setTraceEnabled(true);
+  const trace = beginTrace()!;
+  trace.emit('photo.upload', { uploadHost: photoUploadHost(url), url, headers: { authorization: 'private-token' } } as any);
+  trace.emit('photo.failure', { uploadHost: url });
+  expect(getDebugTraces()[0].events[1].detail).toEqual({ uploadHost: 'upload.example' });
+  expect(getDebugTraces()[0].events[2].detail).toEqual({});
+  expect(debugReport()).toContain('upload.example');
+  expect(debugReport()).not.toMatch(/https:|private|authorization|token|pending/);
 });

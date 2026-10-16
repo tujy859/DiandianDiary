@@ -3,7 +3,7 @@ import * as local from './store';
 import { Pet, DiaryRecord, RawInput, getCloudSession, getCloudSessionEpoch, setCloudSession, cacheCloudData, uid } from './store';
 import { callCloud, CloudError } from './cloud';
 import { reconcileFamilyState, forgetFamilyState } from './family-state';
-import { TraceObserver, traceError } from './debug-trace';
+import { TraceObserver, traceError, photoUploadHost } from './debug-trace';
 import { SaveProgressObserver, notifySaveProgress } from './save-progress';
 import { photoUploadError, photoStageError } from './photo-upload-error';
 
@@ -57,6 +57,7 @@ async function uploadPhotos(paths: string[], s: local.CloudSession, observe?: Tr
     // 只拒绝云存储的签名展示链接；部分机型的本机持久路径以 http:// 开头（USER_DATA_PATH），必须照常上传
     if (/^https:/.test(path)) throw new Error('照片链接已失效，请刷新后重试');
     let stage = 'read';
+    let uploadHost: string | undefined;
     const photoIndex = ids.length;
     try {
       emit('photo.start', { photoIndex });
@@ -71,9 +72,10 @@ async function uploadPhotos(paths: string[], s: local.CloudSession, observe?: Tr
       progress('authorize', photoIndex);
       const grant = await callCloud<{ uploadId: string; url: string; headers: Record<string, string> }>('media.prepare', { familyId: s.familyId });
       sameSession(s);
+      uploadHost = photoUploadHost(grant.url);
       stage = 'upload';
       progress('upload', photoIndex);
-      emit('photo.upload', { photoIndex, sourceBytes: bytes.byteLength, uploadBytes: bytes.byteLength });
+      emit('photo.upload', { photoIndex, sourceBytes: bytes.byteLength, uploadBytes: bytes.byteLength, uploadHost });
       await new Promise<void>((resolve, reject) => wx.request({
         url: grant.url, method: 'PUT', data: bytes, header: grant.headers, timeout: 120000,
         success: (r: any) => r.statusCode >= 200 && r.statusCode < 300 ? resolve() : reject(photoUploadError(undefined, r.statusCode)),
@@ -91,7 +93,7 @@ async function uploadPhotos(paths: string[], s: local.CloudSession, observe?: Tr
       progress('photo-done', photoIndex);
     } catch (error) {
       const safeError = photoStageError(error, stage);
-      emit('photo.failure', { photoIndex, path: stage, error: traceError(safeError), httpStatus: safeError?.statusCode });
+      emit('photo.failure', { photoIndex, path: stage, error: traceError(safeError), httpStatus: safeError?.statusCode, uploadHost });
       throw safeError;
     }
   }

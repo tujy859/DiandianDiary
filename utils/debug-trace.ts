@@ -10,6 +10,8 @@ export interface TraceDetail {
   matched?: number; records?: Array<{ id: string; date: string }>; date?: string | null; proposedDate?: string | null;
   drafts?: number; refs?: string[]; error?: string; status?: string; durationMs?: number; historyCount?: number; runId?: string; step?: number;
   photoIndex?: number; sourceBytes?: number; uploadBytes?: number; httpStatus?: number;
+  /** 仅上传服务的 DNS 主机名，不接受完整 URL、路径或授权。 */
+  uploadHost?: string;
 }
 export type TraceObserver = (phase: string, detail: TraceDetail) => void;
 export interface DebugTrace { id: string; startedAt: number; status: string; durationMs: number; events: Array<{ phase: string; at: number; detail: TraceDetail }> }
@@ -17,6 +19,21 @@ export interface TraceHandle { id: string; emit: TraceObserver; finish: (status:
 const key = (userId: string, familyId: string) => `jd_debug_${userId}_${familyId}_traces`;
 export function isTraceEnabled(): boolean { return isDeveloperMode() && wx.getStorageSync(ENABLED) === true; }
 export function setTraceEnabled(enabled: boolean): void { if (isDeveloperMode()) wx.setStorageSync(ENABLED, enabled); }
+
+function safeUploadHost(value: unknown): string | undefined {
+  if (typeof value !== 'string' || value.length > 253) return undefined;
+  const host = value.toLowerCase(), labels = host.split('.');
+  if (labels.length < 2 || !labels.every(label => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label))
+    || !/^[a-z]{2,63}$/.test(labels[labels.length - 1])) return undefined;
+  return host;
+}
+
+/** 仅从服务端返回的 HTTPS 上传地址提取主机，原 URL 不进入诊断。 */
+export function photoUploadHost(url: unknown): string | undefined {
+  if (typeof url !== 'string') return undefined;
+  const match = /^https:\/\/([^/?#]+)(?:[/?#]|$)/i.exec(url);
+  return match ? safeUploadHost(match[1]) : undefined;
+}
 
 /** 默认不采集任意错误原文；防止服务商将请求头、正文或 Key 回显到报告。 */
 export function traceError(error: any): string {
@@ -62,6 +79,8 @@ function clean(detail: TraceDetail): TraceDetail {
     const value = detail[field]; if (Number.isSafeInteger(value) && value >= 0) out[field] = value;
   }
   if (Number.isInteger(detail.httpStatus) && detail.httpStatus >= 100 && detail.httpStatus <= 599) out.httpStatus = detail.httpStatus;
+  const uploadHost = safeUploadHost(detail.uploadHost);
+  if (uploadHost) out.uploadHost = uploadHost;
   const safeId = (id: unknown) => typeof id === 'string' && /^[a-zA-Z0-9_-]{1,100}$/.test(id);
   if (Array.isArray(detail.refs)) out.refs = detail.refs.filter(safeId).slice(0, 20);
   if (Array.isArray(detail.records)) out.records = detail.records.filter(r => r && safeId(r.id) && /^\d{4}-\d{2}-\d{2}$/.test(r.date)).slice(0, 20).map(r => ({ id: r.id, date: r.date }));
