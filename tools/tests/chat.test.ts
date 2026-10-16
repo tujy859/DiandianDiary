@@ -5,7 +5,8 @@ import * as store from '../../utils/store';
 import { RequestToken } from '../../utils/cancellation';
 import { today } from '../../utils/date';
 import * as sessions from '../../utils/chat-store';
-import { SESSION_GAP_MS, buildHistory } from '../../utils/context';
+import { SESSION_GAP_MS, buildHistory, buildDraftStates } from '../../utils/context';
+import { validateDraftUpdate } from '../../utils/draft';
 import { enableDeveloperMode } from '../../utils/developer';
 import { setTraceEnabled, getDebugTraces } from '../../utils/debug-trace';
 import { CloudError } from '../../utils/cloud';
@@ -100,6 +101,96 @@ beforeEach(() => {
   page.data.modelOn = true;
 });
 afterEach(() => { jest.restoreAllMocks(); jest.clearAllTimers(); jest.useRealTimers(); });
+
+describe('聊天更正真实卡片', () => {
+  const text = '日期应该是25年12月27号';
+  function prepare() {
+    jest.setSystemTime(new Date('2026-10-16T12:00:00+08:00'));
+    page._savingDrafts = {};
+    page.data.messages = [{ id: 'card', role: 'ai', kind: 'draft', time: Date.now(), draft: {
+      key: 'card', petId: a.id, date: '2026-10-16', text: '25年12月27号，演示猫在吃饭', tags: ['吃饭'], photos: [], status: 'pending',
+      rawInput: { text: '最初的用户原话', photos: [], provenance: 'direct' },
+    } }];
+    return validateDraftUpdate({ key: 'card', sourceText: text, date: '2025-12-27' }, buildDraftStates(page.data.messages, a.id), { text, petId: a.id });
+  }
+  test('工具方案应用同一张卡，确认文字来自实际日期；保存前不入库，保存后日期与原话一致', async () => {
+    const update = prepare();
+    run.mockResolvedValueOnce({ ...result('模型说已保存了'), draftUpdates: [update] });
+    await page.replyByAI(text, [], a);
+    expect(run.mock.calls[0][2].draftStatuses[0]).toMatchObject({ key: 'card', date: '2026-10-16' });
+    expect(page.data.messages.filter((m: any) => m.kind === 'draft')).toHaveLength(1);
+    expect(page.data.messages[0].draft).toMatchObject({ key: 'card', date: '2025-12-27', text: '25年12月27号，演示猫在吃饭', tags: ['吃饭'], status: 'pending' });
+    expect(page.data.messages[1].text).toContain('2025-12-27'); expect(page.data.messages[1].text).not.toContain('模型说');
+    expect(store.getRecords(a.id)).toEqual([]);
+    await page.onCardSave({ detail: { key: 'card' } });
+    const saved = store.getRecords(a.id)[0]; expect(saved.date).toBe('2025-12-27');
+    expect(saved.rawInput!.text).toContain('最初的用户原话'); expect(saved.rawInput!.text).toContain(text);
+    expect(page.data.messages[0].draft.status).toBe('saved');
+  });
+  test.each(['update', 'omitted', 'duplicate'])('JSON 降级 %s 路径也更新原卡且不信口头承诺', async mode => {
+    prepare(); run.mockRejectedValueOnce(new Error('工具不可用'));
+    json.mockResolvedValueOnce({ reply: '日期已经对了，不用修改', query: null,
+      draft: mode === 'duplicate' ? { date: '2025-12-27', sourceText: text, text: '演示猫吃饭', tags: [] } : null,
+      ...(mode === 'update' ? { update: { key: 'card', sourceText: text, date: '2025-12-27' } } : {}) });
+    await page.replyByAI(text, [], a);
+    expect(page.data.messages.filter((m: any) => m.kind === 'draft')).toHaveLength(1);
+    expect(page.data.messages[0].draft.date).toBe('2025-12-27');
+    expect(page.data.messages[1].text).toContain('已更新'); expect(page.data.messages[1].text).not.toContain('不用修改');
+  });
+  test('JSON 错误日期更正拒绝并保留原卡', async () => {
+    prepare(); run.mockRejectedValueOnce(new Error('工具不可用'));
+    json.mockResolvedValueOnce({ reply: '改好了', query: null, draft: null, update: { key: 'card', sourceText: text, date: '2026-10-16' } });
+    await page.replyByAI(text, [], a);
+    expect(page.data.messages[0].draft.date).toBe('2026-10-16'); expect(page.data.messages[1].text).toContain('尚未修改');
+  });
+  test('本机持久化失败时恢复原卡，不能显示成功', async () => {
+    const update = prepare(); const before = JSON.stringify(page.data.messages[0].draft);
+    jest.spyOn(sessions, 'saveLocalSession').mockImplementationOnce(() => { throw new Error('演示存储故障'); });
+    run.mockResolvedValueOnce({ ...result('成功'), draftUpdates: [update] });
+    await page.replyByAI(text, [], a);
+    expect(JSON.stringify(page.data.messages[0].draft)).toBe(before);
+    expect(page.data.messages[1].text).toContain('未能保存');
+  });
+  test.each(['saved', 'discarded', 'manual', 'saving'])('模型等待期间发生 %s，不覆盖最新卡片', async change => {
+    const update = prepare(); const wait = deferred(); run.mockReturnValueOnce(wait.promise);
+    const pending = page.replyByAI(text, [], a);
+    if (change === 'manual') page.onCardSetDate({ detail: { key: 'card', date: '2025-12-26' } });
+    else if (change === 'saving') page._savingDrafts.card = true;
+    else page.updateDraft(0, { status: change });
+    const before = JSON.stringify(page.data.messages[0].draft);
+    wait.resolve({ ...result('修改成功'), draftUpdates: [update] }); await pending;
+    expect(JSON.stringify(page.data.messages[0].draft)).toBe(before);
+    expect(page.data.messages[1].text).toContain('未应用');
+  });
+  test.each(['stop', 'pet', 'session', 'epoch'])('等待期间 %s 后，迟到更正不改变卡片或添加成功回复', async change => {
+    const update = prepare(); const wait = deferred(); run.mockReturnValueOnce(wait.promise);
+    const pending = page.replyByAI(text, [], a);
+    if (change === 'stop') page.onStop();
+    else if (change === 'pet') page.data.currentPet = b;
+    else if (change === 'session') page.data.sessionId = 'different';
+    else store.setCloudSession({ userId: 'new-demo-user', familyId: 'new-demo-family' });
+    const before = JSON.stringify(page.data.messages);
+    wait.resolve({ ...result('成功'), draftUpdates: [update] }); await pending;
+    expect(JSON.stringify(page.data.messages)).toBe(before);
+  });
+  test('日期更正不改变照片或原照片依据，编辑后的附件仍按最新卡片保存', async () => {
+    const update = prepare();
+    page.data.messages[0].draft.photos = ['demo/photo.jpg'];
+    run.mockResolvedValueOnce({ ...result(''), draftUpdates: [update] });
+    await page.replyByAI(text, [], a);
+    expect(page.data.messages[0].draft.photos).toEqual(['demo/photo.jpg']);
+    expect(page.data.messages[0].draft.rawInput.photos).toEqual([]);
+  });
+  test('JSON 跨轮日期依据也能生成正确旧事卡', async () => {
+    prepare(); page.data.messages = [{ id: 'year', role: 'user', kind: 'text', text: '这是去年拍的', time: Date.now() }];
+    run.mockRejectedValueOnce(new Error('工具不可用'));
+    const text = '12月27号，演示猫在吃饭';
+    json.mockResolvedValueOnce({ reply: '', query: null, draft: { sourceText: text, text: '演示猫在吃饭', date: null, tags: ['吃饭'], dateSources: ['这是去年拍的'] } });
+    await page.replyByAI(text, [], a);
+    expect(page.data.messages[1].draft.date).toBe('2025-12-27');
+    expect(page.data.messages[1].draft.rawInput.text).toContain('这是去年拍的');
+  });
+});
 
 test('退出卸载页面后，迟到标题 / 摘要不能重新保存旧聊天', async () => {
   page._session = { ...sessions.newSession(), messages: [{ id: 'old', role: 'user', kind: 'text', text: '旧消息', time: Date.now() }] };

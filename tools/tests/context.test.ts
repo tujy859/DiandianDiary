@@ -1,4 +1,4 @@
-import { buildHistory, HISTORY_BUDGET } from '../../utils/context';
+import { buildHistory, buildDraftStates, HISTORY_BUDGET } from '../../utils/context';
 import { ChatMessage } from '../../utils/store';
 
 const line = (i: number, text: string): ChatMessage => ({ id: String(i), role: i % 2 ? 'ai' : 'user', kind: 'text', text, time: Date.now() });
@@ -26,4 +26,12 @@ test('新话题隔离旧上下文，失败消息不成为助手知识', () => {
 test('完整事实来源保留用户未整理的原文', () => {
   const messages = [{ ...line(0, '今天洗澡了'), sourceText: '  今天洗澡了！\n' }];
   expect(buildHistory(messages, Infinity, true)[0].content).toBe('  今天洗澡了！\n');
+});
+
+test('草稿实际字段仅来自当前话题与当前宠物，正文不能覆盖 date', () => {
+  const card: ChatMessage = { id: 'card', role: 'ai', kind: 'draft', time: 1,
+    draft: { key: 'card', petId: 'demo', date: '2026-10-16', text: '25年12月27号吃饭', tags: ['吃饭'], photos: [], status: 'pending' } };
+  expect(buildDraftStates([card], 'demo')[0]).toMatchObject({ key: 'card', date: '2026-10-16', text: '25年12月27号吃饭', status: 'pending' });
+  expect(buildDraftStates([card], 'other')).toEqual([]);
+  expect(buildDraftStates([card, { id: 'divider', role: 'ai', kind: 'divider', time: 2 }], 'demo')).toEqual([]);
 });

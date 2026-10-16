@@ -5,18 +5,19 @@ import { CloudError } from './cloud';
 import { isValidDate, parse, fmt } from './date';
 import { EVENT_TYPES, RecordQueryOptions } from './query';
 import { AbortToken, AbortedError, throwIfAborted } from './cancellation';
-import { DRAFT_WRITING_GUIDE } from './draft';
+import { DRAFT_WRITING_GUIDE, DraftState, DraftUpdateInput } from './draft';
 
 export interface LlmContext {
   petName: string; species: string; today: string;
   history: Array<{ role: 'user' | 'assistant'; content: string }>;
   records: Array<{ date: string; text: string; tags: string[] }>;
-  draftStatuses?: Array<{ text: string; status: string }>;
+  draftStatuses?: DraftState[];
 }
 export interface LlmOutput {
   reply: string;
-  draft: { date: string | null; tags: string[]; text: string; sourceText?: string } | null;
+  draft: { date: string | null; tags: string[]; text: string; sourceText?: string; dateSources?: string[] } | null;
   query: Omit<RecordQueryOptions, 'petId' | 'referenceDate'> | null;
+  update?: DraftUpdateInput | null;
 }
 export interface LlmToolCall { id: string; name: string; arguments: Record<string, any>; }
 export interface LlmTurn { content: string; toolCalls: LlmToolCall[]; message: any; }
@@ -31,10 +32,12 @@ function buildJsonPrompt(ctx: LlmContext): string {
   const monthStart = `${ctx.today.slice(0, 7)}-01`;
   const nextMonth = fmt(new Date(reference.getFullYear(), reference.getMonth() + 1, 1));
   return `你是「记一下喵」的宠物陪伴助手。宠物是「${ctx.petName}」（${ctx.species}），今天 ${ctx.today}。
-本次没有工具调用功能，只输出一个 JSON 对象，不要 Markdown，不要前后解释。必须包含 reply、draft、query 三个字段：
-{"reply":"简短回复","draft":null,"query":null}
+本次没有工具调用功能，只输出一个 JSON 对象，不要 Markdown，不要前后解释。必须包含 reply、draft、query 三个字段，可以增加 update 字段：
+{"reply":"简短回复","draft":null,"query":null,"update":null}
 已发生的事实可以把 draft 设为 {"date":"YYYY-MM-DD 或 null","text":"整理后的事实","sourceText":"从本话题用户原话逐字摘取的事实分句，含日期","tags":["标签"]}；日期只来自用户明确描述，模糊用 null。「把刚才的记下来」可以整理前文用户明确陈述的事实；只有助手建议或指向不明时先追问。咨询、计划、否定、闲聊都必须 draft=null。草稿尚未保存，不能说已经记入。
 ${DRAFT_WRITING_GUIDE}
+跨轮日期依据可在 draft.dateSources 中提供最多四段逐字引用的用户原话。
+用户更正已有待确认卡时，draft=null，update={"key":"实际卡片key","sourceText":"本轮用户更正原话","date":"YYYY-MM-DD"}；可更正 date/text/tags，只提供明确要求更正的字段，可附 dateSources。多卡时 targetText 必须引用本轮用户指出的、仅匹配目标卡正文的片段，否则先追问。不能修改 saved/failed/discarded 卡。date 才是卡片实际日期，不能看正文猜日期；尚未应用更正时不能声称已修改。不能同时创建与修改草稿。
 单纯记录事实时 query=null、reply=""，只生成草稿，卡片会提示确认，不重复说保存说明或回顾其他事情。用户同时提问时才给 query。领养 / 收养查询用 eventType=adoption。
 历史查询必须设置 query 对象，允许 eventType、keyword、startDate、endDateExclusive、mode、limit；不适用的字段省略。
 eventType 可选 ${EVENT_TYPES.join(', ')}，驱虫用 deworming，疫苗用 vaccination，不能用宽泛医疗替代。
@@ -52,14 +55,27 @@ export function extractJson(content: string): LlmOutput {
   try { obj = JSON.parse(raw); } catch (_) { throw new Error('模型没有返回有效 JSON'); }
   if (!obj || Array.isArray(obj) || typeof obj !== 'object'
     || typeof obj.reply !== 'string' || !('draft' in obj) || !('query' in obj)
-    || Object.keys(obj).some((key) => !['reply', 'draft', 'query'].includes(key))) throw new Error('模型 JSON 字段不符合约定');
+    || Object.keys(obj).some((key) => !['reply', 'draft', 'query', 'update'].includes(key))) throw new Error('模型 JSON 字段不符合约定');
   if (obj.draft !== null) {
     const d = obj.draft;
     if (!d || Array.isArray(d) || typeof d !== 'object' || typeof d.text !== 'string' || !d.text.trim()
       || !Array.isArray(d.tags) || d.tags.some((tag: unknown) => typeof tag !== 'string')
       || (d.date !== null && !isValidDate(d.date))
       || (d.sourceText !== undefined && (typeof d.sourceText !== 'string' || !d.sourceText.trim()))
-      || Object.keys(d).some((key) => !['text', 'date', 'tags', 'sourceText'].includes(key))) throw new Error('模型 JSON 草稿不符合约定');
+      || (d.dateSources !== undefined && (!Array.isArray(d.dateSources) || d.dateSources.length > 4 || d.dateSources.some((s: unknown) => typeof s !== 'string' || !s.trim())))
+      || Object.keys(d).some((key) => !['text', 'date', 'tags', 'sourceText', 'dateSources'].includes(key))) throw new Error('模型 JSON 草稿不符合约定');
+  }
+  if (obj.update !== undefined && obj.update !== null) {
+    const u = obj.update;
+    if (!u || Array.isArray(u) || typeof u !== 'object' || typeof u.key !== 'string' || !u.key
+      || typeof u.sourceText !== 'string' || !u.sourceText.trim() || obj.draft !== null
+      || Object.keys(u).some(key => !['key', 'sourceText', 'targetText', 'date', 'text', 'tags', 'dateSources'].includes(key))
+      || (u.date !== undefined && !isValidDate(u.date))
+      || (u.text !== undefined && (typeof u.text !== 'string' || !u.text.trim()))
+      || (u.tags !== undefined && (!Array.isArray(u.tags) || u.tags.some((tag: unknown) => typeof tag !== 'string')))
+      || (u.targetText !== undefined && (typeof u.targetText !== 'string' || !u.targetText.trim()))
+      || (u.dateSources !== undefined && (!Array.isArray(u.dateSources) || u.dateSources.length > 4 || u.dateSources.some((s: unknown) => typeof s !== 'string' || !s.trim())))
+      || !['date', 'text', 'tags'].some(key => u[key] !== undefined)) throw new Error('模型 JSON 草稿更正不符合约定');
   }
   if (obj.query !== null) {
     const q = obj.query;
@@ -73,7 +89,7 @@ export function extractJson(content: string): LlmOutput {
       || [q.startDate, q.endDateExclusive].some((value) => value !== undefined && !isValidDate(value))
       || (q.startDate && q.endDateExclusive && q.startDate >= q.endDateExclusive)) throw new Error('模型 JSON 查询参数不符合约定');
   }
-  return { reply: obj.reply, draft: obj.draft, query: obj.query };
+  return { reply: obj.reply, draft: obj.draft, query: obj.query, ...(obj.update !== undefined ? { update: obj.update } : {}) };
 }
 
 /** 云开发 AI 与自建 API 共用同一套解析，只有传输层不同。 */

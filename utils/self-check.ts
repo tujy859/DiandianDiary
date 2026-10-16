@@ -1,7 +1,7 @@
 /** 页面与自动化共用的核心自检。只传演示数据，不读写缓存、不请求网络。 */
 import type { ChatMessage, DiaryRecord } from './store';
 import { addDays, diffDays, parseDateWords, weekday } from './date';
-import { validateDraft } from './draft';
+import { validateDraft, validateDraftUpdate } from './draft';
 import { queryRecordList } from './query';
 import { buildHistory, currentSessionMessages, unclaimedPhotos } from './context';
 
@@ -47,6 +47,22 @@ export const CORE_SELF_CHECKS: readonly SelfCheck[] = [
       { text: '今天没有洗澡', petId: 'demo-pet', photos: [] }, referenceDate))
       && rejects(() => validateDraft({ text: ' ' }, { text: '今天洗澡了', petId: 'demo-pet', photos: [] }, referenceDate)),
     '事实出处必须来自用户原话，正文不能为空') },
+  { id: 'draft-date-context', name: '草稿 · 跨轮补年份，补记时间不覆盖事件日期', run: () => {
+    const text = '12月27号，小猫在吃饭';
+    const draft = validateDraft({ text: '小猫在吃饭', sourceText: text, dateSources: ['这是去年拍的'] },
+      { text, petId: 'demo-pet', photos: [], userHistory: [{ content: '这是去年拍的', referenceDate }] }, referenceDate);
+    return verify(draft.date === '2025-12-27' && draft.rawInput.text.includes('这是去年拍的'), '跨轮年份与月日组合为 2025-12-27，保留依据');
+  } },
+  { id: 'draft-correction', name: '草稿 · 日期更正仅修改待确认卡', run: () => {
+    const state = { key: 'demo-card', petId: 'demo-pet', date: referenceDate, text: '小猫在吃饭', tags: ['吃饭'], status: 'pending' };
+    const text = '日期应该是25年12月27号';
+    const args = { key: state.key, sourceText: text, date: '2025-12-27' };
+    const input = { text, petId: state.petId };
+    const update = validateDraftUpdate(args, [state], input, referenceDate);
+    return verify(update.patch.date === '2025-12-27' && state.date === referenceDate
+      && rejects(() => validateDraftUpdate(args, [{ ...state, status: 'saved' }], input, referenceDate)),
+    '先校验方案，不提前改卡；已保存卡拒绝聊天修改');
+  } },
   { id: 'draft-future', name: '草稿 · 明确未来日期不能记为已发生', run: () => verify(
     rejects(() => validateDraft({ text: '洗澡了' },
       { text: '2027年1月1日洗澡', petId: 'demo-pet', photos: [] }, referenceDate)), '明确未来日期拒绝生成已发生草稿') },

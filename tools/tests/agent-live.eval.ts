@@ -4,6 +4,7 @@ import { savePet, addRecord, getRecords, clearAll, Pet } from '../../utils/store
 import { today, addDays } from '../../utils/date';
 import { ConversationLine } from '../../utils/context';
 import { diaryFlowSteps } from '../../utils/flow-scenarios';
+import { DraftState } from '../../utils/draft';
 
 jest.setTimeout(330000);
 const cfg = { provider: 'eval', baseUrl: process.env.DIARY_EVAL_BASE_URL || '',
@@ -38,8 +39,27 @@ beforeEach(() => {
 });
 
 type Case = { name: string; text: string; history?: ConversationLine[]; conversation?: ConversationLine[];
+  draftStatuses?: () => DraftState[];
   check: (r: AgentResult) => void };
 const cases: Case[] = [
+  { name: '两位年份旧事不落到补记当天', text: '25年12月27号，点点在吃饭，今天想补记一下', check: r => {
+    expect(r.drafts).toHaveLength(1); expect(r.drafts[0].date).toBe('2025-12-27');
+  } },
+  { name: '跨轮去年与月日组合', text: '12月27号，点点在吃饭', history: [{ role: 'user', content: '接下来记这张照片，这是去年拍的' }], check: r => {
+    expect(r.drafts).toHaveLength(1); expect(r.drafts[0].date).toBe(`${Number(today().slice(0, 4)) - 1}-12-27`);
+  } },
+  { name: '错误日期原卡更正，不重复出卡', text: '日期不对，应该是25年12月27号',
+    draftStatuses: () => [{ key: 'demo-card', petId: pet.id, date: today(), text: '25年12月27号点点在吃饭', tags: ['吃饭'], status: 'pending' }], check: r => {
+      expect(r.drafts).toEqual([]); expect(r.draftUpdates).toHaveLength(1); expect(r.draftUpdates![0].patch.date).toBe('2025-12-27');
+  } },
+  { name: '多张草稿日期更正指向不明先追问', text: '日期不对，应该是25年12月27号',
+    draftStatuses: () => ['吃饭', '洗澡'].map((text, index) => ({ key: `demo-${index}`, petId: pet.id, date: today(), text, tags: [], status: 'pending' })), check: r => {
+      expect(r.drafts).toEqual([]); expect(r.draftUpdates).toBeUndefined(); expect(r.reply).toMatch(/哪|多张|明确/);
+  } },
+  { name: '已保存卡不能聊天直接更正', text: '日期不对，应该是25年12月27号',
+    draftStatuses: () => [{ key: 'demo-saved', petId: pet.id, date: today(), text: '点点在吃饭', tags: [], status: 'saved' }], check: r => {
+      expect(r.drafts).toEqual([]); expect(r.draftUpdates).toBeUndefined(); expect(r.reply).toMatch(/时光册|已保存/);
+  } },
   ...diaryFlowSteps(today()).filter(s => s.kind === 'record').map(step => ({ name: `端侧共用样例：${step.title}`, text: step.text, check: (r: AgentResult) => {
     expect(r.drafts).toHaveLength(1); expect(r.drafts[0].date).toBe(step.date);
     expect(r.reply).toBe(''); expect(r.refs).toEqual([]);
@@ -90,7 +110,7 @@ const cases: Case[] = [
 test.each(cases)('$name', async (c) => {
   const started = Date.now();
   const count = getRecords(pet.id).length;
-  const result = await runAgent(cfg, c.text, { pet, history: c.history || [], conversation: c.conversation || c.history, photos: [] });
+  const result = await runAgent(cfg, c.text, { pet, history: c.history || [], conversation: c.conversation || c.history, photos: [], draftStatuses: c.draftStatuses?.() });
   console.info(JSON.stringify({ case: c.name, model: cfg.model, elapsedMs: Date.now() - started, tools: result.toolsUsed, drafts: result.drafts.length, refs: result.refs.length }));
   expect(getRecords(pet.id)).toHaveLength(count);
   c.check(result);

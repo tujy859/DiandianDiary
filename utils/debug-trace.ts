@@ -65,7 +65,7 @@ function clean(detail: TraceDetail): TraceDetail {
     const value = detail[field];
     if (typeof value === 'string' && /^[a-zA-Z0-9_.-]{1,48}$/.test(value)) out[field] = value;
   }
-  if (out.tool && !['query_records', 'create_draft_record', 'read_session', 'read_conversation'].includes(out.tool)) out.tool = 'unknown';
+  if (out.tool && !['query_records', 'create_draft_record', 'update_draft_record', 'read_session', 'read_conversation'].includes(out.tool)) out.tool = 'unknown';
   // 关键词只保留常见事件；任意查询文本可能带用户私人信息。
   if (typeof detail.keyword === 'string') out.keyword = /^(领养|收养|驱虫|疫苗|洗澡|玩耍|罐头|体重)$/.test(detail.keyword) ? detail.keyword : '[自定义关键词]';
   for (const field of ['startDate', 'endDateExclusive', 'date', 'proposedDate']) {

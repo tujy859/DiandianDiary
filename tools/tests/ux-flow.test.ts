@@ -8,6 +8,7 @@ import { beginTrace, setTraceEnabled, clearDebugTraces } from '../../utils/debug
 import { isDeveloperMode } from '../../utils/developer';
 import Dialog from 'tdesign-miniprogram/dialog/index';
 import { callCloud } from '../../utils/cloud';
+import { CORE_SELF_CHECKS } from '../../utils/self-check';
 
 jest.mock('tdesign-miniprogram/dialog/index', () => ({ __esModule: true, default: { alert: jest.fn(), confirm: jest.fn() } }), { virtual: true });
 jest.mock('tdesign-miniprogram/toast/index', () => ({ __esModule: true, default: jest.fn() }), { virtual: true });
@@ -461,7 +462,7 @@ test('统一开发测试按阶段进入，只有首次使用分区读取家庭�
   expect(tools.data).toMatchObject({ allowed: true, section: 'start', currentFamilyName: '演示家庭', results: [] });
   expect(callCloud).toHaveBeenCalledTimes(1);
   tools.onSection({ currentTarget: { dataset: { section: 'core' } } });
-  expect(tools.data.passed).toBe(12);
+  expect(tools.data.passed).toBe(CORE_SELF_CHECKS.length);
   expect(callCloud).toHaveBeenCalledTimes(1);
   const navigate = jest.spyOn(wx, 'navigateTo'); tools.onReplay();
   expect(navigate).toHaveBeenLastCalledWith({ url: '/pages/onboard/onboard?replay=1' });

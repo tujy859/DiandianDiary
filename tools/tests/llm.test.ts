@@ -31,6 +31,15 @@ test('JSON 降级支持原文证据及分页参数，供共用执行器验证', 
   expect(out.draft!.sourceText).toBe('昨天洗澡了');
   expect(out.query!.offset).toBe(3);
 });
+
+test('JSON 降级支持日期补充和原卡更正，拒绝混合创建或越权字段', () => {
+  const update = { key: 'demo-card', sourceText: '日期应该是25年12月27号', date: '2025-12-27' };
+  expect(extractJson(JSON.stringify({ reply: '', draft: null, query: null, update })).update).toEqual(update);
+  expect(() => extractJson(JSON.stringify({ reply: '', draft: null, query: null, update: { ...update, status: 'saved' } }))).toThrow('更正');
+  const draft = { text: '吃饭', sourceText: '猫在吃饭', date: null, tags: [], dateSources: ['这是去年拍的'] };
+  expect(extractJson(JSON.stringify({ reply: '', draft, query: null })).draft!.dateSources).toEqual(['这是去年拍的']);
+  expect(() => extractJson(JSON.stringify({ reply: '', draft, query: null, update }))).toThrow('更正');
+});
 test('工具参数 JSON 损坏触发降级，不当作空参数执行全量查询', async () => {
   (global as any).__wxStub.request = (opts: any) => opts.success({ statusCode: 200, data: { choices: [{ message: { tool_calls: [{ id: 'a', function: { name: 'query_records', arguments: '{broken' } }] } }] } });
   await expect(chatTurn(cfg, [], [])).rejects.toThrow('工具参数');

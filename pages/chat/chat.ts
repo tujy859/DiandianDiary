@@ -20,9 +20,9 @@ import { today, isValidDate } from '../../utils/date';
 import { RequestToken } from '../../utils/cancellation';
 import { CloudError } from '../../utils/cloud';
 import { isHistoryQuery, hasExplicitQuestion, queryRecords, resolveQueryOptions } from '../../utils/query';
-import { validateDraft } from '../../utils/draft';
+import { validateDraft, validateDraftUpdate, dateCorrectionFallback, isDateCorrectionRequest, appendCorrection, draftUpdateReply, DraftUpdate } from '../../utils/draft';
 import {
-  SESSION_GAP_MS, unclaimedPhotos, buildHistory, isDivider, makeDivider,
+  SESSION_GAP_MS, unclaimedPhotos, buildHistory, buildDraftStates, isDivider, makeDivider,
 } from '../../utils/context';
 import { addRecord, refreshCloudIfStale, cloudFileIds } from '../../utils/repository';
 import { getLayout } from '../../utils/layout';
@@ -660,6 +660,7 @@ Page({
     this.clearTopicTimer();
     this.scrollToBottom();
     const referenceDate = today();
+    const requestSessionId = this.data.sessionId;
     // 对话历史与取证窗口都以最后一个话题分隔条为界
     const history = buildHistory(historyMessages || this.data.messages);
     const conversation = buildHistory(historyMessages || this.data.messages, Infinity, true);
@@ -668,11 +669,10 @@ Page({
     const cfg = getModelConfig(); // 请求全程使用同一个配置快照
     const source = this.data.messages.slice().reverse().find((m: ChatMessage) => m.role === 'user' && m.text === text);
     const originalText = source?.sourceText !== undefined ? source.sourceText : text;
-    const draftStatuses = this.data.messages.filter((m) => m.kind === 'draft' && m.draft && m.draft.text)
-      .slice(-10).map((m) => ({ text: m.draft!.text, status: m.draft!.status }));
+    const draftStatuses = buildDraftStates(this.data.messages, pet.id);
     try {
       const res = await runAgent(cfg, text, {
-        pet, history, conversation, photos: photoPool, abortToken: scopedToken,
+        pet, history, conversation, photos: photoPool, abortToken: scopedToken, originalText,
         // 记录卡实时状态：用户点了保存/不记录，模型立刻知道，不再反复提醒确认
         draftStatuses,
         onEvent: trace?.emit,
@@ -688,12 +688,18 @@ Page({
         },
       });
       this.assertActive(token, pet.id);
+      if (scopedToken.aborted || this.data.sessionId !== requestSessionId) throw new AbortedError();
+      let updateReply = '';
+      if (res.draftUpdates?.length) {
+        updateReply = this.applyModelDraftUpdate(res.draftUpdates[0], pet.id, trace);
+      }
       const msgs: ChatMessage[] = res.drafts.map((d) => {
         if (d.rawInput?.text === text) d.rawInput.text = originalText;
         return this.toMessage({ kind: 'draft', draft: d, sourceText: originalText, sourcePhotos: savedPhotos }, 'tool');
       });
       if (trace) { if (!this._draftTraces) this._draftTraces = {}; msgs.forEach(m => { this._draftTraces[m.id] = trace; }); }
-      if (res.reply || res.refs.length) msgs.push(this.toMessage({ kind: res.refs.length ? 'query' : 'text', text: res.reply || '', refs: res.refs }, 'tool'));
+      if (updateReply) msgs.push(this.toMessage({ kind: 'text', text: updateReply }, 'tool'));
+      if ((!updateReply || res.refs.length) && (res.reply || res.refs.length)) msgs.push(this.toMessage({ kind: res.refs.length ? 'query' : 'text', text: res.reply || '', refs: res.refs }, 'tool'));
       if (!msgs.length) msgs.push(this.toMessage({ kind: 'text', text: '我在呢，继续说～' }, 'tool'));
       this.appendMessages(msgs);
       trace?.finish('complete', { path: 'tool', drafts: res.drafts.length, refs: res.refs.map(r => r.recordId) });
@@ -715,9 +721,22 @@ Page({
           records: getRecords(pet.id).slice(0, 20).map((r) => ({ date: r.date, text: r.text, tags: r.tags })),
         }, scopedToken);
         this.assertActive(token, pet.id);
+        if (scopedToken.aborted || this.data.sessionId !== requestSessionId) throw new AbortedError();
         const msgs: ChatMessage[] = [];
-        if (out.draft) {
-          const draft = validateDraft(out.draft, { text, petId: pet.id, photos: photoPool,
+        let correctionReply = '';
+        if (out.update) {
+          try {
+            const update = validateDraftUpdate(out.update, draftStatuses, { text, originalText, petId: pet.id,
+              userHistory: conversation.filter(m => m.role === 'user') }, referenceDate);
+            correctionReply = this.applyModelDraftUpdate(update, pet.id, trace);
+          } catch (error: any) { correctionReply = `草稿尚未修改：${error.message}。`; }
+        } else if (!out.draft || (draftStatuses.length && isDateCorrectionRequest(text))) {
+          const correction = dateCorrectionFallback(text, draftStatuses, pet.id, conversation.filter(m => m.role === 'user'), referenceDate, originalText);
+          if (correction) correctionReply = correction.update
+            ? this.applyModelDraftUpdate(correction.update, pet.id, trace) : correction.reply;
+        }
+        if (out.draft && !correctionReply) {
+          const draft = validateDraft(out.draft, { text, originalText, petId: pet.id, photos: photoPool,
             userHistory: conversation.filter((m) => m.role === 'user') }, referenceDate);
           if (draft.rawInput.text === text) draft.rawInput.text = originalText;
           msgs.push(this.toMessage({ kind: 'draft', draft, sourceText: originalText, sourcePhotos: savedPhotos }, 'model'));
@@ -725,7 +744,7 @@ Page({
           if (trace) { if (!this._draftTraces) this._draftTraces = {}; this._draftTraces[msgs[msgs.length - 1].id] = trace; }
         }
         const historical = isHistoryQuery(text);
-        const querying = (!!out.query || historical) && (!out.draft || hasExplicitQuestion(text));
+        const querying = (!correctionReply || (!!out.query && hasExplicitQuestion(text))) && (!!out.query || historical) && (!out.draft || hasExplicitQuestion(text));
         if (querying) {
           const options = out.query || resolveQueryOptions(text, {}, referenceDate);
           if (!out.query && !options.eventType && !options.keyword && !/记录|日记/.test(text)) throw new Error('请补充要查询的事件关键词');
@@ -733,7 +752,8 @@ Page({
           trace?.emit('query.result', { path: 'json', ...options, matched: result.totalMatched, records: result.records.map(r => ({ id: r.id, date: r.date })) });
           msgs.push(this.toMessage({ kind: 'query', text: result.summary, refs: result.refs }, 'model'));
         }
-        if (!out.draft && !querying && out.reply) msgs.push(this.toMessage({ kind: 'text', text: out.reply }, 'model'));
+        if (correctionReply) msgs.push(this.toMessage({ kind: 'text', text: correctionReply }, 'model'));
+        else if (!out.draft && !querying && out.reply) msgs.push(this.toMessage({ kind: 'text', text: out.reply }, 'model'));
         if (!msgs.length) msgs.push(this.toMessage({ kind: 'text', text: '我在呢，继续说～' }, 'model'));
         this.appendMessages(msgs);
         trace?.finish('complete', { path: 'json', drafts: out.draft ? 1 : 0, refs: msgs.flatMap(m => (m.refs || []).map(r => r.recordId)) });
@@ -758,6 +778,37 @@ Page({
         this.refreshTopicBoundary();
       }
     }
+  },
+
+  applyModelDraftUpdate(update: DraftUpdate, petId: string, trace?: TraceHandle): string {
+    const states = buildDraftStates(this.data.messages, petId);
+    const current = states.find(row => row.key === update.key);
+    if (this._savingDrafts?.[update.key] || !current || current.status !== 'pending'
+      || ['key', 'petId', 'date', 'text', 'status'].some(field => current[field] !== update.expected[field])
+      || JSON.stringify(current.tags) !== JSON.stringify(update.expected.tags)) {
+      return '草稿状态已变化，本次更正未应用。请核对当前卡片后再试。';
+    }
+    // 日期方案已基于用户消息校验，应用时只允许已验证字段，不采纳任意模型 patch。
+    const patch = update.patch;
+    if (!patch || !Object.keys(patch).length || Object.keys(patch).some(key => !['date', 'text', 'tags'].includes(key))
+      || (patch.date !== undefined && (!isValidDate(patch.date) || patch.date > today()))
+      || (patch.text !== undefined && (typeof patch.text !== 'string' || !patch.text.trim()))
+      || (patch.tags !== undefined && (!Array.isArray(patch.tags) || patch.tags.some(tag => typeof tag !== 'string')))) {
+      return '草稿更正内容无效，尚未修改。';
+    }
+    const idx = this.findDraft(update.key);
+    const old = this.data.messages[idx].draft!;
+    let rawInput;
+    try { rawInput = appendCorrection(old.rawInput, old, update.correction); }
+    catch (error: any) { return `草稿尚未修改：${error.message}。`; }
+    try { this.updateDraft(idx, { ...patch, rawInput }); }
+    catch (_) {
+      this.setData({ [`messages[${idx}].draft`]: old });
+      return '本机未能保存草稿更正，尚未修改，请稍后重试。';
+    }
+    this.setSaveView(update.key);
+    trace?.emit('draft.update_applied', { tool: 'update_draft_record', date: this.data.messages[idx].draft!.date, status: 'pending' });
+    return draftUpdateReply(this.data.messages[idx].draft!, patch);
   },
 
   onStop() {

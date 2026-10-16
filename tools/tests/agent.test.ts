@@ -65,6 +65,54 @@ function mockModel(turns: any[]) {
   };
 }
 
+describe('读取实际草稿与聊天纠错', () => {
+  let pet: Pet;
+  const text = '日期应该是25年12月27号';
+  const state = () => ({ key: 'demo-card', petId: pet.id, date: today(), text: '25年12月27号，演示猫吃饭', tags: ['吃饭'], status: 'pending' });
+  const call = (name: string, args: any) => ({ id: 'update', function: { name, arguments: JSON.stringify(args) } });
+  beforeEach(() => { clearAll(); pet = savePet({ name: '演示猫', species: '猫' }); });
+  afterEach(() => clearAll());
+  test('请求带实际日期与 key，更正方案回灌后不采用模型的虚假口头确认', async () => {
+    const payloads: any[] = [];
+    const turns = [{ content: '', tool_calls: [call('update_draft_record', { key: 'demo-card', sourceText: text, date: '2025-12-27' })] },
+      { content: '已经保存进时光册了' }];
+    (global as any).__wxStub.request = (opts: any) => { payloads.push(JSON.parse(JSON.stringify(opts.data))); opts.success({ statusCode: 200, data: { choices: [{ message: turns.shift() }] } }); };
+    const card = state();
+    const result = await runAgent(CFG, text, { pet, history: [], photos: [], draftStatuses: [card] });
+    expect(payloads[0].messages[0].content).toContain(`"date":"${today()}"`);
+    expect(payloads[0].messages[0].content).toContain('demo-card');
+    expect(payloads[1].messages.find((m: any) => m.role === 'tool').content).toContain('2025-12-27');
+    expect(result.draftUpdates![0].patch).toEqual({ date: '2025-12-27' });
+    expect(result.drafts).toEqual([]); expect(result.reply).toBe(''); expect(card.date).toBe(today()); expect(getRecords(pet.id)).toEqual([]);
+  });
+  test('模型误称卡片正确且漏调工具时，仍生成单卡明确日期更正方案', async () => {
+    mockModel([{ content: '这张卡上写的就是2025年12月27号' }]);
+    const result = await runAgent(CFG, text, { pet, history: [], photos: [], draftStatuses: [state()] });
+    expect(result.draftUpdates![0].patch.date).toBe('2025-12-27'); expect(result.reply).toBe('');
+  });
+  test('模型误建重复卡时回传错误，并补救原卡更正', async () => {
+    mockModel([{ content: '', tool_calls: [call('create_draft_record', { sourceText: text, text: '演示猫吃饭' })] }, { content: '请确认新卡' }]);
+    const result = await runAgent(CFG, text, { pet, history: [], photos: [], draftStatuses: [state()] });
+    expect(result.drafts).toEqual([]); expect(result.draftUpdates![0].key).toBe('demo-card');
+  });
+  test('更正工具拒绝错误日期后不能用模型成功文案掩盖失败', async () => {
+    mockModel([{ content: '', tool_calls: [call('update_draft_record', { key: 'demo-card', sourceText: text, date: '2026-10-16' })] }, { content: '已经修改了' }]);
+    const result = await runAgent(CFG, text, { pet, history: [], photos: [], draftStatuses: [state()] });
+    expect(result.draftUpdates).toBeUndefined(); expect(result.reply).toContain('尚未修改'); expect(result.reply).not.toContain('已经修改了');
+  });
+  test('多卡指向不明不猜最近一条', async () => {
+    mockModel([{ content: '改好了' }]);
+    const result = await runAgent(CFG, text, { pet, history: [], photos: [], draftStatuses: [state(), { ...state(), key: 'other', text: '洗澡了' }] });
+    expect(result.draftUpdates).toBeUndefined(); expect(result.reply).toContain('多张');
+  });
+  test('日期分散在两轮时工具共用证据校验', async () => {
+    const text = '12月27号，演示猫在吃饭';
+    mockModel([{ content: '', tool_calls: [call('create_draft_record', { sourceText: text, text: '演示猫在吃饭', dateSources: ['这是去年拍的'] })] }, { content: '请确认' }]);
+    const result = await runAgent(CFG, text, { pet, history: [{ role: 'user', content: '这是去年拍的' }], photos: [] });
+    expect(result.drafts[0].date).toBe(`${Number(today().slice(0, 4)) - 1}-12-27`);
+  });
+});
+
 describe('Agent 工具调用', () => {
   let pet: Pet;
   let r2: any;

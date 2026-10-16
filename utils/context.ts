@@ -9,6 +9,14 @@
  */
 import { ChatMessage, uid } from './store';
 import { fmt } from './date';
+import type { DraftState } from './draft';
+
+/** 卡片与模型共享同一组字段，严格限定当前话题和宠物。 */
+export function buildDraftStates(messages: ChatMessage[], petId: string): DraftState[] {
+  return currentSessionMessages(messages).filter(m => m.kind === 'draft' && m.draft?.petId === petId)
+    .map(m => ({ key: m.draft!.key, petId: m.draft!.petId, date: m.draft!.date, text: m.draft!.text,
+      tags: m.draft!.tags.slice(), status: m.draft!.status }));
+}
 
 export interface ConversationLine {
   role: 'user' | 'assistant'; content: string; referenceDate?: string;

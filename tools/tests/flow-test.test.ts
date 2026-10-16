@@ -61,6 +61,42 @@ function chatPage() {
   page.syncFlowState(); return page;
 }
 
+test.each(['tool', 'json', 'omitted'])('正式 Page → agent → 原卡更正 → 确认保存 → 云端重读，模型路径=%s', async mode => {
+  const run = await prepareFlowRun(), instance = chatPage();
+  const originalText = '今天演示猫在吃饭', correction = '日期不对，应该是25年12月27号';
+  const requests: any[] = [];
+  wx.request = (options: any) => {
+    if (mode === 'json' && options.data.tools) { options.success({ statusCode: 400, data: {} }); return; }
+    requests.push(options.data);
+    const messages = options.data.messages, text = messages.filter((m: any) => m.role === 'user').pop().content;
+    const updating = text === correction;
+    const key = instance.data.messages.find((m: any) => m.draft)?.draft.key;
+    const args = updating ? { key, sourceText: text, date: '2025-12-27' }
+      : { sourceText: text, text: '演示猫在吃饭', date: '2026-10-15', tags: ['吃饭'] };
+    let message: any = { content: '这张卡日期本来就正确，已经保存好了' };
+    if (mode === 'json') message = { content: JSON.stringify({ reply: message.content, draft: updating ? null : args, query: null, ...(updating ? { update: args } : {}) }) };
+    else if (messages[messages.length - 1].role !== 'tool' && !(mode === 'omitted' && updating)) message = { content: '', tool_calls: [{ id: 'demo', function: {
+      name: updating ? 'update_draft_record' : 'create_draft_record', arguments: JSON.stringify(args),
+    } }] };
+    options.success({ statusCode: 200, data: { choices: [{ message }] } });
+  };
+  instance.data.inputValue = originalText; await instance.onSend(); await instance._syncTail;
+  const first = instance.data.messages.find((m: any) => m.draft);
+  expect(first.draft.date).toBe('2026-10-15'); const key = first.draft.key;
+  instance.data.inputValue = correction; await instance.onSend(); await instance._syncTail;
+  const cards = instance.data.messages.filter((m: any) => m.draft);
+  expect(cards).toHaveLength(1); expect(cards[0].draft).toMatchObject({ key, date: '2025-12-27', status: 'pending' });
+  expect(instance.data.messages[instance.data.messages.length - 1].text).toContain('日期改为2025-12-27');
+  expect(db.dump('diaries')).toHaveLength(0);
+  expect(requests.some(data => data.messages[0].content.includes(`"key":"${key}"`) && data.messages[0].content.includes('"date":"2026-10-15"'))).toBe(true);
+  await instance.onCardSave({ detail: { key } }); await instance._syncTail;
+  await repo.refreshCloud();
+  const saved = store.getRecords(run.petId);
+  expect(saved).toHaveLength(1); expect(saved[0].date).toBe('2025-12-27');
+  expect(saved[0].rawInput!.text).toContain(originalText); expect(saved[0].rawInput!.text).toContain(correction);
+  expect(cards[0].draft.status).toBe('saved');
+});
+
 test.each([false, true])('全流程使用正式发送 / 确认 / 新话题动作，JSON=%s', async fallback => {
   jsonMode = fallback; const run = await prepareFlowRun(); const instance = chatPage();
   await executeFlow(instance.flowAdapter(), true);
