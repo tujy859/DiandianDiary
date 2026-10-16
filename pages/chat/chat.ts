@@ -660,7 +660,16 @@ Page({
     this.clearTopicTimer();
     this.scrollToBottom();
     const referenceDate = today();
-    const requestSessionId = this.data.sessionId;
+    // 首次云同步会将 id 从空值回填为正式 id；clientId 才是创建时就固定的话题身份。
+    const requestTopicIdentity = this._session?.clientId || this.data.sessionId;
+    const assertRequestContext = () => {
+      this.assertActive(token, pet.id);
+      if (scopedToken.aborted) throw new AbortedError();
+      if ((this._session?.clientId || this.data.sessionId) !== requestTopicIdentity) {
+        trace?.emit('request.invalidated', { status: 'topic_changed' });
+        throw new AbortedError();
+      }
+    };
     // 对话历史与取证窗口都以最后一个话题分隔条为界
     const history = buildHistory(historyMessages || this.data.messages);
     const conversation = buildHistory(historyMessages || this.data.messages, Infinity, true);
@@ -687,8 +696,7 @@ Page({
             nextOffset: offset + limit < rows.length ? offset + limit : null });
         },
       });
-      this.assertActive(token, pet.id);
-      if (scopedToken.aborted || this.data.sessionId !== requestSessionId) throw new AbortedError();
+      assertRequestContext();
       let updateReply = '';
       if (res.draftUpdates?.length) {
         updateReply = this.applyModelDraftUpdate(res.draftUpdates[0], pet.id, trace);
@@ -720,8 +728,7 @@ Page({
           petName: pet.name, species: pet.species, today: referenceDate, history, draftStatuses,
           records: getRecords(pet.id).slice(0, 20).map((r) => ({ date: r.date, text: r.text, tags: r.tags })),
         }, scopedToken);
-        this.assertActive(token, pet.id);
-        if (scopedToken.aborted || this.data.sessionId !== requestSessionId) throw new AbortedError();
+        assertRequestContext();
         const msgs: ChatMessage[] = [];
         let correctionReply = '';
         if (out.update) {

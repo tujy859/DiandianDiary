@@ -111,6 +111,8 @@ describe('聊天更正真实卡片', () => {
       key: 'card', petId: a.id, date: '2026-10-16', text: '25年12月27号，演示猫在吃饭', tags: ['吃饭'], photos: [], status: 'pending',
       rawInput: { text: '最初的用户原话', photos: [], provenance: 'direct' },
     } }];
+    // 正式发送前 persist 已建立客户端话题身份；直接调用 replyByAI 的夹具也应保留它。
+    page._session = sessions.newSession(); page._session.messages = page.data.messages;
     return validateDraftUpdate({ key: 'card', sourceText: text, date: '2025-12-27' }, buildDraftStates(page.data.messages, a.id), { text, petId: a.id });
   }
   test('工具方案应用同一张卡，确认文字来自实际日期；保存前不入库，保存后日期与原话一致', async () => {
@@ -167,11 +169,26 @@ describe('聊天更正真实卡片', () => {
     const pending = page.replyByAI(text, [], a);
     if (change === 'stop') page.onStop();
     else if (change === 'pet') page.data.currentPet = b;
-    else if (change === 'session') page.data.sessionId = 'different';
+    else if (change === 'session') page._session = sessions.newSession();
     else store.setCloudSession({ userId: 'new-demo-user', familyId: 'new-demo-family' });
     const before = JSON.stringify(page.data.messages);
     wait.resolve({ ...result('成功'), draftUpdates: [update] }); await pending;
     expect(JSON.stringify(page.data.messages)).toBe(before);
+  });
+  test('真正新建话题时，即使新旧云端 id 都为空，也拒绝旧话题的迟到回复并记录原因', async () => {
+    prepare(); const wait = deferred(); run.mockReturnValueOnce(wait.promise);
+    store.setCloudSession({ userId: 'demo-user', familyId: 'demo-family' });
+    enableDeveloperMode(); setTraceEnabled(true);
+    const pending = page.replyByAI(text, [], a);
+    const oldClientId = page._session.clientId;
+    expect(page.data.sessionId).toBe('');
+    page.startNewSession();
+    expect(page.data.sessionId).toBe(''); expect(page._session.clientId).not.toBe(oldClientId);
+    wait.resolve(result('不应出现的旧回复')); await pending;
+    expect(page.data.messages.some((m: any) => m.text === '不应出现的旧回复')).toBe(false);
+    const trace = getDebugTraces().slice(-1)[0];
+    expect(trace.status).toBe('cancelled');
+    expect(trace.events.some(e => e.phase === 'request.invalidated' && e.detail.status === 'topic_changed')).toBe(true);
   });
   test('日期更正不改变照片或原照片依据，编辑后的附件仍按最新卡片保存', async () => {
     const update = prepare();

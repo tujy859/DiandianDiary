@@ -61,6 +61,39 @@ function chatPage() {
   page.syncFlowState(); return page;
 }
 
+test.each(['tool', 'json'])('首次发消息云同步先返回 id，不得取消同一话题迟到的 %s 草稿', async mode => {
+  await prepareFlowRun(); const instance = chatPage();
+  const text = '大概这周一，演示猫玩了玩具';
+  let release!: () => void, ready!: () => void;
+  const waiting = new Promise<void>(resolve => { ready = resolve; });
+  const respond = (options: any) => {
+    const messages = options.data.messages;
+    const draft = { sourceText: text, text: '演示猫玩了玩具', date: null, tags: ['玩耍'] };
+    const message = mode === 'json' ? { content: JSON.stringify({ reply: '', draft, query: null }) }
+      : messages[messages.length - 1].role === 'tool' ? { content: '请确认草稿' }
+      : { content: '', tool_calls: [{ id: 'demo-first', function: { name: 'create_draft_record', arguments: JSON.stringify(draft) } }] };
+    options.success({ statusCode: 200, data: { choices: [{ message }] } });
+  };
+  let first = true;
+  wx.request = (options: any) => {
+    if (mode === 'json' && options.data.tools) { options.success({ statusCode: 400, data: {} }); return; }
+    if (first) { first = false; release = () => respond(options); ready(); }
+    else respond(options);
+  };
+  expect(instance.data.sessionId).toBe('');
+  instance.data.inputValue = text; const sending = instance.onSend();
+  await waiting;
+  const clientId = instance._session.clientId;
+  await instance._syncTail;
+  expect(instance.data.sessionId).not.toBe('');
+  expect(instance._session.clientId).toBe(clientId);
+  release(); await sending; await instance._syncTail;
+  expect(instance.data.messages.filter((m: any) => m.draft)).toHaveLength(1);
+  expect(instance.data.messages.find((m: any) => m.draft).draft).toMatchObject({ date: null, status: 'pending', text: '演示猫玩了玩具' });
+  expect(getDebugTraces().slice(-1)[0].status).toBe('complete');
+  expect(db.dump('diaries')).toHaveLength(0);
+});
+
 test.each(['tool', 'json', 'omitted'])('正式 Page → agent → 原卡更正 → 确认保存 → 云端重读，模型路径=%s', async mode => {
   const run = await prepareFlowRun(), instance = chatPage();
   const originalText = '今天演示猫在吃饭', correction = '日期不对，应该是25年12月27号';
