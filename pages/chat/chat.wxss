@@ -19,16 +19,12 @@
    （徽章本身样式在 app.wxss 全局共享，与时光册完全一致） */
 .petbar {
   position: absolute;
-  top: 20rpx;
-  left: 28rpx;
-  right: 28rpx;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 30;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16rpx;
 }
-.is-test-family .petbar { position:relative; top:auto; left:auto; right:auto; padding:16rpx 28rpx 0; flex-shrink:0; }
+.is-test-family .petbar { position:relative; top:auto; left:auto; right:auto; }
 .is-test-family .msgs { padding-top:24rpx; }
 
 /* 消息流 */

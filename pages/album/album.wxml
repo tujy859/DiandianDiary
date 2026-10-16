@@ -2,11 +2,13 @@
   <offline-bar />
   <test-space-bar />
   <!-- 头部：宠物 + 视角切换 -->
-  <view class="header">
-    <view wx:if="{{currentPet}}" class="pet-chip" bindtap="onSwitchPet">
-      <image class="pet-avatar" src="{{petAvatar}}" mode="aspectFit" />
-      <text class="pet-name">{{currentPet.name}}</text>
-      <t-icon name="chevron-down" size="30rpx" color="#2F6B4F" />
+  <view class="header pet-toolbar">
+    <view wx:if="{{currentPet}}" class="pet-switch" bindtap="onSwitchPet" aria-role="button" aria-label="切换宠物，当前{{currentPet.name}}">
+      <view class="pet-chip">
+        <image class="pet-avatar" src="{{petAvatar}}" mode="aspectFit" />
+        <text class="pet-name">{{currentPet.name}}</text>
+        <t-icon name="chevron-down" size="24rpx" color="#2F6B4F" />
+      </view>
     </view>
     <view class="seg">
       <view class="seg-item {{view === 'timeline' ? 'is-active' : ''}}" data-view="timeline" bindtap="onSwitchView">时间轴</view>

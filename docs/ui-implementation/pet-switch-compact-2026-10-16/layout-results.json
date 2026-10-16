@@ -1,0 +1,2360 @@
+[
+  {
+    "name": "chat",
+    "width": 320,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 78.046875,
+      "height": 32,
+      "right": 91.6875,
+      "bottom": 46.53125
+    },
+    "avatar": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 32,
+      "height": 32,
+      "right": 45.640625,
+      "bottom": 46.53125
+    },
+    "touch": {
+      "x": 13.640625,
+      "y": 8.53125,
+      "width": 78.046875,
+      "height": 44,
+      "right": 91.6875,
+      "bottom": 52.53125
+    },
+    "other": {
+      "x": 177.53125,
+      "y": 8.53125,
+      "width": 128.828125,
+      "height": 44,
+      "right": 306.359375,
+      "bottom": 52.53125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 59.34375,
+      "right": 320,
+      "bottom": 59.34375
+    },
+    "binding": "onSwitchPet",
+    "font": "11.9467px",
+    "ellipsis": "ellipsis",
+    "textWidth": 23.890625,
+    "overlap": false,
+    "overflow": false,
+    "tail": 64,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "album",
+    "width": 320,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 78.046875,
+      "height": 32,
+      "right": 91.6875,
+      "bottom": 46.53125
+    },
+    "avatar": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 32,
+      "height": 32,
+      "right": 45.640625,
+      "bottom": 46.53125
+    },
+    "touch": {
+      "x": 13.640625,
+      "y": 8.53125,
+      "width": 78.046875,
+      "height": 44,
+      "right": 91.6875,
+      "bottom": 52.53125
+    },
+    "other": {
+      "x": 215.921875,
+      "y": 16.390625,
+      "width": 90.4375,
+      "height": 28.28125,
+      "right": 306.359375,
+      "bottom": 44.671875
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 59.34375,
+      "right": 320,
+      "bottom": 59.34375
+    },
+    "binding": "onSwitchPet",
+    "font": "11.9467px",
+    "ellipsis": "ellipsis",
+    "textWidth": 23.890625,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 64
+  },
+  {
+    "name": "chat",
+    "width": 320,
+    "long": false,
+    "testFamily": true,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 13.640625,
+      "y": 52.53125,
+      "width": 78.046875,
+      "height": 32,
+      "right": 91.6875,
+      "bottom": 84.53125
+    },
+    "avatar": {
+      "x": 13.640625,
+      "y": 52.53125,
+      "width": 32,
+      "height": 32,
+      "right": 45.640625,
+      "bottom": 84.53125
+    },
+    "touch": {
+      "x": 13.640625,
+      "y": 46.53125,
+      "width": 78.046875,
+      "height": 44,
+      "right": 91.6875,
+      "bottom": 90.53125
+    },
+    "other": {
+      "x": 177.53125,
+      "y": 46.53125,
+      "width": 128.828125,
+      "height": 44,
+      "right": 306.359375,
+      "bottom": 90.53125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 38,
+      "width": 320,
+      "height": 59.34375,
+      "right": 320,
+      "bottom": 97.34375
+    },
+    "binding": "onSwitchPet",
+    "font": "11.9467px",
+    "ellipsis": "ellipsis",
+    "textWidth": 23.890625,
+    "overlap": false,
+    "overflow": false,
+    "tail": 64,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "album",
+    "width": 320,
+    "long": false,
+    "testFamily": true,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 13.640625,
+      "y": 52.53125,
+      "width": 78.046875,
+      "height": 32,
+      "right": 91.6875,
+      "bottom": 84.53125
+    },
+    "avatar": {
+      "x": 13.640625,
+      "y": 52.53125,
+      "width": 32,
+      "height": 32,
+      "right": 45.640625,
+      "bottom": 84.53125
+    },
+    "touch": {
+      "x": 13.640625,
+      "y": 46.53125,
+      "width": 78.046875,
+      "height": 44,
+      "right": 91.6875,
+      "bottom": 90.53125
+    },
+    "other": {
+      "x": 215.921875,
+      "y": 54.390625,
+      "width": 90.4375,
+      "height": 28.28125,
+      "right": 306.359375,
+      "bottom": 82.671875
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 38,
+      "width": 320,
+      "height": 59.34375,
+      "right": 320,
+      "bottom": 97.34375
+    },
+    "binding": "onSwitchPet",
+    "font": "11.9467px",
+    "ellipsis": "ellipsis",
+    "textWidth": 23.890625,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 64
+  },
+  {
+    "name": "chat",
+    "width": 320,
+    "long": true,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 143.75,
+      "height": 32,
+      "right": 157.390625,
+      "bottom": 46.53125
+    },
+    "avatar": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 32,
+      "height": 32,
+      "right": 45.640625,
+      "bottom": 46.53125
+    },
+    "touch": {
+      "x": 13.640625,
+      "y": 8.53125,
+      "width": 143.75,
+      "height": 44,
+      "right": 157.390625,
+      "bottom": 52.53125
+    },
+    "other": {
+      "x": 177.53125,
+      "y": 8.53125,
+      "width": 128.828125,
+      "height": 44,
+      "right": 306.359375,
+      "bottom": 52.53125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 59.34375,
+      "right": 320,
+      "bottom": 59.34375
+    },
+    "binding": "onSwitchPet",
+    "font": "11.9467px",
+    "ellipsis": "ellipsis",
+    "textWidth": 89.59375,
+    "overlap": false,
+    "overflow": false,
+    "tail": 64,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "album",
+    "width": 320,
+    "long": true,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 143.75,
+      "height": 32,
+      "right": 157.390625,
+      "bottom": 46.53125
+    },
+    "avatar": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 32,
+      "height": 32,
+      "right": 45.640625,
+      "bottom": 46.53125
+    },
+    "touch": {
+      "x": 13.640625,
+      "y": 8.53125,
+      "width": 143.75,
+      "height": 44,
+      "right": 157.390625,
+      "bottom": 52.53125
+    },
+    "other": {
+      "x": 215.921875,
+      "y": 16.390625,
+      "width": 90.4375,
+      "height": 28.28125,
+      "right": 306.359375,
+      "bottom": 44.671875
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 59.34375,
+      "right": 320,
+      "bottom": 59.34375
+    },
+    "binding": "onSwitchPet",
+    "font": "11.9467px",
+    "ellipsis": "ellipsis",
+    "textWidth": 89.59375,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 64
+  },
+  {
+    "name": "chat",
+    "width": 320,
+    "long": true,
+    "testFamily": true,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 13.640625,
+      "y": 52.53125,
+      "width": 143.75,
+      "height": 32,
+      "right": 157.390625,
+      "bottom": 84.53125
+    },
+    "avatar": {
+      "x": 13.640625,
+      "y": 52.53125,
+      "width": 32,
+      "height": 32,
+      "right": 45.640625,
+      "bottom": 84.53125
+    },
+    "touch": {
+      "x": 13.640625,
+      "y": 46.53125,
+      "width": 143.75,
+      "height": 44,
+      "right": 157.390625,
+      "bottom": 90.53125
+    },
+    "other": {
+      "x": 177.53125,
+      "y": 46.53125,
+      "width": 128.828125,
+      "height": 44,
+      "right": 306.359375,
+      "bottom": 90.53125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 38,
+      "width": 320,
+      "height": 59.34375,
+      "right": 320,
+      "bottom": 97.34375
+    },
+    "binding": "onSwitchPet",
+    "font": "11.9467px",
+    "ellipsis": "ellipsis",
+    "textWidth": 89.59375,
+    "overlap": false,
+    "overflow": false,
+    "tail": 64,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "album",
+    "width": 320,
+    "long": true,
+    "testFamily": true,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 13.640625,
+      "y": 52.53125,
+      "width": 143.75,
+      "height": 32,
+      "right": 157.390625,
+      "bottom": 84.53125
+    },
+    "avatar": {
+      "x": 13.640625,
+      "y": 52.53125,
+      "width": 32,
+      "height": 32,
+      "right": 45.640625,
+      "bottom": 84.53125
+    },
+    "touch": {
+      "x": 13.640625,
+      "y": 46.53125,
+      "width": 143.75,
+      "height": 44,
+      "right": 157.390625,
+      "bottom": 90.53125
+    },
+    "other": {
+      "x": 215.921875,
+      "y": 54.390625,
+      "width": 90.4375,
+      "height": 28.28125,
+      "right": 306.359375,
+      "bottom": 82.671875
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 38,
+      "width": 320,
+      "height": 59.34375,
+      "right": 320,
+      "bottom": 97.34375
+    },
+    "binding": "onSwitchPet",
+    "font": "11.9467px",
+    "ellipsis": "ellipsis",
+    "textWidth": 89.59375,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 64
+  },
+  {
+    "name": "chat",
+    "width": 375,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 16,
+      "y": 16,
+      "width": 86,
+      "height": 32,
+      "right": 102,
+      "bottom": 48
+    },
+    "avatar": {
+      "x": 16,
+      "y": 16,
+      "width": 32,
+      "height": 32,
+      "right": 48,
+      "bottom": 48
+    },
+    "touch": {
+      "x": 16,
+      "y": 10,
+      "width": 86,
+      "height": 44,
+      "right": 102,
+      "bottom": 54
+    },
+    "other": {
+      "x": 208,
+      "y": 10,
+      "width": 151,
+      "height": 44,
+      "right": 359,
+      "bottom": 54
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 375,
+      "height": 62,
+      "right": 375,
+      "bottom": 62
+    },
+    "binding": "onSwitchPet",
+    "font": "14px",
+    "ellipsis": "ellipsis",
+    "textWidth": 28,
+    "overlap": false,
+    "overflow": false,
+    "tail": 72,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "album",
+    "width": 375,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 16,
+      "y": 16,
+      "width": 86,
+      "height": 32,
+      "right": 102,
+      "bottom": 48
+    },
+    "avatar": {
+      "x": 16,
+      "y": 16,
+      "width": 32,
+      "height": 32,
+      "right": 48,
+      "bottom": 48
+    },
+    "touch": {
+      "x": 16,
+      "y": 10,
+      "width": 86,
+      "height": 44,
+      "right": 102,
+      "bottom": 54
+    },
+    "other": {
+      "x": 253,
+      "y": 15.40625,
+      "width": 106,
+      "height": 33.1875,
+      "right": 359,
+      "bottom": 48.59375
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 375,
+      "height": 62,
+      "right": 375,
+      "bottom": 62
+    },
+    "binding": "onSwitchPet",
+    "font": "14px",
+    "ellipsis": "ellipsis",
+    "textWidth": 28,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 72
+  },
+  {
+    "name": "chat",
+    "width": 375,
+    "long": false,
+    "testFamily": true,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 16,
+      "y": 54,
+      "width": 86,
+      "height": 32,
+      "right": 102,
+      "bottom": 86
+    },
+    "avatar": {
+      "x": 16,
+      "y": 54,
+      "width": 32,
+      "height": 32,
+      "right": 48,
+      "bottom": 86
+    },
+    "touch": {
+      "x": 16,
+      "y": 48,
+      "width": 86,
+      "height": 44,
+      "right": 102,
+      "bottom": 92
+    },
+    "other": {
+      "x": 208,
+      "y": 48,
+      "width": 151,
+      "height": 44,
+      "right": 359,
+      "bottom": 92
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 38,
+      "width": 375,
+      "height": 62,
+      "right": 375,
+      "bottom": 100
+    },
+    "binding": "onSwitchPet",
+    "font": "14px",
+    "ellipsis": "ellipsis",
+    "textWidth": 28,
+    "overlap": false,
+    "overflow": false,
+    "tail": 72,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "album",
+    "width": 375,
+    "long": false,
+    "testFamily": true,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 16,
+      "y": 54,
+      "width": 86,
+      "height": 32,
+      "right": 102,
+      "bottom": 86
+    },
+    "avatar": {
+      "x": 16,
+      "y": 54,
+      "width": 32,
+      "height": 32,
+      "right": 48,
+      "bottom": 86
+    },
+    "touch": {
+      "x": 16,
+      "y": 48,
+      "width": 86,
+      "height": 44,
+      "right": 102,
+      "bottom": 92
+    },
+    "other": {
+      "x": 253,
+      "y": 53.40625,
+      "width": 106,
+      "height": 33.1875,
+      "right": 359,
+      "bottom": 86.59375
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 38,
+      "width": 375,
+      "height": 62,
+      "right": 375,
+      "bottom": 100
+    },
+    "binding": "onSwitchPet",
+    "font": "14px",
+    "ellipsis": "ellipsis",
+    "textWidth": 28,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 72
+  },
+  {
+    "name": "chat",
+    "width": 375,
+    "long": true,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 16,
+      "y": 16,
+      "width": 163,
+      "height": 32,
+      "right": 179,
+      "bottom": 48
+    },
+    "avatar": {
+      "x": 16,
+      "y": 16,
+      "width": 32,
+      "height": 32,
+      "right": 48,
+      "bottom": 48
+    },
+    "touch": {
+      "x": 16,
+      "y": 10,
+      "width": 163,
+      "height": 44,
+      "right": 179,
+      "bottom": 54
+    },
+    "other": {
+      "x": 208,
+      "y": 10,
+      "width": 151,
+      "height": 44,
+      "right": 359,
+      "bottom": 54
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 375,
+      "height": 62,
+      "right": 375,
+      "bottom": 62
+    },
+    "binding": "onSwitchPet",
+    "font": "14px",
+    "ellipsis": "ellipsis",
+    "textWidth": 105,
+    "overlap": false,
+    "overflow": false,
+    "tail": 72,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "album",
+    "width": 375,
+    "long": true,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 16,
+      "y": 16,
+      "width": 163,
+      "height": 32,
+      "right": 179,
+      "bottom": 48
+    },
+    "avatar": {
+      "x": 16,
+      "y": 16,
+      "width": 32,
+      "height": 32,
+      "right": 48,
+      "bottom": 48
+    },
+    "touch": {
+      "x": 16,
+      "y": 10,
+      "width": 163,
+      "height": 44,
+      "right": 179,
+      "bottom": 54
+    },
+    "other": {
+      "x": 253,
+      "y": 15.40625,
+      "width": 106,
+      "height": 33.1875,
+      "right": 359,
+      "bottom": 48.59375
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 375,
+      "height": 62,
+      "right": 375,
+      "bottom": 62
+    },
+    "binding": "onSwitchPet",
+    "font": "14px",
+    "ellipsis": "ellipsis",
+    "textWidth": 105,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 72
+  },
+  {
+    "name": "chat",
+    "width": 375,
+    "long": true,
+    "testFamily": true,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 16,
+      "y": 54,
+      "width": 163,
+      "height": 32,
+      "right": 179,
+      "bottom": 86
+    },
+    "avatar": {
+      "x": 16,
+      "y": 54,
+      "width": 32,
+      "height": 32,
+      "right": 48,
+      "bottom": 86
+    },
+    "touch": {
+      "x": 16,
+      "y": 48,
+      "width": 163,
+      "height": 44,
+      "right": 179,
+      "bottom": 92
+    },
+    "other": {
+      "x": 208,
+      "y": 48,
+      "width": 151,
+      "height": 44,
+      "right": 359,
+      "bottom": 92
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 38,
+      "width": 375,
+      "height": 62,
+      "right": 375,
+      "bottom": 100
+    },
+    "binding": "onSwitchPet",
+    "font": "14px",
+    "ellipsis": "ellipsis",
+    "textWidth": 105,
+    "overlap": false,
+    "overflow": false,
+    "tail": 72,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "album",
+    "width": 375,
+    "long": true,
+    "testFamily": true,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 16,
+      "y": 54,
+      "width": 163,
+      "height": 32,
+      "right": 179,
+      "bottom": 86
+    },
+    "avatar": {
+      "x": 16,
+      "y": 54,
+      "width": 32,
+      "height": 32,
+      "right": 48,
+      "bottom": 86
+    },
+    "touch": {
+      "x": 16,
+      "y": 48,
+      "width": 163,
+      "height": 44,
+      "right": 179,
+      "bottom": 92
+    },
+    "other": {
+      "x": 253,
+      "y": 53.40625,
+      "width": 106,
+      "height": 33.1875,
+      "right": 359,
+      "bottom": 86.59375
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 38,
+      "width": 375,
+      "height": 62,
+      "right": 375,
+      "bottom": 100
+    },
+    "binding": "onSwitchPet",
+    "font": "14px",
+    "ellipsis": "ellipsis",
+    "textWidth": 105,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 72
+  },
+  {
+    "name": "chat",
+    "width": 414,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 91.5625,
+      "height": 32,
+      "right": 109.21875,
+      "bottom": 49.03125
+    },
+    "avatar": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 32,
+      "height": 32,
+      "right": 49.65625,
+      "bottom": 49.03125
+    },
+    "touch": {
+      "x": 17.65625,
+      "y": 11.03125,
+      "width": 91.5625,
+      "height": 44,
+      "right": 109.21875,
+      "bottom": 55.03125
+    },
+    "other": {
+      "x": 229.703125,
+      "y": 11.03125,
+      "width": 166.640625,
+      "height": 44,
+      "right": 396.34375,
+      "bottom": 55.03125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 414,
+      "height": 63.859375,
+      "right": 414,
+      "bottom": 63.859375
+    },
+    "binding": "onSwitchPet",
+    "font": "15.456px",
+    "ellipsis": "ellipsis",
+    "textWidth": 30.90625,
+    "overlap": false,
+    "overflow": false,
+    "tail": 78,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "album",
+    "width": 414,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 91.5625,
+      "height": 32,
+      "right": 109.21875,
+      "bottom": 49.03125
+    },
+    "avatar": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 32,
+      "height": 32,
+      "right": 49.65625,
+      "bottom": 49.03125
+    },
+    "touch": {
+      "x": 17.65625,
+      "y": 11.03125,
+      "width": 91.5625,
+      "height": 44,
+      "right": 109.21875,
+      "bottom": 55.03125
+    },
+    "other": {
+      "x": 279.40625,
+      "y": 14.734375,
+      "width": 116.9375,
+      "height": 36.59375,
+      "right": 396.34375,
+      "bottom": 51.328125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 414,
+      "height": 63.859375,
+      "right": 414,
+      "bottom": 63.859375
+    },
+    "binding": "onSwitchPet",
+    "font": "15.456px",
+    "ellipsis": "ellipsis",
+    "textWidth": 30.90625,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 78
+  },
+  {
+    "name": "chat",
+    "width": 414,
+    "long": false,
+    "testFamily": true,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 17.65625,
+      "y": 55.03125,
+      "width": 91.5625,
+      "height": 32,
+      "right": 109.21875,
+      "bottom": 87.03125
+    },
+    "avatar": {
+      "x": 17.65625,
+      "y": 55.03125,
+      "width": 32,
+      "height": 32,
+      "right": 49.65625,
+      "bottom": 87.03125
+    },
+    "touch": {
+      "x": 17.65625,
+      "y": 49.03125,
+      "width": 91.5625,
+      "height": 44,
+      "right": 109.21875,
+      "bottom": 93.03125
+    },
+    "other": {
+      "x": 229.703125,
+      "y": 49.03125,
+      "width": 166.640625,
+      "height": 44,
+      "right": 396.34375,
+      "bottom": 93.03125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 38,
+      "width": 414,
+      "height": 63.859375,
+      "right": 414,
+      "bottom": 101.859375
+    },
+    "binding": "onSwitchPet",
+    "font": "15.456px",
+    "ellipsis": "ellipsis",
+    "textWidth": 30.90625,
+    "overlap": false,
+    "overflow": false,
+    "tail": 78,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "album",
+    "width": 414,
+    "long": false,
+    "testFamily": true,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 17.65625,
+      "y": 55.03125,
+      "width": 91.5625,
+      "height": 32,
+      "right": 109.21875,
+      "bottom": 87.03125
+    },
+    "avatar": {
+      "x": 17.65625,
+      "y": 55.03125,
+      "width": 32,
+      "height": 32,
+      "right": 49.65625,
+      "bottom": 87.03125
+    },
+    "touch": {
+      "x": 17.65625,
+      "y": 49.03125,
+      "width": 91.5625,
+      "height": 44,
+      "right": 109.21875,
+      "bottom": 93.03125
+    },
+    "other": {
+      "x": 279.40625,
+      "y": 52.734375,
+      "width": 116.9375,
+      "height": 36.59375,
+      "right": 396.34375,
+      "bottom": 89.328125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 38,
+      "width": 414,
+      "height": 63.859375,
+      "right": 414,
+      "bottom": 101.859375
+    },
+    "binding": "onSwitchPet",
+    "font": "15.456px",
+    "ellipsis": "ellipsis",
+    "textWidth": 30.90625,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 78
+  },
+  {
+    "name": "chat",
+    "width": 414,
+    "long": true,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 176.5625,
+      "height": 32,
+      "right": 194.21875,
+      "bottom": 49.03125
+    },
+    "avatar": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 32,
+      "height": 32,
+      "right": 49.65625,
+      "bottom": 49.03125
+    },
+    "touch": {
+      "x": 17.65625,
+      "y": 11.03125,
+      "width": 176.5625,
+      "height": 44,
+      "right": 194.21875,
+      "bottom": 55.03125
+    },
+    "other": {
+      "x": 229.703125,
+      "y": 11.03125,
+      "width": 166.640625,
+      "height": 44,
+      "right": 396.34375,
+      "bottom": 55.03125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 414,
+      "height": 63.859375,
+      "right": 414,
+      "bottom": 63.859375
+    },
+    "binding": "onSwitchPet",
+    "font": "15.456px",
+    "ellipsis": "ellipsis",
+    "textWidth": 115.90625,
+    "overlap": false,
+    "overflow": false,
+    "tail": 78,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "album",
+    "width": 414,
+    "long": true,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 176.5625,
+      "height": 32,
+      "right": 194.21875,
+      "bottom": 49.03125
+    },
+    "avatar": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 32,
+      "height": 32,
+      "right": 49.65625,
+      "bottom": 49.03125
+    },
+    "touch": {
+      "x": 17.65625,
+      "y": 11.03125,
+      "width": 176.5625,
+      "height": 44,
+      "right": 194.21875,
+      "bottom": 55.03125
+    },
+    "other": {
+      "x": 279.40625,
+      "y": 14.734375,
+      "width": 116.9375,
+      "height": 36.59375,
+      "right": 396.34375,
+      "bottom": 51.328125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 414,
+      "height": 63.859375,
+      "right": 414,
+      "bottom": 63.859375
+    },
+    "binding": "onSwitchPet",
+    "font": "15.456px",
+    "ellipsis": "ellipsis",
+    "textWidth": 115.90625,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 78
+  },
+  {
+    "name": "chat",
+    "width": 414,
+    "long": true,
+    "testFamily": true,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 17.65625,
+      "y": 55.03125,
+      "width": 176.5625,
+      "height": 32,
+      "right": 194.21875,
+      "bottom": 87.03125
+    },
+    "avatar": {
+      "x": 17.65625,
+      "y": 55.03125,
+      "width": 32,
+      "height": 32,
+      "right": 49.65625,
+      "bottom": 87.03125
+    },
+    "touch": {
+      "x": 17.65625,
+      "y": 49.03125,
+      "width": 176.5625,
+      "height": 44,
+      "right": 194.21875,
+      "bottom": 93.03125
+    },
+    "other": {
+      "x": 229.703125,
+      "y": 49.03125,
+      "width": 166.640625,
+      "height": 44,
+      "right": 396.34375,
+      "bottom": 93.03125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 38,
+      "width": 414,
+      "height": 63.859375,
+      "right": 414,
+      "bottom": 101.859375
+    },
+    "binding": "onSwitchPet",
+    "font": "15.456px",
+    "ellipsis": "ellipsis",
+    "textWidth": 115.90625,
+    "overlap": false,
+    "overflow": false,
+    "tail": 78,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "album",
+    "width": 414,
+    "long": true,
+    "testFamily": true,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 17.65625,
+      "y": 55.03125,
+      "width": 176.5625,
+      "height": 32,
+      "right": 194.21875,
+      "bottom": 87.03125
+    },
+    "avatar": {
+      "x": 17.65625,
+      "y": 55.03125,
+      "width": 32,
+      "height": 32,
+      "right": 49.65625,
+      "bottom": 87.03125
+    },
+    "touch": {
+      "x": 17.65625,
+      "y": 49.03125,
+      "width": 176.5625,
+      "height": 44,
+      "right": 194.21875,
+      "bottom": 93.03125
+    },
+    "other": {
+      "x": 279.40625,
+      "y": 52.734375,
+      "width": 116.9375,
+      "height": 36.59375,
+      "right": 396.34375,
+      "bottom": 89.328125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 38,
+      "width": 414,
+      "height": 63.859375,
+      "right": 414,
+      "bottom": 101.859375
+    },
+    "binding": "onSwitchPet",
+    "font": "15.456px",
+    "ellipsis": "ellipsis",
+    "textWidth": 115.90625,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 78
+  },
+  {
+    "name": "chat",
+    "width": 320,
+    "long": false,
+    "testFamily": false,
+    "keyboard": true,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 78.046875,
+      "height": 32,
+      "right": 91.6875,
+      "bottom": 46.53125
+    },
+    "avatar": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 32,
+      "height": 32,
+      "right": 45.640625,
+      "bottom": 46.53125
+    },
+    "touch": {
+      "x": 13.640625,
+      "y": 8.53125,
+      "width": 78.046875,
+      "height": 44,
+      "right": 91.6875,
+      "bottom": 52.53125
+    },
+    "other": {
+      "x": 177.53125,
+      "y": 8.53125,
+      "width": 128.828125,
+      "height": 44,
+      "right": 306.359375,
+      "bottom": 52.53125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 59.34375,
+      "right": 320,
+      "bottom": 59.34375
+    },
+    "binding": "onSwitchPet",
+    "font": "11.9467px",
+    "ellipsis": "ellipsis",
+    "textWidth": 23.890625,
+    "overlap": false,
+    "overflow": false,
+    "tail": 0,
+    "dockBottom": 430,
+    "pagePadding": 0
+  },
+  {
+    "name": "chat",
+    "width": 320,
+    "long": true,
+    "testFamily": false,
+    "keyboard": true,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 143.75,
+      "height": 32,
+      "right": 157.390625,
+      "bottom": 46.53125
+    },
+    "avatar": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 32,
+      "height": 32,
+      "right": 45.640625,
+      "bottom": 46.53125
+    },
+    "touch": {
+      "x": 13.640625,
+      "y": 8.53125,
+      "width": 143.75,
+      "height": 44,
+      "right": 157.390625,
+      "bottom": 52.53125
+    },
+    "other": {
+      "x": 177.53125,
+      "y": 8.53125,
+      "width": 128.828125,
+      "height": 44,
+      "right": 306.359375,
+      "bottom": 52.53125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 59.34375,
+      "right": 320,
+      "bottom": 59.34375
+    },
+    "binding": "onSwitchPet",
+    "font": "11.9467px",
+    "ellipsis": "ellipsis",
+    "textWidth": 89.59375,
+    "overlap": false,
+    "overflow": false,
+    "tail": 0,
+    "dockBottom": 430,
+    "pagePadding": 0
+  },
+  {
+    "name": "chat",
+    "width": 375,
+    "long": false,
+    "testFamily": false,
+    "keyboard": true,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 16,
+      "y": 16,
+      "width": 86,
+      "height": 32,
+      "right": 102,
+      "bottom": 48
+    },
+    "avatar": {
+      "x": 16,
+      "y": 16,
+      "width": 32,
+      "height": 32,
+      "right": 48,
+      "bottom": 48
+    },
+    "touch": {
+      "x": 16,
+      "y": 10,
+      "width": 86,
+      "height": 44,
+      "right": 102,
+      "bottom": 54
+    },
+    "other": {
+      "x": 208,
+      "y": 10,
+      "width": 151,
+      "height": 44,
+      "right": 359,
+      "bottom": 54
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 375,
+      "height": 62,
+      "right": 375,
+      "bottom": 62
+    },
+    "binding": "onSwitchPet",
+    "font": "14px",
+    "ellipsis": "ellipsis",
+    "textWidth": 28,
+    "overlap": false,
+    "overflow": false,
+    "tail": 0,
+    "dockBottom": 430,
+    "pagePadding": 0
+  },
+  {
+    "name": "chat",
+    "width": 375,
+    "long": true,
+    "testFamily": false,
+    "keyboard": true,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 16,
+      "y": 16,
+      "width": 163,
+      "height": 32,
+      "right": 179,
+      "bottom": 48
+    },
+    "avatar": {
+      "x": 16,
+      "y": 16,
+      "width": 32,
+      "height": 32,
+      "right": 48,
+      "bottom": 48
+    },
+    "touch": {
+      "x": 16,
+      "y": 10,
+      "width": 163,
+      "height": 44,
+      "right": 179,
+      "bottom": 54
+    },
+    "other": {
+      "x": 208,
+      "y": 10,
+      "width": 151,
+      "height": 44,
+      "right": 359,
+      "bottom": 54
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 375,
+      "height": 62,
+      "right": 375,
+      "bottom": 62
+    },
+    "binding": "onSwitchPet",
+    "font": "14px",
+    "ellipsis": "ellipsis",
+    "textWidth": 105,
+    "overlap": false,
+    "overflow": false,
+    "tail": 0,
+    "dockBottom": 430,
+    "pagePadding": 0
+  },
+  {
+    "name": "chat",
+    "width": 414,
+    "long": false,
+    "testFamily": false,
+    "keyboard": true,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 91.5625,
+      "height": 32,
+      "right": 109.21875,
+      "bottom": 49.03125
+    },
+    "avatar": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 32,
+      "height": 32,
+      "right": 49.65625,
+      "bottom": 49.03125
+    },
+    "touch": {
+      "x": 17.65625,
+      "y": 11.03125,
+      "width": 91.5625,
+      "height": 44,
+      "right": 109.21875,
+      "bottom": 55.03125
+    },
+    "other": {
+      "x": 229.703125,
+      "y": 11.03125,
+      "width": 166.640625,
+      "height": 44,
+      "right": 396.34375,
+      "bottom": 55.03125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 414,
+      "height": 63.859375,
+      "right": 414,
+      "bottom": 63.859375
+    },
+    "binding": "onSwitchPet",
+    "font": "15.456px",
+    "ellipsis": "ellipsis",
+    "textWidth": 30.90625,
+    "overlap": false,
+    "overflow": false,
+    "tail": 0,
+    "dockBottom": 430,
+    "pagePadding": 0
+  },
+  {
+    "name": "chat",
+    "width": 414,
+    "long": true,
+    "testFamily": false,
+    "keyboard": true,
+    "avatarSource": "/assets/pets/cat-british-longhair-gray.png",
+    "chip": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 176.5625,
+      "height": 32,
+      "right": 194.21875,
+      "bottom": 49.03125
+    },
+    "avatar": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 32,
+      "height": 32,
+      "right": 49.65625,
+      "bottom": 49.03125
+    },
+    "touch": {
+      "x": 17.65625,
+      "y": 11.03125,
+      "width": 176.5625,
+      "height": 44,
+      "right": 194.21875,
+      "bottom": 55.03125
+    },
+    "other": {
+      "x": 229.703125,
+      "y": 11.03125,
+      "width": 166.640625,
+      "height": 44,
+      "right": 396.34375,
+      "bottom": 55.03125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 414,
+      "height": 63.859375,
+      "right": 414,
+      "bottom": 63.859375
+    },
+    "binding": "onSwitchPet",
+    "font": "15.456px",
+    "ellipsis": "ellipsis",
+    "textWidth": 115.90625,
+    "overlap": false,
+    "overflow": false,
+    "tail": 0,
+    "dockBottom": 430,
+    "pagePadding": 0
+  },
+  {
+    "name": "chat",
+    "width": 320,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/dog-cream.png",
+    "chip": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 78.046875,
+      "height": 32,
+      "right": 91.6875,
+      "bottom": 46.53125
+    },
+    "avatar": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 32,
+      "height": 32,
+      "right": 45.640625,
+      "bottom": 46.53125
+    },
+    "touch": {
+      "x": 13.640625,
+      "y": 8.53125,
+      "width": 78.046875,
+      "height": 44,
+      "right": 91.6875,
+      "bottom": 52.53125
+    },
+    "other": {
+      "x": 177.53125,
+      "y": 8.53125,
+      "width": 128.828125,
+      "height": 44,
+      "right": 306.359375,
+      "bottom": 52.53125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 59.34375,
+      "right": 320,
+      "bottom": 59.34375
+    },
+    "binding": "onSwitchPet",
+    "font": "11.9467px",
+    "ellipsis": "ellipsis",
+    "textWidth": 23.890625,
+    "overlap": false,
+    "overflow": false,
+    "tail": 64,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "chat",
+    "width": 320,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/brand/app-icon.png",
+    "chip": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 78.046875,
+      "height": 32,
+      "right": 91.6875,
+      "bottom": 46.53125
+    },
+    "avatar": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 32,
+      "height": 32,
+      "right": 45.640625,
+      "bottom": 46.53125
+    },
+    "touch": {
+      "x": 13.640625,
+      "y": 8.53125,
+      "width": 78.046875,
+      "height": 44,
+      "right": 91.6875,
+      "bottom": 52.53125
+    },
+    "other": {
+      "x": 177.53125,
+      "y": 8.53125,
+      "width": 128.828125,
+      "height": 44,
+      "right": 306.359375,
+      "bottom": 52.53125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 59.34375,
+      "right": 320,
+      "bottom": 59.34375
+    },
+    "binding": "onSwitchPet",
+    "font": "11.9467px",
+    "ellipsis": "ellipsis",
+    "textWidth": 23.890625,
+    "overlap": false,
+    "overflow": false,
+    "tail": 64,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "album",
+    "width": 320,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/dog-cream.png",
+    "chip": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 78.046875,
+      "height": 32,
+      "right": 91.6875,
+      "bottom": 46.53125
+    },
+    "avatar": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 32,
+      "height": 32,
+      "right": 45.640625,
+      "bottom": 46.53125
+    },
+    "touch": {
+      "x": 13.640625,
+      "y": 8.53125,
+      "width": 78.046875,
+      "height": 44,
+      "right": 91.6875,
+      "bottom": 52.53125
+    },
+    "other": {
+      "x": 215.921875,
+      "y": 16.390625,
+      "width": 90.4375,
+      "height": 28.28125,
+      "right": 306.359375,
+      "bottom": 44.671875
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 59.34375,
+      "right": 320,
+      "bottom": 59.34375
+    },
+    "binding": "onSwitchPet",
+    "font": "11.9467px",
+    "ellipsis": "ellipsis",
+    "textWidth": 23.890625,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 64
+  },
+  {
+    "name": "album",
+    "width": 320,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/brand/app-icon.png",
+    "chip": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 78.046875,
+      "height": 32,
+      "right": 91.6875,
+      "bottom": 46.53125
+    },
+    "avatar": {
+      "x": 13.640625,
+      "y": 14.53125,
+      "width": 32,
+      "height": 32,
+      "right": 45.640625,
+      "bottom": 46.53125
+    },
+    "touch": {
+      "x": 13.640625,
+      "y": 8.53125,
+      "width": 78.046875,
+      "height": 44,
+      "right": 91.6875,
+      "bottom": 52.53125
+    },
+    "other": {
+      "x": 215.921875,
+      "y": 16.390625,
+      "width": 90.4375,
+      "height": 28.28125,
+      "right": 306.359375,
+      "bottom": 44.671875
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 59.34375,
+      "right": 320,
+      "bottom": 59.34375
+    },
+    "binding": "onSwitchPet",
+    "font": "11.9467px",
+    "ellipsis": "ellipsis",
+    "textWidth": 23.890625,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 64
+  },
+  {
+    "name": "chat",
+    "width": 375,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/dog-cream.png",
+    "chip": {
+      "x": 16,
+      "y": 16,
+      "width": 86,
+      "height": 32,
+      "right": 102,
+      "bottom": 48
+    },
+    "avatar": {
+      "x": 16,
+      "y": 16,
+      "width": 32,
+      "height": 32,
+      "right": 48,
+      "bottom": 48
+    },
+    "touch": {
+      "x": 16,
+      "y": 10,
+      "width": 86,
+      "height": 44,
+      "right": 102,
+      "bottom": 54
+    },
+    "other": {
+      "x": 208,
+      "y": 10,
+      "width": 151,
+      "height": 44,
+      "right": 359,
+      "bottom": 54
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 375,
+      "height": 62,
+      "right": 375,
+      "bottom": 62
+    },
+    "binding": "onSwitchPet",
+    "font": "14px",
+    "ellipsis": "ellipsis",
+    "textWidth": 28,
+    "overlap": false,
+    "overflow": false,
+    "tail": 72,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "chat",
+    "width": 375,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/brand/app-icon.png",
+    "chip": {
+      "x": 16,
+      "y": 16,
+      "width": 86,
+      "height": 32,
+      "right": 102,
+      "bottom": 48
+    },
+    "avatar": {
+      "x": 16,
+      "y": 16,
+      "width": 32,
+      "height": 32,
+      "right": 48,
+      "bottom": 48
+    },
+    "touch": {
+      "x": 16,
+      "y": 10,
+      "width": 86,
+      "height": 44,
+      "right": 102,
+      "bottom": 54
+    },
+    "other": {
+      "x": 208,
+      "y": 10,
+      "width": 151,
+      "height": 44,
+      "right": 359,
+      "bottom": 54
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 375,
+      "height": 62,
+      "right": 375,
+      "bottom": 62
+    },
+    "binding": "onSwitchPet",
+    "font": "14px",
+    "ellipsis": "ellipsis",
+    "textWidth": 28,
+    "overlap": false,
+    "overflow": false,
+    "tail": 72,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "album",
+    "width": 375,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/dog-cream.png",
+    "chip": {
+      "x": 16,
+      "y": 16,
+      "width": 86,
+      "height": 32,
+      "right": 102,
+      "bottom": 48
+    },
+    "avatar": {
+      "x": 16,
+      "y": 16,
+      "width": 32,
+      "height": 32,
+      "right": 48,
+      "bottom": 48
+    },
+    "touch": {
+      "x": 16,
+      "y": 10,
+      "width": 86,
+      "height": 44,
+      "right": 102,
+      "bottom": 54
+    },
+    "other": {
+      "x": 253,
+      "y": 15.40625,
+      "width": 106,
+      "height": 33.1875,
+      "right": 359,
+      "bottom": 48.59375
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 375,
+      "height": 62,
+      "right": 375,
+      "bottom": 62
+    },
+    "binding": "onSwitchPet",
+    "font": "14px",
+    "ellipsis": "ellipsis",
+    "textWidth": 28,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 72
+  },
+  {
+    "name": "album",
+    "width": 375,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/brand/app-icon.png",
+    "chip": {
+      "x": 16,
+      "y": 16,
+      "width": 86,
+      "height": 32,
+      "right": 102,
+      "bottom": 48
+    },
+    "avatar": {
+      "x": 16,
+      "y": 16,
+      "width": 32,
+      "height": 32,
+      "right": 48,
+      "bottom": 48
+    },
+    "touch": {
+      "x": 16,
+      "y": 10,
+      "width": 86,
+      "height": 44,
+      "right": 102,
+      "bottom": 54
+    },
+    "other": {
+      "x": 253,
+      "y": 15.40625,
+      "width": 106,
+      "height": 33.1875,
+      "right": 359,
+      "bottom": 48.59375
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 375,
+      "height": 62,
+      "right": 375,
+      "bottom": 62
+    },
+    "binding": "onSwitchPet",
+    "font": "14px",
+    "ellipsis": "ellipsis",
+    "textWidth": 28,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 72
+  },
+  {
+    "name": "chat",
+    "width": 414,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/dog-cream.png",
+    "chip": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 91.5625,
+      "height": 32,
+      "right": 109.21875,
+      "bottom": 49.03125
+    },
+    "avatar": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 32,
+      "height": 32,
+      "right": 49.65625,
+      "bottom": 49.03125
+    },
+    "touch": {
+      "x": 17.65625,
+      "y": 11.03125,
+      "width": 91.5625,
+      "height": 44,
+      "right": 109.21875,
+      "bottom": 55.03125
+    },
+    "other": {
+      "x": 229.703125,
+      "y": 11.03125,
+      "width": 166.640625,
+      "height": 44,
+      "right": 396.34375,
+      "bottom": 55.03125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 414,
+      "height": 63.859375,
+      "right": 414,
+      "bottom": 63.859375
+    },
+    "binding": "onSwitchPet",
+    "font": "15.456px",
+    "ellipsis": "ellipsis",
+    "textWidth": 30.90625,
+    "overlap": false,
+    "overflow": false,
+    "tail": 78,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "chat",
+    "width": 414,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/brand/app-icon.png",
+    "chip": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 91.5625,
+      "height": 32,
+      "right": 109.21875,
+      "bottom": 49.03125
+    },
+    "avatar": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 32,
+      "height": 32,
+      "right": 49.65625,
+      "bottom": 49.03125
+    },
+    "touch": {
+      "x": 17.65625,
+      "y": 11.03125,
+      "width": 91.5625,
+      "height": 44,
+      "right": 109.21875,
+      "bottom": 55.03125
+    },
+    "other": {
+      "x": 229.703125,
+      "y": 11.03125,
+      "width": 166.640625,
+      "height": 44,
+      "right": 396.34375,
+      "bottom": 55.03125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 414,
+      "height": 63.859375,
+      "right": 414,
+      "bottom": 63.859375
+    },
+    "binding": "onSwitchPet",
+    "font": "15.456px",
+    "ellipsis": "ellipsis",
+    "textWidth": 30.90625,
+    "overlap": false,
+    "overflow": false,
+    "tail": 78,
+    "dockBottom": 730,
+    "pagePadding": 0
+  },
+  {
+    "name": "album",
+    "width": 414,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/pets/dog-cream.png",
+    "chip": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 91.5625,
+      "height": 32,
+      "right": 109.21875,
+      "bottom": 49.03125
+    },
+    "avatar": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 32,
+      "height": 32,
+      "right": 49.65625,
+      "bottom": 49.03125
+    },
+    "touch": {
+      "x": 17.65625,
+      "y": 11.03125,
+      "width": 91.5625,
+      "height": 44,
+      "right": 109.21875,
+      "bottom": 55.03125
+    },
+    "other": {
+      "x": 279.40625,
+      "y": 14.734375,
+      "width": 116.9375,
+      "height": 36.59375,
+      "right": 396.34375,
+      "bottom": 51.328125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 414,
+      "height": 63.859375,
+      "right": 414,
+      "bottom": 63.859375
+    },
+    "binding": "onSwitchPet",
+    "font": "15.456px",
+    "ellipsis": "ellipsis",
+    "textWidth": 30.90625,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 78
+  },
+  {
+    "name": "album",
+    "width": 414,
+    "long": false,
+    "testFamily": false,
+    "keyboard": false,
+    "avatarSource": "/assets/brand/app-icon.png",
+    "chip": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 91.5625,
+      "height": 32,
+      "right": 109.21875,
+      "bottom": 49.03125
+    },
+    "avatar": {
+      "x": 17.65625,
+      "y": 17.03125,
+      "width": 32,
+      "height": 32,
+      "right": 49.65625,
+      "bottom": 49.03125
+    },
+    "touch": {
+      "x": 17.65625,
+      "y": 11.03125,
+      "width": 91.5625,
+      "height": 44,
+      "right": 109.21875,
+      "bottom": 55.03125
+    },
+    "other": {
+      "x": 279.40625,
+      "y": 14.734375,
+      "width": 116.9375,
+      "height": 36.59375,
+      "right": 396.34375,
+      "bottom": 51.328125
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 0,
+      "width": 414,
+      "height": 63.859375,
+      "right": 414,
+      "bottom": 63.859375
+    },
+    "binding": "onSwitchPet",
+    "font": "15.456px",
+    "ellipsis": "ellipsis",
+    "textWidth": 30.90625,
+    "overlap": false,
+    "overflow": false,
+    "pagePadding": 78
+  }
+]

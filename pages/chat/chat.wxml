@@ -12,11 +12,13 @@
     </view>
   </view>
   <!-- 顶部：当前宠物，点击切换（catchtap 阻止冒泡到根节点的 onTapPageBlank，避免弹窗弹出时布局跳变） -->
-  <view wx:if="{{currentPet}}" class="petbar">
-    <view class="pet-chip" catchtap="onSwitchPet">
-      <image class="pet-avatar" src="{{petAvatar}}" mode="aspectFit" />
-      <text class="pet-name">{{currentPet.name}}</text>
-      <t-icon name="chevron-down" size="30rpx" color="#2F6B4F" />
+  <view wx:if="{{currentPet}}" class="petbar pet-toolbar">
+    <view class="pet-switch" catchtap="onSwitchPet" aria-role="button" aria-label="切换宠物，当前{{currentPet.name}}">
+      <view class="pet-chip">
+        <image class="pet-avatar" src="{{petAvatar}}" mode="aspectFit" />
+        <text class="pet-name">{{currentPet.name}}</text>
+        <t-icon name="chevron-down" size="24rpx" color="#2F6B4F" />
+      </view>
     </view>
     <view class="topic-actions">
       <view class="topic-action {{flowRunning || aiThinking ? 'is-disabled' : ''}}" catchtap="onNewTopic" aria-role="button" aria-label="开启新话题">

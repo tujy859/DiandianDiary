@@ -1,5 +1,4 @@
 .page { display:flex; flex-direction:column; overflow:hidden; }
-.header { display:flex; align-items:center; justify-content:space-between; gap:16rpx; padding:24rpx 36rpx 16rpx; flex-shrink:0; }
 .seg { display:flex; flex-shrink:0; background:#efeee8; padding:6rpx; border-radius:24rpx; }
 .seg-item { color:#78837b; font-size:24rpx; padding:8rpx 20rpx; border-radius:18rpx; }
 .seg-item.is-active { background:#ffffff; color:#32694f; font-weight:600; }

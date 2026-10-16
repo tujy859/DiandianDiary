@@ -30,6 +30,9 @@ page {
   --jd-tint: #edf4ef;
   --jd-bg: #faf8f3;
   --jd-page-gutter: 36rpx;
+  --jd-pet-toolbar-gutter: 32rpx;
+  --jd-pet-toolbar-top: 20rpx;
+  --jd-pet-chip-size: 32px;
   /* 圆角三档 + 全圆 */
   --jd-r-sm: 16rpx;
   --jd-r-md: 24rpx;
@@ -64,19 +67,51 @@ scroll-view {
   box-sizing: border-box;
 }
 
-/* 宠物切换徽章：聊聊/时光册共用，固定视觉规格（位置由各页 .petbar/.header 决定） */
-.pet-chip {
+/* 两页共享顶部间距；视觉按钮与宽松点击区域分开，头像与外框等高。 */
+.pet-toolbar {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  min-width: 0;
-  padding: 8rpx 0;
-  background: #ffffff;
-  border-radius: 24rpx;
-  border: 1rpx solid #e9ece6;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: var(--jd-pet-toolbar-top) var(--jd-pet-toolbar-gutter) 16rpx;
+  flex-shrink: 0;
 }
 
-.pet-chip:active {
+.pet-switch {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 44px;
+  flex-shrink: 1;
+}
+
+.pet-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  min-width: 0;
+  max-width: 100%;
+  height: var(--jd-pet-chip-size);
+  padding: 0 12rpx 0 0;
+  background: #ffffff;
+  border-radius: 999rpx;
+  overflow: hidden;
+}
+
+.pet-chip::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border: 1rpx solid #e9ece6;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.pet-switch:active .pet-chip {
   transform: scale(0.97);
 }
 
@@ -92,10 +127,9 @@ scroll-view {
 
 .pet-chip .pet-avatar {
   display: block;
-  width: 64rpx;
-  height: 64rpx;
-  padding: 3rpx;
-  border-radius: 22rpx;
+  width: var(--jd-pet-chip-size);
+  height: var(--jd-pet-chip-size);
+  padding: 0;
   background: #f2eee5;
   flex-shrink: 0;
 }
