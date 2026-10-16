@@ -32,7 +32,8 @@ import { guardReady } from '../../utils/onboard';
 import { openAddPet } from '../../utils/pet-navigation';
 import { isTestFamily } from '../../utils/new-user-test';
 import { beginTrace, traceError, TraceHandle } from '../../utils/debug-trace';
-import { diarySaveMessage } from '../../utils/save-feedback';
+import { diarySaveFeedback } from '../../utils/save-feedback';
+import { SaveProgress, SaveViewState, saveProgressView } from '../../utils/save-progress';
 import { getFlowRun, executeFlow, cancelFlowRun, FlowPage } from '../../utils/flow-test';
 
 /** 欢迎态建议：按当前宠物生成，点一下就能直接开聊 */
@@ -91,6 +92,7 @@ Page({
     sessionVersion: 0,
     /** 当前会话已满 100 条，提示开启新话题 */
     messageCapped: false,
+    saveStates: {} as Record<string, SaveViewState>,
   },
 
   /** 当前会话：消息流与同步的载体，不直接参与渲染 */
@@ -871,6 +873,12 @@ Page({
     return this.data.messages.findIndex((m) => m.draft && m.draft.key === key);
   },
 
+  setSaveView(key: string, state?: SaveViewState) {
+    const saveStates = { ...this.data.saveStates };
+    if (state) saveStates[key] = state; else delete saveStates[key];
+    this.setData({ saveStates });
+  },
+
   /**
    * 照片回填：本机路径照旧用于本机展示，同时记下已上传的 fileId，
    * 这样「保存到日记的那张图」会出现在跨设备的同一条聊天里。
@@ -907,16 +915,28 @@ Page({
       return;
     }
     const trace: TraceHandle | undefined = this._draftTraces?.[key] || beginTrace({ path: 'manual' });
+    const saveStartedAt = Date.now();
+    const epoch = getCloudSessionEpoch();
+    const currentPetId = this.data.currentPet?.id;
+    const current = () => !this._disposed && epoch === getCloudSessionEpoch()
+      && currentPetId === this.data.currentPet?.id && this.findDraft(key) >= 0;
+    let progress: SaveProgress = { stage: 'local' };
+    const onProgress = (next: SaveProgress) => {
+      progress = next;
+      if (current()) this.setSaveView(key, saveProgressView(next));
+    };
     trace?.emit('save.start', { date: draft.date });
     try {
       this._savingDrafts = { ...this._savingDrafts, [key]: true };
       this.clearTopicTimer();
+      onProgress(progress);
       const scope = JSON.stringify(getCloudSession());
-      const currentPetId = this.data.currentPet?.id;
       // 会话同步后照片以云端 fileId 为准（photoIds），本地路径才需要落盘
       const photoInputs = draft.photos.map((path, i) => draft.photoIds?.[i] || path);
-      const savedPhotos = await persistPhotos(photoInputs);
-      if (scope !== JSON.stringify(getCloudSession())) throw new Error('家庭空间已切换，请重试');
+      let savedPhotos: string[];
+      try { savedPhotos = await persistPhotos(photoInputs); }
+      catch (_) { throw new CloudError('PHOTO_READ', '照片读取失败'); }
+      if (scope !== JSON.stringify(getCloudSession()) || epoch !== getCloudSessionEpoch()) throw new CloudError('SESSION_CHANGED', '家庭空间已切换，请重试');
       const rec = await addRecord({
         petId: draft.petId,
         date: draft.date,
@@ -927,21 +947,30 @@ Page({
         mode,
         clientId: key,
         observe: trace?.emit,
+        onProgress,
       });
+      trace?.emit('save.finish', { status: 'saved', durationMs: Date.now() - saveStartedAt });
       trace?.finish('saved', { date: rec.date, records: [{ id: rec.id, date: rec.date }] });
       // 保存成功 = 照片才正式上云：回填云端 fileId，这条聊天在别的设备也能显示同一张图
-      const cloudIds = cloudFileIds(savedPhotos);
-      if (cloudIds.some(Boolean)) this.backfillPhotoIds(savedPhotos, cloudIds);
-      if (scope === JSON.stringify(getCloudSession()) && currentPetId === this.data.currentPet?.id && this.data.messages[idx]?.draft?.key === key) {
-        this.updateDraft(idx, { status: 'saved', recordId: rec.id });
+      if (current()) {
+        const cloudIds = cloudFileIds(savedPhotos);
+        if (cloudIds.some(Boolean)) this.backfillPhotoIds(savedPhotos, cloudIds);
+        this.updateDraft(this.findDraft(key), { status: 'saved', recordId: rec.id });
+        this.setSaveView(key);
+        if (cloudIds.some(Boolean)) this.persist(); // 让会话带着云端照片再同步一次
       }
-      if (cloudIds.some(Boolean)) this.persist(); // 让会话带着云端照片再同步一次
     } catch (err: any) {
+      trace?.emit('save.finish', { status: 'save_failed', durationMs: Date.now() - saveStartedAt, error: traceError(err) });
       trace?.finish('save_failed', { error: traceError(err) });
-      if (this.data.messages[idx]?.draft?.key === key) this.updateDraft(idx, { status: 'failed' });
-      Toast({ context: this, selector: '#t-toast', message: diarySaveMessage(err), theme: 'error' });
+      if (current()) {
+        const feedback = diarySaveFeedback(err, progress.stage);
+        this.updateDraft(this.findDraft(key), { status: 'failed' });
+        this.setSaveView(key, { busy: false, stage: progress.stage, label: feedback.title, detail: feedback.message, failureTitle: feedback.title });
+        if (this._visible) Dialog.alert({ context: this, selector: '#t-dialog', title: feedback.title, content: feedback.message, confirmBtn: '知道了' });
+      }
     } finally {
       delete this._savingDrafts[key];
+      if (!this._disposed && !current()) this.setSaveView(key);
       this.refreshTopicBoundary();
     }
   },
@@ -962,6 +991,7 @@ Page({
     if (idx < 0) return;
     if (this.data.messages[idx].draft!.status === 'saved') return;
     this.updateDraft(idx, { status: 'discarded' });
+    this.setSaveView(e.detail.key);
   },
 
   onCardSetDate(e: WechatMiniprogram.CustomEvent) {
@@ -1008,6 +1038,7 @@ Page({
       return oldIndex >= 0 ? old.photoIds?.[oldIndex] || '' : '';
     });
     this.updateDraft(idx, { petId, date, text, photos, photoIds, tags, status: 'pending' });
+    this.setSaveView(old.key);
     this.setData({ editorVisible: false });
     this.refreshTopicBoundary();
   },

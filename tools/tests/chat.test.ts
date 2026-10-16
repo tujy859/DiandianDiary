@@ -11,10 +11,11 @@ import { setTraceEnabled, getDebugTraces } from '../../utils/debug-trace';
 import { CloudError } from '../../utils/cloud';
 import * as repository from '../../utils/repository';
 import Toast from 'tdesign-miniprogram/toast/index';
+import Dialog from 'tdesign-miniprogram/dialog/index';
 
 jest.mock('tdesign-miniprogram/action-sheet/index', () => ({ __esModule: true, default: { show: jest.fn() } }), { virtual: true });
 jest.mock('tdesign-miniprogram/toast/index', () => ({ __esModule: true, default: jest.fn() }), { virtual: true });
-jest.mock('tdesign-miniprogram/dialog/index', () => ({ __esModule: true, default: { confirm: () => Promise.reject() } }), { virtual: true });
+jest.mock('tdesign-miniprogram/dialog/index', () => ({ __esModule: true, default: { confirm: () => Promise.reject(), alert: jest.fn() } }), { virtual: true });
 jest.mock('../../utils/agent', () => ({ runAgent: jest.fn(), AbortedError: jest.requireActual('../../utils/cancellation').AbortedError }));
 jest.mock('../../utils/llm', () => ({
   chatWithModel: jest.fn(), isModelReady: () => true,
@@ -219,16 +220,92 @@ test('重复点击已保存卡片不能新增重复记录', async () => {
   expect(page.data.messages[0].draft.status).toBe('saved');
 });
 
+test('保存阶段实时可见，上传与云端确认期间不能重复保存或修改，完成后才标记已保存', async () => {
+  const uploading = deferred(), confirming = deferred();
+  page._visible = true;
+  page.data.messages = [{ id: 'progress', role: 'ai', kind: 'draft', draft: { key: 'progress', petId: a.id,
+    date: today(), text: '演示记录', tags: [], photos: [], status: 'pending' } }];
+  (repository.addRecord as jest.Mock).mockImplementationOnce(async input => {
+    input.onProgress({ stage: 'upload', photoIndex: 0, photoTotal: 2 });
+    await uploading.promise;
+    input.onProgress({ stage: 'confirm', photoIndex: 0, photoTotal: 2 });
+    await confirming.promise;
+    input.onProgress({ stage: 'save' });
+    return store.addRecord(input);
+  });
+  const saving = page.onCardSave({ detail: { key: 'progress' } });
+  await Promise.resolve(); await Promise.resolve();
+  expect(page.data.saveStates.progress).toMatchObject({ busy: true, label: '正在上传第 1 / 2 张照片' });
+  await page.onCardSave({ detail: { key: 'progress' } });
+  page.onCardEdit({ detail: { key: 'progress' } }); page.onCardDiscard({ detail: { key: 'progress' } });
+  expect(page.data.editorVisible).toBe(false); expect(page.data.messages[0].draft.status).toBe('pending');
+  uploading.resolve(null); await Promise.resolve(); await Promise.resolve();
+  expect(page.data.saveStates.progress.label).toContain('云端确认');
+  expect(store.getRecords(a.id)).toHaveLength(0);
+  confirming.resolve(null); await saving;
+  expect(page.data.messages[0].draft.status).toBe('saved');
+  expect(page.data.saveStates.progress).toBeUndefined();
+  expect(store.getRecords(a.id)).toHaveLength(1);
+});
+
+test('保存失败的分类原因留在卡片且可重试；关闭执行日志也能看到阶段', async () => {
+  page._visible = true;
+  const wait = deferred();
+  let progress: any;
+  (repository.addRecord as jest.Mock).mockImplementationOnce(input => { progress = input.onProgress; return wait.promise; });
+  page.data.messages = [{ id: 'failure', role: 'ai', kind: 'draft', draft: { key: 'failure', petId: a.id,
+    date: today(), text: '演示记录', tags: [], photos: [], status: 'pending' } }];
+  const saving = page.onCardSave({ detail: { key: 'failure' } });
+  await Promise.resolve(); await Promise.resolve();
+  progress({ stage: 'upload', photoIndex: 0, photoTotal: 1 });
+  wait.reject(new CloudError('PHOTO_DOMAIN', 'private response'));
+  await saving;
+  expect(page.data.saveStates.failure).toMatchObject({ busy: false, failureTitle: '照片服务配置异常' });
+  expect(page.data.saveStates.failure.detail).toContain('联系开发者');
+  expect(JSON.stringify(page.data.saveStates)).not.toContain('private response');
+  expect(Dialog.alert).toHaveBeenLastCalledWith(expect.objectContaining({ title: '照片服务配置异常' }));
+  expect(page.data.messages[0].draft.status).toBe('failed');
+});
+
+test('页面卸载后不显示迟到进度或失败弹窗', async () => {
+  page._visible = true;
+  const wait = deferred(); let progress: any;
+  (repository.addRecord as jest.Mock).mockImplementationOnce(input => { progress = input.onProgress; return wait.promise; });
+  page.data.messages = [{ id: 'late', role: 'ai', kind: 'draft', draft: { key: 'late', petId: a.id,
+    date: today(), text: '演示记录', tags: [], photos: [], status: 'pending' } }];
+  const saving = page.onCardSave({ detail: { key: 'late' } });
+  await Promise.resolve(); await Promise.resolve(); page.onUnload();
+  const state = page.data.saveStates.late;
+  progress({ stage: 'upload', photoIndex: 0, photoTotal: 1 }); wait.reject(new CloudError('PHOTO_TIMEOUT', 'private timeout'));
+  await saving;
+  expect(page.data.saveStates.late).toEqual(state); expect(Dialog.alert).not.toHaveBeenCalled();
+});
+
+test('保存期间切换宠物，迟到失败不污染新宠物，也不留下永久忙碌状态', async () => {
+  page._visible = true;
+  const wait = deferred();
+  (repository.addRecord as jest.Mock).mockImplementationOnce(() => wait.promise);
+  page.data.messages = [{ id: 'switch', role: 'ai', kind: 'draft', draft: { key: 'switch', petId: a.id,
+    date: today(), text: '演示记录', tags: [], photos: [], status: 'pending' } }];
+  const saving = page.onCardSave({ detail: { key: 'switch' } });
+  await Promise.resolve(); await Promise.resolve();
+  page.data.currentPet = b; page.data.messages = [];
+  wait.reject(new CloudError('PHOTO_NETWORK', 'private response')); await saving;
+  expect(page.data.saveStates.switch).toBeUndefined(); expect(Dialog.alert).not.toHaveBeenCalled();
+  expect(page.data.messages).toEqual([]);
+});
+
 test.each([new Error('SDK: file size exceeded; private response'),
   { errMsg: 'callFunction:fail private response' },
   new CloudError('NETWORK', 'HTTP 500 private response')])('保存异常不直接外显 SDK 原文，保留照片与草稿供重试：%p', async error => {
   (repository.addRecord as jest.Mock).mockRejectedValueOnce(error);
+  page._visible = true;
   jest.spyOn(repository, 'cloudFileIds').mockReturnValue([]);
   const photos = ['/tmp/jd-user-data/photo.jpg'];
   page.data.messages = [{ id: 'draft', role: 'ai', kind: 'draft', draft: { key: 'draft', petId: a.id,
     date: today(), text: '演示照片', tags: [], photos: photos.slice(), status: 'pending' } }];
   await page.onCardSave({ detail: { key: 'draft' } });
-  expect(Toast).toHaveBeenLastCalledWith(expect.objectContaining({ message: '暂时无法确认保存结果，请稍后重试' }));
+  expect(Dialog.alert).toHaveBeenLastCalledWith(expect.objectContaining({ content: '暂时无法确认保存结果，请稍后重试。草稿和照片已保留。' }));
   expect(page.data.messages[0].draft).toMatchObject({ status: 'failed', photos, text: '演示照片' });
   expect(store.getRecords(a.id)).toHaveLength(0);
   await page.onCardSave({ detail: { key: 'draft' } });

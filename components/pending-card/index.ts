@@ -4,6 +4,7 @@ Component({
   properties: {
     draft: { type: Object, value: {} },
     petName: { type: String, value: '' },
+    saveState: { type: Object, value: {} },
   },
   data: {
     dateText: '',
@@ -33,18 +34,22 @@ Component({
       this.setData({ dateText: d ? displayDate(d) : '' });
     },
     onSave() {
+      if (this.data.saveState?.busy) return;
       this.triggerEvent('save', { key: this.data.draft.key });
     },
     onEdit() {
+      if (this.data.saveState?.busy) return;
       this.triggerEvent('edit', { key: this.data.draft.key });
     },
     onDiscard() {
+      if (this.data.saveState?.busy) return;
       this.triggerEvent('discard', { key: this.data.draft.key });
     },
     onView() {
       this.triggerEvent('viewrecord', { recordId: this.data.draft.recordId });
     },
     onChip(e: WechatMiniprogram.TouchEvent) {
+      if (this.data.saveState?.busy) return;
       const { value } = e.currentTarget.dataset;
       this.triggerEvent('setdate', { key: this.data.draft.key, date: value });
     },

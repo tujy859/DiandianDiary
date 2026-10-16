@@ -9,7 +9,7 @@ export interface TraceDetail {
   keyword?: string; startDate?: string; endDateExclusive?: string; mode?: string; limit?: number; offset?: number;
   matched?: number; records?: Array<{ id: string; date: string }>; date?: string | null; proposedDate?: string | null;
   drafts?: number; refs?: string[]; error?: string; status?: string; durationMs?: number; historyCount?: number; runId?: string; step?: number;
-  photoIndex?: number; sourceBytes?: number; uploadBytes?: number;
+  photoIndex?: number; sourceBytes?: number; uploadBytes?: number; httpStatus?: number;
 }
 export type TraceObserver = (phase: string, detail: TraceDetail) => void;
 export interface DebugTrace { id: string; startedAt: number; status: string; durationMs: number; events: Array<{ phase: string; at: number; detail: TraceDetail }> }
@@ -23,6 +23,12 @@ export function traceError(error: any): string {
   const message = String(error?.message || '');
   if (error?.code === 'PHOTO_READ') return '照片读取失败';
   if (error?.code === 'PHOTO_UPLOAD') return '照片上传失败';
+  const photoErrors: Record<string, string> = { PHOTO_DOMAIN: '照片上传域名未配置', PHOTO_CONFIG: '照片上传接口未更新',
+    PHOTO_NETWORK: '照片上传连接中断', PHOTO_TIMEOUT: '照片上传超时', PHOTO_AUTH: '照片上传授权被拒绝',
+    PHOTO_TLS: '照片上传安全连接失败', PHOTO_SERVICE: '照片上传服务繁忙', PHOTO_CAPACITY: '照片上传服务容量限制',
+    PHOTO_FORMAT: '照片格式不支持', PHOTO_EXPIRED: '照片上传授权过期' };
+  if (photoErrors[error?.code]) return photoErrors[error.code];
+  if (Object.values(photoErrors).includes(message)) return message;
   if (['请求超时', '已取消', '日期校验失败', '原文依据校验失败', '工具或 JSON 参数校验失败', '身份或家庭作用域变化', '照片读取失败', '照片上传失败', '照片大小超限', '照片格式不支持'].includes(message)) return message;
   if (/照片.*(?:超过|超限)|file size.*exceed/i.test(message)) return '照片大小超限';
   if (/^请选择支持的照片格式/.test(message)) return '照片格式不支持';
@@ -55,6 +61,7 @@ function clean(detail: TraceDetail): TraceDetail {
   for (const field of ['photoIndex', 'sourceBytes', 'uploadBytes']) {
     const value = detail[field]; if (Number.isSafeInteger(value) && value >= 0) out[field] = value;
   }
+  if (Number.isInteger(detail.httpStatus) && detail.httpStatus >= 100 && detail.httpStatus <= 599) out.httpStatus = detail.httpStatus;
   const safeId = (id: unknown) => typeof id === 'string' && /^[a-zA-Z0-9_-]{1,100}$/.test(id);
   if (Array.isArray(detail.refs)) out.refs = detail.refs.filter(safeId).slice(0, 20);
   if (Array.isArray(detail.records)) out.records = detail.records.filter(r => r && safeId(r.id) && /^\d{4}-\d{2}-\d{2}$/.test(r.date)).slice(0, 20).map(r => ({ id: r.id, date: r.date }));

@@ -60,6 +60,13 @@
   color: #8f9b94;
 }
 
+.save-feedback { margin-bottom:20rpx; padding:20rpx; border-radius:16rpx; background:#f0f6f1; color:#256145; }
+.save-feedback.is-failed { background:#fdf3f1; color:#a7443e; }
+.save-label { font-size:25rpx; font-weight:600; line-height:1.5; }
+.save-detail { margin-top:8rpx; font-size:23rpx; line-height:1.6; overflow-wrap:anywhere; }
+.save-spinner { width:22rpx; height:22rpx; border:3rpx solid #cce2d6; border-top-color:#256145; border-radius:50%; animation:save-spin 0.9s linear infinite; }
+@keyframes save-spin { to { transform:rotate(360deg); } }
+
 .pcard-link {
   display: flex;
   align-items: center;

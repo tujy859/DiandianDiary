@@ -293,6 +293,47 @@ test('照片直传失败时不确认上传、不写日记，重试可以完成',
   } finally { fs.mockRestore(); }
 });
 
+test('原始输入与整理结果的照片合并计数、只上传一次，确认完成后才写日记', async () => {
+  jest.spyOn(wx, 'getFileSystemManager').mockReturnValue({ readFile: ({ success }: any) => success({ data: new Uint8Array([255, 216, 255]).buffer }) });
+  await repo.connectCloud(); const pet = await repo.savePet({ name: '演示猫', species: '猫' });
+  const stages: any[] = [], diaryCounts: number[] = [];
+  const saved = await repo.addRecord({ ...input(pet.id), photos: ['/local/a.jpg'], rawInput: { text: '演示', photos: ['/local/a.jpg', '/local/b.jpg'] },
+    onProgress: progress => {
+      stages.push(progress);
+      diaryCounts.push(db.dump('diaries').length);
+    } });
+  expect(stages.map(progress => progress.stage)).toEqual([
+    'read', 'authorize', 'upload', 'confirm', 'photo-done', 'read', 'authorize', 'upload', 'confirm', 'photo-done', 'save', 'refresh',
+  ]);
+  expect(stages.filter(progress => progress.stage === 'upload')).toEqual([
+    { stage: 'upload', photoIndex: 0, photoTotal: 2 }, { stage: 'upload', photoIndex: 1, photoTotal: 2 },
+  ]);
+  expect(wx.request).toHaveBeenCalledTimes(2);
+  expect(diaryCounts.slice(0, -1).every(count => count === 0)).toBe(true);
+  expect(diaryCounts[diaryCounts.length - 1]).toBe(1);
+  expect(saved.rawInput!.photos).toHaveLength(2);
+});
+
+test('纯文字保存也反馈写入和显示确认；反馈回调异常不影响业务', async () => {
+  await repo.connectCloud(); const pet = await repo.savePet({ name: '演示猫', species: '猫' });
+  const progress = jest.fn(() => { throw new Error('view unavailable'); });
+  await expect(repo.addRecord({ ...input(pet.id), onProgress: progress })).resolves.toHaveProperty('id');
+  expect(progress.mock.calls).toEqual([[{ stage: 'save', photoTotal: 0 }], [{ stage: 'refresh' }]]);
+});
+
+test('写入成功但照片显示刷新失败时停在显示确认阶段，同草稿重试不重复新增', async () => {
+  jest.spyOn(wx, 'getFileSystemManager').mockReturnValue({ readFile: ({ success }: any) => success({ data: new Uint8Array([255, 216, 255]).buffer }) });
+  await repo.connectCloud(); const pet = await repo.savePet({ name: '演示猫', species: '猫' });
+  const stages: any[] = [];
+  const data = { ...input(pet.id), photos: ['/local/a.jpg'], onProgress: progress => stages.push(progress.stage) };
+  failAction = 'media.urls';
+  await expect(repo.addRecord(data)).rejects.toMatchObject({ code: 'NETWORK' });
+  expect(stages[stages.length - 1]).toBe('refresh'); expect(db.dump('diaries')).toHaveLength(1);
+  failAction = '';
+  await expect(repo.addRecord(data)).resolves.toHaveProperty('id');
+  expect(db.dump('diaries')).toHaveLength(1); expect(wx.request).toHaveBeenCalledTimes(1);
+});
+
 test('照片传输期间退出登录，迟到成功不能继续确认或保存', async () => {
   const fs = jest.spyOn(wx, 'getFileSystemManager').mockReturnValue({ readFile: ({ success }: any) => success({ data: new Uint8Array([255, 216, 255]).buffer }) });
   try {

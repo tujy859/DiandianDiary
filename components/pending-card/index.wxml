@@ -1,7 +1,11 @@
 <view class="pcard jd-card status-{{draft.status}}">
   <!-- 头部状态：精致微光徽章 -->
   <view class="pcard-head">
-    <block wx:if="{{draft.status === 'pending'}}">
+    <block wx:if="{{saveState.busy}}">
+      <view class="pcard-badge is-saved"><view class="save-spinner"></view><text>正在保存</text></view>
+      <text class="pcard-title">请稍候</text>
+    </block>
+    <block wx:elif="{{draft.status === 'pending'}}">
       <view class="pcard-badge is-pending">
         <text class="badge-sparkle">✦</text>
         <text>待确认日记</text>
@@ -21,15 +25,20 @@
     <block wx:elif="{{draft.status === 'failed'}}">
       <view class="pcard-badge is-failed">
         <t-icon name="close" size="26rpx" color="#D54941" />
-        <text>保存失败</text>
+        <text>保存未完成</text>
       </view>
-      <text class="pcard-title">请检查提示后重试</text>
+      <text class="pcard-title">草稿已保留</text>
     </block>
     <block wx:else>
       <view class="pcard-badge is-discarded">
         <text>已取消记录</text>
       </view>
     </block>
+  </view>
+
+  <view wx:if="{{saveState.busy || (draft.status === 'failed' && saveState.detail)}}" class="save-feedback {{saveState.busy ? '' : 'is-failed'}}" aria-role="status">
+    <view class="save-label">{{saveState.label}}</view>
+    <view class="save-detail">{{saveState.detail}}</view>
   </view>
 
   <view class="pcard-body {{draft.status === 'discarded' ? 'is-muted' : ''}}">
@@ -78,7 +87,7 @@
   </view>
 
   <!-- 底部操作按钮 -->
-  <view wx:if="{{draft.status === 'pending'}}" class="pcard-actions">
+  <view wx:if="{{!saveState.busy && draft.status === 'pending'}}" class="pcard-actions">
     <view class="pcard-btn is-primary" bindtap="onSave">
       <text>保存这条</text>
     </view>
@@ -89,9 +98,9 @@
       <text>不记录</text>
     </view>
   </view>
-  <view wx:elif="{{draft.status === 'failed'}}" class="pcard-actions">
-    <view class="pcard-btn is-primary" bindtap="onSave">重试保存</view>
-    <view class="pcard-btn is-ghost" bindtap="onDiscard">不记录</view>
+  <view wx:elif="{{!saveState.busy && draft.status === 'failed'}}" class="pcard-actions">
+    <view class="pcard-btn is-primary" bindtap="onSave">{{saveState.stage === 'refresh' ? '确认保存结果' : '重试保存'}}</view>
+    <view wx:if="{{saveState.stage !== 'refresh'}}" class="pcard-btn is-ghost" bindtap="onDiscard">不记录</view>
   </view>
 </view>
 

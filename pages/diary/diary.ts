@@ -8,7 +8,8 @@ import { displayDate, relDay } from '../../utils/date';
 import { extractTags } from '../../utils/intent';
 import { updateRecord, removeRecord, refreshCloudIfStale } from '../../utils/repository';
 import { guardReady } from '../../utils/onboard';
-import { diarySaveMessage } from '../../utils/save-feedback';
+import { diarySaveFeedback } from '../../utils/save-feedback';
+import { SaveProgress, saveLoadingTitle } from '../../utils/save-progress';
 
 Page({
   data: {
@@ -112,17 +113,22 @@ Page({
     this._saving = true;
     const { petId, date, text, photos } = e.detail;
     wx.showLoading({ title: '保存中…', mask: true });
+    let progress: SaveProgress = { stage: 'local' };
     try {
       const savedPhotos = await persistPhotos(photos);
       const tags = text !== this.data.record!.text ? extractTags(text) : this.data.record!.tags;
-      await updateRecord(this.data.id, { petId, date, text, photos: savedPhotos, tags });
+      await updateRecord(this.data.id, { petId, date, text, photos: savedPhotos, tags }, next => {
+        progress = next;
+        wx.showLoading({ title: saveLoadingTitle(next), mask: true });
+      });
       wx.hideLoading();
       this.setData({ editorVisible: false });
       this.reload();
       Toast({ context: this, selector: '#t-toast', message: '已保存', theme: 'success' });
     } catch (err: any) {
       wx.hideLoading();
-      Toast({ context: this, selector: '#t-toast', message: diarySaveMessage(err), theme: 'error' });
+      const feedback = diarySaveFeedback(err, progress.stage);
+      Dialog.alert({ context: this, selector: '#t-dialog', title: feedback.title, content: feedback.message, confirmBtn: '知道了' });
     } finally { this._saving = false; }
   },
 

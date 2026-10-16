@@ -127,6 +127,7 @@
         <pending-card
           wx:elif="{{item.kind === 'draft'}}"
           draft="{{item.draft}}"
+          save-state="{{saveStates[item.draft.key]}}"
           pet-name="{{currentPet.name}}"
           bind:save="onCardSave"
           bind:edit="onCardEdit"

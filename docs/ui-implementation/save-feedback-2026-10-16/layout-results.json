@@ -1,0 +1,290 @@
+[
+  {
+    "name": "local",
+    "width": 320,
+    "overflow": false,
+    "label": "正在准备保存",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "read",
+    "width": 320,
+    "overflow": false,
+    "label": "正在读取第 2 / 3 张照片",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "authorize",
+    "width": 320,
+    "overflow": false,
+    "label": "正在准备上传第 2 / 3 张照片",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "upload",
+    "width": 320,
+    "overflow": false,
+    "label": "正在上传第 2 / 3 张照片",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "confirm",
+    "width": 320,
+    "overflow": false,
+    "label": "正在云端确认第 2 / 3 张照片",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "photo-done",
+    "width": 320,
+    "overflow": false,
+    "label": "第 2 / 3 张照片已就绪",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "save",
+    "width": 320,
+    "overflow": false,
+    "label": "照片已就绪，正在保存日记",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "refresh",
+    "width": 320,
+    "overflow": false,
+    "label": "日记已写入，正在确认显示",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "failed-timeout",
+    "width": 320,
+    "overflow": false,
+    "label": "照片上传超时",
+    "actions": 2,
+    "feedbackFits": true
+  },
+  {
+    "name": "failed-domain",
+    "width": 320,
+    "overflow": false,
+    "label": "照片服务配置异常",
+    "actions": 2,
+    "feedbackFits": true
+  },
+  {
+    "name": "failed-refresh",
+    "width": 320,
+    "overflow": false,
+    "label": "日记已写入，显示确认未完成",
+    "actions": 1,
+    "feedbackFits": true
+  },
+  {
+    "name": "saved",
+    "width": 320,
+    "overflow": false,
+    "actions": 0,
+    "feedbackFits": true,
+    "viewLink": "查看日记·"
+  },
+  {
+    "name": "local",
+    "width": 375,
+    "overflow": false,
+    "label": "正在准备保存",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "read",
+    "width": 375,
+    "overflow": false,
+    "label": "正在读取第 2 / 3 张照片",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "authorize",
+    "width": 375,
+    "overflow": false,
+    "label": "正在准备上传第 2 / 3 张照片",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "upload",
+    "width": 375,
+    "overflow": false,
+    "label": "正在上传第 2 / 3 张照片",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "confirm",
+    "width": 375,
+    "overflow": false,
+    "label": "正在云端确认第 2 / 3 张照片",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "photo-done",
+    "width": 375,
+    "overflow": false,
+    "label": "第 2 / 3 张照片已就绪",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "save",
+    "width": 375,
+    "overflow": false,
+    "label": "照片已就绪，正在保存日记",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "refresh",
+    "width": 375,
+    "overflow": false,
+    "label": "日记已写入，正在确认显示",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "failed-timeout",
+    "width": 375,
+    "overflow": false,
+    "label": "照片上传超时",
+    "actions": 2,
+    "feedbackFits": true
+  },
+  {
+    "name": "failed-domain",
+    "width": 375,
+    "overflow": false,
+    "label": "照片服务配置异常",
+    "actions": 2,
+    "feedbackFits": true
+  },
+  {
+    "name": "failed-refresh",
+    "width": 375,
+    "overflow": false,
+    "label": "日记已写入，显示确认未完成",
+    "actions": 1,
+    "feedbackFits": true
+  },
+  {
+    "name": "saved",
+    "width": 375,
+    "overflow": false,
+    "actions": 0,
+    "feedbackFits": true,
+    "viewLink": "查看日记·"
+  },
+  {
+    "name": "local",
+    "width": 414,
+    "overflow": false,
+    "label": "正在准备保存",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "read",
+    "width": 414,
+    "overflow": false,
+    "label": "正在读取第 2 / 3 张照片",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "authorize",
+    "width": 414,
+    "overflow": false,
+    "label": "正在准备上传第 2 / 3 张照片",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "upload",
+    "width": 414,
+    "overflow": false,
+    "label": "正在上传第 2 / 3 张照片",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "confirm",
+    "width": 414,
+    "overflow": false,
+    "label": "正在云端确认第 2 / 3 张照片",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "photo-done",
+    "width": 414,
+    "overflow": false,
+    "label": "第 2 / 3 张照片已就绪",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "save",
+    "width": 414,
+    "overflow": false,
+    "label": "照片已就绪，正在保存日记",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "refresh",
+    "width": 414,
+    "overflow": false,
+    "label": "日记已写入，正在确认显示",
+    "actions": 0,
+    "feedbackFits": true
+  },
+  {
+    "name": "failed-timeout",
+    "width": 414,
+    "overflow": false,
+    "label": "照片上传超时",
+    "actions": 2,
+    "feedbackFits": true
+  },
+  {
+    "name": "failed-domain",
+    "width": 414,
+    "overflow": false,
+    "label": "照片服务配置异常",
+    "actions": 2,
+    "feedbackFits": true
+  },
+  {
+    "name": "failed-refresh",
+    "width": 414,
+    "overflow": false,
+    "label": "日记已写入，显示确认未完成",
+    "actions": 1,
+    "feedbackFits": true
+  },
+  {
+    "name": "saved",
+    "width": 414,
+    "overflow": false,
+    "actions": 0,
+    "feedbackFits": true,
+    "viewLink": "查看日记·"
+  }
+]
