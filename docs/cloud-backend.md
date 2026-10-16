@@ -43,6 +43,7 @@ flowchart LR
 | `diaries` | `_id`, `familyId`, `petId`, `rawInput`, `formatted`, `formatting`, `createdBy`, `updatedBy`, `version`, 时间戳, `deletedAt` | 记录原文与整理结果 |
 | `invites` | `_id`（token 哈希）, `familyId`, `createdBy`, `expiresAt`, `usedBy`, `usedAt`, `revoked` | 一次性、24 小时有效的加入凭证 |
 | `media` | `_id`（fileID 哈希）, `fileId`, `familyId`, `uploadedBy`, `createdAt` | 照片所属家庭与访问验证 |
+| `media_uploads` | `_id`（服务端随机上传 ID）, `familyId`, `uploadedBy`, `stagingFileId`, `expiresAt`, `fileId?` | 临时上传授权与幂等确认；仅服务端读写 |
 
 成员列表存于家庭文档，适合小型家庭。成员变更与用户家庭索引同时提交事务，避免出现「已退出但列表仍可访问」。若未来扩大到社群，应迁移到单独的 membership 集合，并重新设计角色与索引。
 
@@ -74,7 +75,7 @@ flowchart LR
 }
 ```
 
-`rawInput` 首次确认保存时写入，后续编辑不得替换。当前聊天入口保留整理前的完整输入（包括首尾空白），草稿编辑只改 `formatted`。照片保存的是压缩后的文件，原始输入照片列表与整理结果照片列表分别保留；不承诺保存相机原始分辨率。
+`rawInput` 首次确认保存时写入，后续编辑不得替换。当前聊天入口保留整理前的完整输入（包括首尾空白），草稿编辑只改 `formatted`。照片按微信选图返回的文件原样转存和上传，小程序内部不再压缩、缩放或重新编码；是否由微信选图器压缩取决于用户选图操作，不承诺取得相机底层原始文件。原始输入照片列表与整理结果照片列表分别保留，已经压缩保存的旧照片不会恢复画质。
 
 `formatting.mode` 是客户端上报的整理方式：`local / model / tool / manual / legacy`，用于展示来源，不当作模型真实性的服务端审计证明。当前保存最新整理结果和版本号，尚未保留每次编辑的完整历史快照。
 
@@ -141,7 +142,9 @@ flowchart LR
 | `diary.get` | `familyId`, `id` | 日记 |
 | `diary.save` | `familyId`, `petId`, 新建 `clientId + rawInput` 或编辑 `id + version`, `formatted`, `mode?` | 日记 |
 | `diary.delete` | `familyId`, `id`, `version` | 删除结果 |
-| `media.upload` | `familyId`, `base64` | `{ fileId }` |
+| `media.prepare` | `familyId` | 服务端生成的 `uploadId`、临时 PUT `url` 与授权 `headers` |
+| `media.complete` | `familyId`, `uploadId` | `{ fileId }`；验证内容并保存正式照片 |
+| `media.upload` | `familyId`, `base64` | 旧客户端兼容接口，仍限 1MB；新客户端不调用 |
 | `media.urls` | `familyId`, `fileIds`（最多 9 个） | 已鉴权的照片临时 URL 列表 |
 
 列表用 `_id` 升序游标，每页最多 10 条，兼顾云函数响应体大小；客户端拉完所有页后按事件日期排序，维持现有查询和时间轴行为。这适合当前小规模家庭，尚未实现时间轴按需加载和云端事实检索。分页过程中的并发新增可能要下次刷新才出现，不宣称跨分页的全局快照一致性。
@@ -150,7 +153,17 @@ flowchart LR
 
 ## 5. 照片与本机缓存
 
-云存储和数据库都关闭客户端直接读写，客户端经鉴权云函数上传照片、获取下载 URL。这避免仅凭知道 fileID 就绕过家庭权限。每张照片压缩后限 1MB，只接受 JPG/PNG，日记每个照片列表最多 9 张。小文件通过云函数转传以简化访问边界；大文件将来应使用经过授权的上传凭证流程。
+数据库和云存储的常规客户端读写规则仍关闭。用户确认保存时，客户端向 `media.prepare` 申请当前家庭的临时上传授权，使用 `wx.request` PUT 二进制文件到该临时路径，再调用 `media.complete`。新路径取消项目自定的 1MB 限制，不使用 Base64 云函数请求体，也不压缩或重新编码。日记每个照片列表最多 9 张，文件内容仍校验照片格式，接受 JPG、PNG、GIF、WebP、HEIC 与 AVIF；格式由文件头判断，不根据本机后缀猜测。HEIC / AVIF 在不同微信客户端的显示兼容性需要真机验证，当前没有格式转换或缩略图服务。
+
+临时授权只针对服务端生成的临时路径，上传单由账号与家庭隔离、30 分钟内确认。客户端不能直接传入任意 fileID 进行登记。确认时服务端下载临时文件，校验格式后按内容 SHA-256 原样写入正式路径，再通过事务重新验证家庭权限并登记；客户端从未获得正式路径的覆盖授权，临时凭证尚未过期也不能替换已保存照片。已完成的上传 ID 可幂等重试，临时 fileID 在完成前不能用于日记或下载接口。完成后尽力删除本次临时对象，未完成上传单 / 临时文件及数据库失败产生的孤立正式文件暂由后台核查，没有自动回收任务。
+
+聊天框接受照片后，发送与确认保存共用同一份持久文件；确认前不上传到家庭云端，确认时不增加新的大小要求。聊天保存和日记编辑入口使用固定的用户提示，不直接展示 SDK / 服务商原始错误；失败保留当前草稿与照片以便重试。执行日志可记录读取 / 授权 / 传输 / 确认阶段及字节数，见[执行日志](developer-self-check.md#执行日志)。这不承诺离线、网络故障或家庭权限变化时也能保存成功。
+
+800KB 原图在旧版误报的诊断边界：旧客户端不先判断原文件大小就使用 1600px / 1080px 目标宽度重新编码，小图存在放大后体积增加的可能；旧服务端还将超过 1MB 与非 JPG / PNG 格式合并为同一错误。单纯 Base64 体积增加不能解释这次现象：800,000 字节和 819,200 字节分别编码为 1,066,668 和 1,092,268 字符，均小于旧客户端的 1,398,104 字符门槛。没有当时文件的格式、尺寸和压缩产物，不能断定具体原因。兼容接口现在也使用同一格式识别，并将大小、格式和编码错误分别提示；其 Base64 传输容量门槛仅用于旧客户端。
+
+不在产品里增加新的固定文件大小门槛，但上传仍受网络、微信客户端内存、云存储额度及云函数运行资源约束，不承诺任意体积都能成功。客户端读取一张文件的 ArrayBuffer，服务端确认时读取同一张文件的 Buffer；原样定稿还包含一次服务端下载和写入，会增加流量、内存与耗时。当前按张顺序上传，上传和确认失败不会写入日记，账号 / 家庭变化后迟到结果不能继续保存。后续可按实际用量增加展示缩略图和清理机制，原图保持不变。
+
+上传契约依据锁定的 `@cloudbase/node-sdk@3.17.2` 的 `getUploadMetadata` PUT 实现，服务端使用云函数运行身份，不在小程序中放长期密钥。官方参考：[CloudBase 存储接口与临时上传授权](https://docs.cloudbase.net/api-reference/openapi/storage)、[CloudBase Node SDK](https://github.com/TencentCloudBase/node-sdk)。
 
 文件路径包含家庭、上传用户与内容哈希，重复上传相同内容不会创建不同路径。临时 URL 不作为长期数据写入日记，数据库始终存 fileID。SDK 获取的签名 URL 有效期依赖云环境；不承诺 `maxAge` 能强制缩短经典云存储链接的寿命。移除成员后不能再获取新链接，已经下载的照片和已发出的 URL 无法立即收回。参考：[经典云存储链接有效期限制](https://docs.cloudbase.net/en/api-reference/webv3-next/storage)。
 
@@ -165,7 +178,7 @@ flowchart LR
 ## 6. 部署
 
 1. 用有权限的小程序 AppID 打开微信开发者工具，开通微信云开发并创建环境。
-2. 创建 **六个集合**：`users`, `families`, `pets`, `diaries`, `invites`, `media`。
+2. 创建集合：`users`, `families`, `pets`, `diaries`, `invites`, `media`, `chat_sessions`, `media_uploads`。后两者由函数冷启动尝试补建，但部署后仍须核对集合及权限。
 3. **每个集合**的自定义安全规则设为 `cloudfunctions/database.rules.json` 的内容：`{ "read": false, "write": false }`。云函数使用服务端权限执行业务鉴权；不要把集合改成所有用户可读写来消除错误。
 4. 云存储也设置 `cloudfunctions/storage.rules.json` 的禁止客户端直接读写规则，或控制台等价的「仅管理员可读写」。这些 JSON 是部署模板，不会因为文件在仓库就自动生效。
 5. 添加下列复合索引（`_id` 自带唯一索引）：
@@ -177,9 +190,10 @@ flowchart LR
 
    其他业务通过文档 ID 直接读取，无需索引。邀请码到期由代码判断；没有 TTL 自动删除，以保留重试记录。
 6. `utils/cloud-config.ts` 已填写环境 ID `cloud1-d5g3cyroib9fc6099`，部署时选择同一环境。`project.config.json` 已设置 `cloudfunctionRoot`，并排除后端、文档、测试目录进入小程序包。
-7. 右键 `cloudfunctions/diaryApi`，上传部署并安装依赖。SDK 固定为 `wx-server-sdk@4.0.2`，已有 lockfile；本地可在该目录执行 `npm ci --ignore-scripts`。使用云开发控制台支持的维护中 Node.js 运行时；建议先配置 256MB 内存、20 秒超时，再根据测试观察调整。
+7. 右键 `cloudfunctions/diaryApi`，上传部署并安装依赖。SDK 固定为 `wx-server-sdk@4.0.2` 与 `@cloudbase/node-sdk@3.17.2`，已有 lockfile；本地可在该目录执行 `npm ci --ignore-scripts`。使用云开发控制台支持的维护中 Node.js 运行时；建议先配置 256MB 内存、20 秒超时，再根据大照片实际耗时 / 内存观察调整，不因本地逻辑测试通过就认定线上资源足够。
 8. 在云函数环境变量配置 `WECHAT_APP_ID`。仅保留微信小程序调用入口，不配置公开 HTTP 触发器。不要在客户端放 AppSecret、腾讯云密钥或共享模型密钥。
-9. 真机打开「我的 → 账号与家庭空间」，点击使用微信身份连接云端。未部署时会显示配置 / 调用错误，需要先完成云端配置。
+9. 新版原样照片上传使用 `wx.request` PUT。将目标环境实际返回的云存储 HTTPS 主机加入微信小程序后台的 **request 合法域名**，不要填写带签名的 URL 或把凭证记入文档 / 日志。开发工具关闭域名检查不能替代体验版验证；这不是 `uploadFile` 域名配置。数据库 / 存储仍使用禁止常规客户端读写规则，无需开放公开读写。先部署兼容旧客户端的云函数、核对 `media_uploads` 权限及域名，再发布新版客户端。
+10. 真机打开「我的 → 账号与家庭空间」，点击使用微信身份连接云端。未部署时会显示配置 / 调用错误，需要先完成云端配置。原样上传变更当前仅有本地逻辑与 SDK 契约验证，尚未部署或进行真实云端上传 / iOS 验收。
 
 初始实施时仅填写了云环境 ID；2026-10-15 已通过微信开发者工具 CLI 验证管理访问并更新云函数，但本轮未执行真实云数据库业务读写验收。上线前还需按产品实际数据用途配置小程序隐私声明、备份和内容审核；此接口没有接入文本/图片审核或服务器模型代理。现有模型直连密钥问题见 README。
 

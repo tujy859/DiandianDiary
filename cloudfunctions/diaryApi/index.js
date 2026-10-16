@@ -1,8 +1,11 @@
 const cloud = require('wx-server-sdk');
 const { adapter } = require('./database');
 const { createService } = require('./service');
+const cloudbase = require('@cloudbase/node-sdk');
+const { storageAdapter } = require('./storage');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
-const service = createService({ db: adapter(cloud.database({ throwOnNotFound: false })), storage: cloud });
+const storage = storageAdapter(cloud, cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV }));
+const service = createService({ db: adapter(cloud.database({ throwOnNotFound: false })), storage });
 
 exports.main = async (event) => {
   try {

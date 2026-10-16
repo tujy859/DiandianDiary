@@ -33,6 +33,21 @@ test('请求与事件都限量，日志按家庭隔离；关闭模式后停止�
   beginTrace(); disableDeveloperMode(); trace.finish('complete');
   expect(getDebugTraces()).toEqual([]);
 });
+
+test('照片诊断只保留字节数和失败步骤，超限单独分类且不泄漏文件与凭证', () => {
+  enableDeveloperMode(); setTraceEnabled(true);
+  const trace = beginTrace()!;
+  trace.emit('photo.read', { photoIndex: 0, sourceBytes: 819200, uploadBytes: 819200, filePath: 'private/photo.png', headers: { token: 'private-token' } } as any);
+  trace.emit('photo.failure', { path: 'upload', error: 'file size exceeded private-token' });
+  trace.emit('photo.failure', { path: 'complete', error: '请选择支持的照片格式（JPG、PNG）' });
+  trace.emit('photo.read', { photoIndex: -1, sourceBytes: Infinity, uploadBytes: 'private-token' } as any);
+  const events = getDebugTraces()[0].events.filter(event => event.phase.startsWith('photo.'));
+  expect(events[0].detail).toEqual({ photoIndex: 0, sourceBytes: 819200, uploadBytes: 819200 });
+  expect(events[1].detail).toEqual({ path: 'upload', error: '照片大小超限' });
+  expect(events[2].detail).toEqual({ path: 'complete', error: '照片格式不支持' });
+  expect(events[3].detail).toEqual({});
+  expect(debugReport()).not.toContain('private');
+});
 test('退出再登录同账号家庭，迟到日志不会恢复缓存', () => {
   enableDeveloperMode(); setTraceEnabled(true); const trace = beginTrace()!;
   logoutLocal(); setCloudSession({ userId: 'demo-user', familyId: 'demo-family' });

@@ -35,6 +35,21 @@ describe('宠物档案', () => {
 });
 
 describe('日记记录', () => {
+  test('照片持久化原样复制选图文件，保留格式且不调用压缩接口', async () => {
+    const compress = jest.spyOn(wx, 'compressImage');
+    const save = jest.fn(({ filePath, success }) => success({ savedFilePath: filePath }));
+    const fileSystem = jest.spyOn(wx, 'getFileSystemManager').mockReturnValue({
+      accessSync: () => undefined, saveFile: save,
+    });
+    try {
+      const paths = await persistPhotos(['tmp://screenshot.png']);
+      expect(paths[0]).toMatch(/\.png$/);
+      expect(save.mock.calls[0][0].tempFilePath).toBe('tmp://screenshot.png');
+      expect(await persistPhotos(paths)).toEqual(paths);
+      expect(save).toHaveBeenCalledTimes(1);
+      expect(compress).not.toHaveBeenCalled();
+    } finally { fileSystem.mockRestore(); compress.mockRestore(); }
+  });
   test('非法日期不能新增或修改，失败不破坏原记录', () => {
     const pet = savePet({ name: '咪咪', species: '猫' });
     const input = { petId: pet.id, date: '2026-02-30', text: '洗澡', tags: ['洗澡'], photos: [] };

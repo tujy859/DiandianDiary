@@ -291,20 +291,7 @@ function getStorage(key: string): string {
 
 /* ---------------- 照片持久化 ---------------- */
 
-/** 压缩后转存：先压缩再落盘，控制本机占用（压缩失败则用原图） */
-function compressPhoto(p: string): Promise<string> {
-  if (p.indexOf(wx.env.USER_DATA_PATH) === 0 || p.indexOf('http') === 0 || p.indexOf('cloud://') === 0) return Promise.resolve(p);
-  return new Promise((resolve) => {
-    wx.compressImage({
-      src: p,
-      quality: 70,
-      success: (res) => resolve(res.tempFilePath || p),
-      fail: () => resolve(p),
-    });
-  });
-}
-
-/** 把 chooseMedia 的临时路径转存到用户目录，返回可长期使用的路径；已经是持久路径的原样返回 */
+/** 原样转存选图结果，不重新编码或压缩；已经是持久路径的原样返回。 */
 export function persistPhotos(paths: string[]): Promise<string[]> {
   const fs = wx.getFileSystemManager();
   const dir = `${wx.env.USER_DATA_PATH}/photos`;
@@ -318,11 +305,11 @@ export function persistPhotos(paths: string[]): Promise<string[]> {
   return Promise.all(
     paths.map(async (p, i) => {
       if (p.indexOf(wx.env.USER_DATA_PATH) === 0 || p.indexOf('http') === 0 || p.indexOf('cloud://') === 0) return p;
-      const src = await compressPhoto(p);
-      const filePath = `${dir}/p_${Date.now()}_${i}_${Math.floor(Math.random() * 1e6)}.jpg`;
+      const extension = p.match(/\.([a-zA-Z0-9]{1,8})$/)?.[1] || 'image';
+      const filePath = `${dir}/p_${Date.now()}_${i}_${Math.floor(Math.random() * 1e6)}.${extension}`;
       return new Promise<string>((resolve, reject) => {
         fs.saveFile({
-          tempFilePath: src,
+          tempFilePath: p,
           filePath,
           success: (res) => resolve(res.savedFilePath || filePath),
           fail: reject,

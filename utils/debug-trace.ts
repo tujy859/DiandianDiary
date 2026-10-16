@@ -9,6 +9,7 @@ export interface TraceDetail {
   keyword?: string; startDate?: string; endDateExclusive?: string; mode?: string; limit?: number; offset?: number;
   matched?: number; records?: Array<{ id: string; date: string }>; date?: string | null; proposedDate?: string | null;
   drafts?: number; refs?: string[]; error?: string; status?: string; durationMs?: number; historyCount?: number; runId?: string; step?: number;
+  photoIndex?: number; sourceBytes?: number; uploadBytes?: number;
 }
 export type TraceObserver = (phase: string, detail: TraceDetail) => void;
 export interface DebugTrace { id: string; startedAt: number; status: string; durationMs: number; events: Array<{ phase: string; at: number; detail: TraceDetail }> }
@@ -20,7 +21,11 @@ export function setTraceEnabled(enabled: boolean): void { if (isDeveloperMode())
 /** 默认不采集任意错误原文；防止服务商将请求头、正文或 Key 回显到报告。 */
 export function traceError(error: any): string {
   const message = String(error?.message || '');
-  if (['请求超时', '已取消', '日期校验失败', '原文依据校验失败', '工具或 JSON 参数校验失败', '身份或家庭作用域变化'].includes(message)) return message;
+  if (error?.code === 'PHOTO_READ') return '照片读取失败';
+  if (error?.code === 'PHOTO_UPLOAD') return '照片上传失败';
+  if (['请求超时', '已取消', '日期校验失败', '原文依据校验失败', '工具或 JSON 参数校验失败', '身份或家庭作用域变化', '照片读取失败', '照片上传失败', '照片大小超限', '照片格式不支持'].includes(message)) return message;
+  if (/照片.*(?:超过|超限)|file size.*exceed/i.test(message)) return '照片大小超限';
+  if (/^请选择支持的照片格式/.test(message)) return '照片格式不支持';
   const http = message.match(/\bHTTP\s+(\d{3})\b/i);
   if (http) return `HTTP ${http[1]}`;
   if (/timeout|超时/i.test(message)) return '请求超时';
@@ -46,6 +51,9 @@ function clean(detail: TraceDetail): TraceDetail {
   }
   for (const field of ['round', 'limit', 'offset', 'matched', 'drafts', 'durationMs', 'historyCount', 'step']) {
     const value = detail[field]; if (typeof value === 'number' && Number.isFinite(value)) out[field] = value;
+  }
+  for (const field of ['photoIndex', 'sourceBytes', 'uploadBytes']) {
+    const value = detail[field]; if (Number.isSafeInteger(value) && value >= 0) out[field] = value;
   }
   const safeId = (id: unknown) => typeof id === 'string' && /^[a-zA-Z0-9_-]{1,100}$/.test(id);
   if (Array.isArray(detail.refs)) out.refs = detail.refs.filter(safeId).slice(0, 20);

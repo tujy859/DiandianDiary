@@ -9,6 +9,8 @@ import { SESSION_GAP_MS, buildHistory } from '../../utils/context';
 import { enableDeveloperMode } from '../../utils/developer';
 import { setTraceEnabled, getDebugTraces } from '../../utils/debug-trace';
 import { CloudError } from '../../utils/cloud';
+import * as repository from '../../utils/repository';
+import Toast from 'tdesign-miniprogram/toast/index';
 
 jest.mock('tdesign-miniprogram/action-sheet/index', () => ({ __esModule: true, default: { show: jest.fn() } }), { virtual: true });
 jest.mock('tdesign-miniprogram/toast/index', () => ({ __esModule: true, default: jest.fn() }), { virtual: true });
@@ -24,7 +26,7 @@ jest.mock('../../utils/onboard', () => ({ guardReady: () => true }));
 jest.mock('../../utils/repository', () => {
   const actual = jest.requireActual('../../utils/repository');
   const local = jest.requireActual('../../utils/store');
-  return { ...actual, addRecord: (input: any) => local.addRecord(input) };
+  return { __esModule: true, ...actual, addRecord: jest.fn((input: any) => local.addRecord(input)) };
 });
 const run = runAgent as jest.Mock;
 const json = chatWithModel as jest.Mock;
@@ -215,6 +217,23 @@ test('重复点击已保存卡片不能新增重复记录', async () => {
   await Promise.all([page.onCardSave({ detail: { key: 'draft' } }), page.onCardSave({ detail: { key: 'draft' } })]);
   expect(store.getRecords(a.id)).toHaveLength(1);
   expect(page.data.messages[0].draft.status).toBe('saved');
+});
+
+test.each([new Error('SDK: file size exceeded; private response'),
+  { errMsg: 'callFunction:fail private response' },
+  new CloudError('NETWORK', 'HTTP 500 private response')])('保存异常不直接外显 SDK 原文，保留照片与草稿供重试：%p', async error => {
+  (repository.addRecord as jest.Mock).mockRejectedValueOnce(error);
+  jest.spyOn(repository, 'cloudFileIds').mockReturnValue([]);
+  const photos = ['/tmp/jd-user-data/photo.jpg'];
+  page.data.messages = [{ id: 'draft', role: 'ai', kind: 'draft', draft: { key: 'draft', petId: a.id,
+    date: today(), text: '演示照片', tags: [], photos: photos.slice(), status: 'pending' } }];
+  await page.onCardSave({ detail: { key: 'draft' } });
+  expect(Toast).toHaveBeenLastCalledWith(expect.objectContaining({ message: '暂时无法确认保存结果，请稍后重试' }));
+  expect(page.data.messages[0].draft).toMatchObject({ status: 'failed', photos, text: '演示照片' });
+  expect(store.getRecords(a.id)).toHaveLength(0);
+  await page.onCardSave({ detail: { key: 'draft' } });
+  expect(page.data.messages[0].draft.status).toBe('saved');
+  expect(store.getRecords(a.id)[0].photos).toEqual(photos);
 });
 
 test('草稿和日记保留未整理的完整输入，编辑草稿不会改写原文', async () => {

@@ -19,6 +19,19 @@ function array(value, name, max, itemMax) {
 const publicUser = (u) => ({ id: u._id, nickname: u.nickname, createdAt: u.createdAt });
 const publicDoc = (d) => { const { _id, ...rest } = d; return { id: _id, ...rest }; };
 const AVATARS = { 'cat-cream-orange': '猫', 'cat-british-longhair-gray': '猫', 'dog-cream': '狗', 'other-paw': '其他' };
+function photoExtension(buffer) {
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'jpg';
+  if (buffer.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))) return 'png';
+  if (/^GIF8[79]a$/.test(buffer.toString('ascii', 0, 6))) return 'gif';
+  if (buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') return 'webp';
+  // 保留 iOS 选图返回的 HEIF/HEIC 和 AVIF 内容，不通过改后缀假装转换成 JPEG。
+  if (buffer.toString('ascii', 4, 8) === 'ftyp') {
+    const brands = buffer.toString('ascii', 8, Math.min(buffer.length, 64));
+    if (/avif|avis/.test(brands)) return 'avif';
+    if (/heic|heix|hevc|hevx/.test(brands)) return 'heic';
+  }
+  fail('INVALID', '请选择支持的照片格式（JPG、PNG、GIF、WebP、HEIC 或 AVIF）');
+}
 function petAvatarId(value, species) {
   if (value === undefined || value === '') return '';
   if (typeof value !== 'string' || !Object.prototype.hasOwnProperty.call(AVATARS, value) || AVATARS[value] !== species) fail('INVALID', '请选择对应物种的头像');
@@ -111,7 +124,7 @@ function createService({ db, storage, now = Date.now, token = () => crypto.rando
   /** 冷启动时补建集合，避免「集合不存在」把整次请求打回去；已存在时静默跳过 */
   async function ensureCollections() {
     if (collectionsReady || typeof db.ensure !== 'function') return;
-    for (const name of ['chat_sessions']) {
+    for (const name of ['chat_sessions', 'media_uploads']) {
       try { await db.ensure(name); } catch (e) { /* 权限不足时忽略，写入时会给出明确错误 */ }
     }
     collectionsReady = true;
@@ -408,15 +421,54 @@ function createService({ db, storage, now = Date.now, token = () => crypto.rando
         return { deleted: true };
       });
     }
+    if (action === 'media.prepare') {
+      await family(db, fid, uid);
+      const uploadId = `upload_${hash(uid, token()).slice(0, 40)}`;
+      // 客户端仅能写临时路径，绝不获得正式照片的覆盖凭证。
+      const grant = await storage.prepareUpload(`pending/${fid}/${uid}/${uploadId}`);
+      await scopedWrite(fid, uid, false, async (tx) => {
+        await tx.set('media_uploads', uploadId, { familyId: fid, uploadedBy: uid,
+          stagingFileId: grant.fileId, createdAt: now(), expiresAt: now() + 30 * 60 * 1000 });
+      });
+      return { uploadId, url: grant.url, headers: grant.headers };
+    }
+    if (action === 'media.complete') {
+      await family(db, fid, uid);
+      const uploadId = string(p.uploadId, '上传 ID');
+      const ticket = await db.get('media_uploads', uploadId);
+      if (!ticket || ticket.familyId !== fid || ticket.uploadedBy !== uid) fail('FORBIDDEN', '照片上传不属于当前账号和家庭');
+      if (ticket.fileId) return { fileId: ticket.fileId };
+      if (ticket.expiresAt <= now()) fail('INVALID', '照片上传已过期，请重试');
+      // 下载临时对象并原样写入不可由客户端覆盖的正式路径，避免签名未过期时被替换内容。
+      const downloaded = await storage.downloadFile({ fileID: ticket.stagingFileId });
+      const buffer = downloaded.fileContent;
+      if (!Buffer.isBuffer(buffer) || !buffer.length) fail('INVALID', '照片内容无效');
+      const extension = photoExtension(buffer);
+      const digest = crypto.createHash('sha256').update(buffer).digest('hex');
+      const upload = await storage.uploadFile({ cloudPath: `families/${fid}/${uid}/${digest}.${extension}`, fileContent: buffer });
+      const result = await scopedWrite(fid, uid, false, async (tx) => {
+        const current = await tx.get('media_uploads', uploadId);
+        if (!current || current.familyId !== fid || current.uploadedBy !== uid) fail('FORBIDDEN', '照片上传无效');
+        if (current.fileId) return { fileId: current.fileId };
+        if (current.expiresAt <= now()) fail('INVALID', '照片上传已过期，请重试');
+        await tx.set('media', hash(upload.fileID), { fileId: upload.fileID, familyId: fid, uploadedBy: uid, createdAt: now() });
+        await tx.set('media_uploads', uploadId, { ...current, fileId: upload.fileID, completedAt: now() });
+        return { fileId: upload.fileID };
+      });
+      // 只清理本次已确认的临时对象；失败不影响已登记照片与幂等重试。
+      try { await storage.deleteFile({ fileList: [ticket.stagingFileId] }); } catch (_) { /* 后台核查遗留临时文件 */ }
+      return result;
+    }
+    // 兼容尚未更新的小程序；新客户端不再使用受云函数请求体限制的 Base64 上传接口。
     if (action === 'media.upload') {
       await family(db, fid, uid);
       const encoded = string(p.base64, '照片数据', 1400000);
       if (!/^[A-Za-z0-9+/]+={0,2}$/.test(encoded) || encoded.length % 4) fail('INVALID', '照片编码无效');
       const buffer = Buffer.from(encoded, 'base64');
-      const jpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
-      const png = buffer.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'));
-      if (!buffer.length || buffer.length > 1024 * 1024 || (!jpeg && !png)) fail('INVALID', '请使用不超过 1MB 的 JPG 或 PNG 照片');
-      const cloudPath = `families/${fid}/${uid}/${hash(buffer.toString('base64'))}.${jpeg ? 'jpg' : 'png'}`;
+      if (!buffer.length) fail('INVALID', '照片内容无效');
+      if (buffer.length > 1024 * 1024) fail('INVALID', '照片超过旧版上传容量，请更新小程序后重试');
+      const extension = photoExtension(buffer);
+      const cloudPath = `families/${fid}/${uid}/${hash(buffer.toString('base64'))}.${extension}`;
       const upload = await storage.uploadFile({ cloudPath, fileContent: buffer });
       // Storage is outside DB transactions. Identical uploads use the same path; failed DB writes leave an orphan for maintenance.
       return scopedWrite(fid, uid, false, async (tx) => {

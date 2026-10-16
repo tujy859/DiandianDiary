@@ -8,6 +8,7 @@ import { displayDate, relDay } from '../../utils/date';
 import { extractTags } from '../../utils/intent';
 import { updateRecord, removeRecord, refreshCloudIfStale } from '../../utils/repository';
 import { guardReady } from '../../utils/onboard';
+import { diarySaveMessage } from '../../utils/save-feedback';
 
 Page({
   data: {
@@ -121,7 +122,7 @@ Page({
       Toast({ context: this, selector: '#t-toast', message: '已保存', theme: 'success' });
     } catch (err: any) {
       wx.hideLoading();
-      Toast({ context: this, selector: '#t-toast', message: err.message || '保存失败，请重试', theme: 'error' });
+      Toast({ context: this, selector: '#t-toast', message: diarySaveMessage(err), theme: 'error' });
     } finally { this._saving = false; }
   },
 

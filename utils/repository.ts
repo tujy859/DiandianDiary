@@ -3,6 +3,7 @@ import * as local from './store';
 import { Pet, DiaryRecord, RawInput, getCloudSession, getCloudSessionEpoch, setCloudSession, cacheCloudData, uid } from './store';
 import { callCloud, CloudError } from './cloud';
 import { reconcileFamilyState, forgetFamilyState } from './family-state';
+import { TraceObserver, traceError } from './debug-trace';
 
 export interface Family {
   id: string; name: string;
@@ -40,8 +41,9 @@ async function mapUrls(ids: string[], s: local.CloudSession): Promise<Record<str
   wx.setStorageSync(mediaKey(s), reverse);
   return map;
 }
-async function uploadPhotos(paths: string[], s: local.CloudSession): Promise<string[]> {
+async function uploadPhotos(paths: string[], s: local.CloudSession, observe?: TraceObserver): Promise<string[]> {
   const ids: string[] = [];
+  const emit: TraceObserver = (phase, detail) => { try { observe?.(phase, detail); } catch (_) { /* 日志不能影响保存 */ } };
   for (const path of paths) {
     sameSession(s);
     const known = mediaMap(s)[path];
@@ -49,21 +51,37 @@ async function uploadPhotos(paths: string[], s: local.CloudSession): Promise<str
     if (path.indexOf('cloud://') === 0) { ids.push(path); continue; } // Server validates family ownership.
     // 只拒绝云存储的签名展示链接；部分机型的本机持久路径以 http:// 开头（USER_DATA_PATH），必须照常上传
     if (/^https:/.test(path)) throw new Error('照片链接已失效，请刷新后重试');
-    const compress = (quality: number, width?: number) => new Promise<string>((resolve) => wx.compressImage({
-      src: path, quality, ...(width ? { compressedWidth: width } : {}),
-      success: (r) => resolve(r.tempFilePath), fail: () => resolve(path),
-    }));
-    const readBase64 = (file: string) => new Promise<string>((resolve, reject) => (wx.getFileSystemManager() as any).readFile({
-      filePath: file, encoding: 'base64', success: (r: any) => resolve(r.data), fail: reject,
-    }));
-    // 先压质量再限宽度：手机原图动辄 4000px，只压质量很难压进限制
-    let base64 = await readBase64(await compress(50, 1600));
-    if (base64.length > 1398104) base64 = await readBase64(await compress(40, 1080));
-    if (base64.length > 1398104) throw new Error('照片压缩后仍超过 1MB，请换一张照片试试');
-    const result = await callCloud<{ fileId: string }>('media.upload', { familyId: s.familyId, base64 });
-    sameSession(s);
-    wx.setStorageSync(mediaKey(s), { ...mediaMap(s), [path]: result.fileId, [result.fileId]: result.fileId });
-    ids.push(result.fileId);
+    let stage = 'read';
+    const photoIndex = ids.length;
+    try {
+      emit('photo.start', { photoIndex });
+      const bytes = await new Promise<ArrayBuffer>((resolve, reject) => (wx.getFileSystemManager() as any).readFile({
+        filePath: path, success: (r: any) => resolve(r.data), fail: () => reject(new CloudError('PHOTO_READ', '照片读取失败，请重新选择照片')),
+      }));
+      sameSession(s);
+      emit('photo.read', { photoIndex, sourceBytes: bytes.byteLength });
+      // 二进制直接传到服务端签发的临时地址，不将照片塞进云函数 JSON，也不重复压缩。
+      stage = 'prepare';
+      const grant = await callCloud<{ uploadId: string; url: string; headers: Record<string, string> }>('media.prepare', { familyId: s.familyId });
+      sameSession(s);
+      stage = 'upload';
+      emit('photo.upload', { photoIndex, sourceBytes: bytes.byteLength, uploadBytes: bytes.byteLength });
+      await new Promise<void>((resolve, reject) => wx.request({
+        url: grant.url, method: 'PUT', data: bytes, header: grant.headers, timeout: 120000,
+        success: (r: any) => r.statusCode >= 200 && r.statusCode < 300 ? resolve() : reject(new CloudError('PHOTO_UPLOAD', '照片上传失败，请重试')),
+        fail: () => reject(new CloudError('PHOTO_UPLOAD', '照片上传失败，请检查网络后重试')),
+      }));
+      sameSession(s);
+      stage = 'complete';
+      const result = await callCloud<{ fileId: string }>('media.complete', { familyId: s.familyId, uploadId: grant.uploadId });
+      sameSession(s);
+      emit('photo.complete', { photoIndex, sourceBytes: bytes.byteLength, uploadBytes: bytes.byteLength });
+      wx.setStorageSync(mediaKey(s), { ...mediaMap(s), [path]: result.fileId, [result.fileId]: result.fileId });
+      ids.push(result.fileId);
+    } catch (error) {
+      emit('photo.failure', { photoIndex, path: stage, error: traceError(error) });
+      throw error;
+    }
   }
   return ids;
 }
@@ -201,11 +219,11 @@ export async function removePet(id: string): Promise<void> {
   sameSession(s);
   cacheCloudData(local.getPets().filter((p) => p.id !== id), local.getRecords().filter((r) => r.petId !== id));
 }
-export async function addRecord(input: { petId: string; date: string; text: string; tags: string[]; photos: string[]; rawInput?: RawInput; mode?: string; clientId?: string }): Promise<DiaryRecord> {
+export async function addRecord(input: { petId: string; date: string; text: string; tags: string[]; photos: string[]; rawInput?: RawInput; mode?: string; clientId?: string; observe?: TraceObserver }): Promise<DiaryRecord> {
   const s = session();
   const raw = input.rawInput || { text: input.text, photos: input.photos, provenance: 'direct' };
-  const photos = await uploadPhotos(input.photos, s);
-  const originalPhotos = await uploadPhotos(raw.photos, s);
+  const photos = await uploadPhotos(input.photos, s, input.observe);
+  const originalPhotos = await uploadPhotos(raw.photos, s, input.observe);
   sameSession(s);
   const d = await callCloud<CloudDiary>('diary.save', { familyId: s.familyId, petId: input.petId, clientId: input.clientId || uid(),
     formatted: { date: input.date, text: input.text, tags: input.tags, photos }, rawInput: { ...raw, photos: originalPhotos }, mode: input.mode });

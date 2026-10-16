@@ -32,6 +32,7 @@ import { guardReady } from '../../utils/onboard';
 import { openAddPet } from '../../utils/pet-navigation';
 import { isTestFamily } from '../../utils/new-user-test';
 import { beginTrace, traceError, TraceHandle } from '../../utils/debug-trace';
+import { diarySaveMessage } from '../../utils/save-feedback';
 import { getFlowRun, executeFlow, cancelFlowRun, FlowPage } from '../../utils/flow-test';
 
 /** 欢迎态建议：按当前宠物生成，点一下就能直接开聊 */
@@ -925,6 +926,7 @@ Page({
         rawInput: draft.rawInput || { text: draft.text, photos: draft.photoIds || draft.photos, provenance: 'legacy' },
         mode,
         clientId: key,
+        observe: trace?.emit,
       });
       trace?.finish('saved', { date: rec.date, records: [{ id: rec.id, date: rec.date }] });
       // 保存成功 = 照片才正式上云：回填云端 fileId，这条聊天在别的设备也能显示同一张图
@@ -937,7 +939,7 @@ Page({
     } catch (err: any) {
       trace?.finish('save_failed', { error: traceError(err) });
       if (this.data.messages[idx]?.draft?.key === key) this.updateDraft(idx, { status: 'failed' });
-      Toast({ context: this, selector: '#t-toast', message: err.message || '保存失败，请重试', theme: 'error' });
+      Toast({ context: this, selector: '#t-toast', message: diarySaveMessage(err), theme: 'error' });
     } finally {
       delete this._savingDrafts[key];
       this.refreshTopicBoundary();
