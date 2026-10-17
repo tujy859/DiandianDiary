@@ -90,6 +90,24 @@ export function newSession(): ChatSession {
 /** 只有真正入库（保存进日记）的照片才会上云：同步时非 fileId 的一律留在本机 */
 const isCloudId = (p: string) => !!p && p.indexOf('cloud://') === 0;
 
+/** 云端从未见过的本机照片按消息/卡片身份恢复，不能复活已删除的云端照片。 */
+function restoreLocalPhotos(remote: ChatSession, local: ChatSession): ChatSession {
+  const unsaved = (photos: string[] = [], ids: string[] = []) => photos.filter((p, i) => !ids[i] && !isCloudId(p) && !/^https:/.test(p));
+  return { ...remote, clientId: local.clientId, messages: remote.messages.map(message => {
+    const previous = local.messages.find(m => m.id === message.id);
+    if (!previous) return message;
+    const photos = [...new Set((message.photos || []).concat(unsaved(previous.photos, previous.photoIds)))];
+    const result = { ...message, photos };
+    if (message.draft && previous.draft?.key === message.draft.key && ['pending', 'failed'].includes(message.draft.status)) {
+      const draft = { ...message.draft, photos: [...new Set(message.draft.photos.concat(unsaved(previous.draft.photos, previous.draft.photoIds)))] };
+      if (draft.rawInput && previous.draft.rawInput) draft.rawInput = { ...draft.rawInput,
+        photos: [...new Set(draft.rawInput.photos.concat(unsaved(previous.draft.rawInput.photos)))] };
+      result.draft = draft;
+    }
+    return result;
+  }) };
+}
+
 function fromCloud(m: any, urls: Record<string, string>, petId: string): ChatMessage {
   const photos = (m.photos || []).map((id: string) => urls[id] || id);
   const draftPhotos = ((m.draft && m.draft.photos) || []).map((id: string) => urls[id] || id);
@@ -180,7 +198,7 @@ export async function readSession(petId: string, id: string): Promise<ChatSessio
   // 同版本的云端内容不包含尚未确认的本机照片，不能用它覆盖完整快照。
   if (local?.dirty) return local;
   if (local && local.version === result.version) return { ...local, title: result.title, summary: result.summary };
-  return result;
+  return local ? restoreLocalPhotos(result, local) : result;
 }
 
 export async function openSession(petId: string, id: string): Promise<ChatSession> {

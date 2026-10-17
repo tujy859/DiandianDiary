@@ -86,6 +86,20 @@ test('旧话题后台同步保留照片快照，不覆盖当前话题', async ()
   expect((await readSession('pet', 'old')).messages[0].photos).toEqual(['/local/photo']);
 });
 
+test('云端更新文字后仍保留本机未确认照片，不复活云端已删除的照片', async () => {
+  const pending = { key: 'card', petId: 'pet', date: null, text: '原文', tags: [], status: 'pending' as const,
+    photos: ['https://old/signed', '/local/unsaved'], photoIds: ['cloud://saved', ''], rawInput: { text: '原文', photos: ['/local/unsaved'] } };
+  saveLocalSession('pet', { ...newSession(), id: 'old', version: 1, messages: [{ ...row('m'), photos: ['/local/unsaved'], draft: pending }] });
+  saveLocalSession('pet', newSession());
+  rpc.mockResolvedValue({ id: 'old', version: 2, messages: [{ ...row('m'), photos: [], draft: { ...pending, text: '远端更正文字', photos: [], rawInput: { text: '原文', photos: [] } } }] });
+  const restored = await readSession('pet', 'old');
+  expect(restored.messages[0].draft!.text).toBe('远端更正文字');
+  expect(restored.messages[0].draft!.photos).toEqual(['/local/unsaved']);
+  expect(restored.messages[0].draft!.rawInput!.photos).toEqual(['/local/unsaved']);
+});
+
+
+
 test('读取等待中切换家庭，不写入另一家庭缓存', async () => {
   rpc.mockImplementation(async () => { setCloudSession({ userId: 'other', familyId: 'other' }); return { id: 'old', version: 1, messages: [] }; });
   await expect(openSession('pet', 'old')).rejects.toThrow('家庭空间已切换');

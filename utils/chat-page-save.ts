@@ -33,7 +33,7 @@ export const chatSaveMethods = {
       const d = m.draft;
       if (!d) return;
       if (d.photos && d.photos.some(toId)) d.photoIds = d.photos.map(toId);
-      if (d.rawInput && d.rawInput.photos) d.rawInput.photos = d.rawInput.photos.map(toId).filter(Boolean);
+      if (d.rawInput && d.rawInput.photos) d.rawInput.photos = d.rawInput.photos.map(p => toId(p) || p);
     });
     this._session.messages = this.data.messages;
   },

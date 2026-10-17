@@ -521,6 +521,15 @@ test('同步失败后持久保留未同步标志，成功重试才清除', async
   expect(sessions.loadLocalSession(a.id)!.dirty).toBe(false);
 });
 
+test('保存一张卡回填照片标识时，其他待确认卡的本机原始照片仍保留', () => {
+  page._session = sessions.newSession();
+  page.data.messages = [{ id: 'one', draft: { photos: ['/local/a'], rawInput: { text: '', photos: ['/local/a'] } } },
+    { id: 'two', draft: { photos: ['/local/b'], rawInput: { text: '', photos: ['/local/b'] } } }];
+  page.backfillPhotoIds(['/local/a'], ['cloud://a']);
+  expect(page.data.messages[0].draft.rawInput.photos).toEqual(['cloud://a']);
+  expect(page.data.messages[1].draft.rawInput.photos).toEqual(['/local/b']);
+});
+
 test('旧话题标题迟到不会写到新话题', async () => {
   const pending = deferred();
   jest.spyOn(sessions, 'generateTitle').mockReturnValueOnce(pending.promise);
