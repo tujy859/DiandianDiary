@@ -1,5 +1,5 @@
 /**
- * 聊天会话：一话题一文档上云，本机只缓存「当前会话」。
+ * 聊天会话：一话题一文档上云，本机按话题保留快照及当前话题。
  * - 换设备：本机没有会话 → 自动新建会话（另一台设备默认开新聊天）
  * - 旧会话：目录里点开即切换为当前会话，可以接着聊
  * - 照片：云端只存 fileId，打开会话时统一换成可展示链接，同时保留 fileId 供草稿保存复用
@@ -53,7 +53,23 @@ export function loadLocalSession(petId: string): ChatSession | null {
 }
 
 export function saveLocalSession(petId: string, session: ChatSession): void {
+  const previous = loadLocalSession(petId);
+  if (previous) saveSessionSnapshot(petId, previous);
+  saveSessionSnapshot(petId, session);
   wx.setStorageSync(localKey(petId), session);
+}
+
+/** 与当前槽位共用账号/家庭前缀，退出及权限清理会一并移除。 */
+export function saveSessionSnapshot(petId: string, session: ChatSession): void {
+  wx.setStorageSync(`${localKey(petId)}:topic:${session.id || session.clientId}`, session);
+  if (session.id) wx.removeStorageSync(`${localKey(petId)}:topic:${session.clientId}`);
+}
+
+function localSnapshot(petId: string, id: string): ChatSession | null {
+  const current = loadLocalSession(petId);
+  if (current?.id === id) return current;
+  const saved = wx.getStorageSync(`${localKey(petId)}:topic:${id}`);
+  return saved && Array.isArray(saved.messages) ? saved : null;
 }
 
 /** 新会话：新的 clientId 保证服务端幂等，且不会串到别的会话上 */
@@ -139,6 +155,9 @@ export async function readSession(petId: string, id: string): Promise<ChatSessio
   assertScope(s, epoch);
   const result = await hydrate(doc, petId);
   assertScope(s, epoch);
+  const local = localSnapshot(petId, id);
+  // 同版本的云端内容不包含尚未确认的本机照片，不能用它覆盖完整快照。
+  if (local && local.version === result.version) return { ...local, title: result.title, summary: result.summary };
   return result;
 }
 
@@ -157,7 +176,7 @@ export async function pullSession(petId: string, session: ChatSession): Promise<
 }
 
 /**
- * 保存会话：只同步已经上云（保存进日记）的照片，其余<｜hy_place▁holder▁no▁813｜>在本机；版本号防覆盖。
+ * 保存会话：只同步已经上云（保存进日记）的照片，其余留在本机；版本号防覆盖。
  * cacheLocal=false 时只写云端——例如切换话题后补推旧会话，不能把旧会话写回「当前会话」槽位。
  */
 export async function pushSession(petId: string, session: ChatSession, cacheLocal = true): Promise<ChatSession> {
@@ -199,6 +218,7 @@ export async function pushSession(petId: string, session: ChatSession, cacheLoca
   const saved: ChatSession = { ...session, id: doc.id, version: doc.version };
   assertScope(s, epoch);
   if (cacheLocal) saveLocalSession(petId, saved);
+  else saveSessionSnapshot(petId, saved);
   return saved;
 }
 
@@ -271,6 +291,10 @@ export async function generateSessionMeta(
 
 export async function removeSession(petId: string, id: string): Promise<void> {
   const s = getCloudSession();
+  const epoch = getCloudSessionEpoch();
   if (!s) return;
   await callCloud('session.delete', { familyId: s.familyId, petId, id });
+  assertScope(s, epoch);
+  wx.removeStorageSync(`${localKey(petId)}:topic:${id}`);
+  if (loadLocalSession(petId)?.id === id) wx.removeStorageSync(localKey(petId));
 }

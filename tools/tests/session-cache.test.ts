@@ -55,6 +55,37 @@ test('超过文档上限不能静默截断旧消息', async () => {
   expect(rpc).not.toHaveBeenCalled();
 });
 
+test('同设备换话题后恢复未确认照片和原始照片，云端仍不上传它们', async () => {
+  const photo = '/local/unsaved.jpg';
+  const current = { ...newSession(), messages: [{ ...row('照片'), photos: [photo], draft: {
+    key: 'card', petId: 'pet', date: null, text: '', tags: [], photos: [photo],
+    status: 'pending' as const, rawInput: { text: '', photos: [photo] },
+  } }] };
+  let doc: any;
+  rpc.mockImplementation(async (action, data) => {
+    if (action === 'session.save') { doc = { ...data, id: 'old', version: 1 }; return doc; }
+    return doc;
+  });
+  await pushSession('pet', current);
+  saveLocalSession('pet', newSession());
+  const restored = await openSession('pet', 'old');
+  expect(doc.messages[0].photos).toEqual([]);
+  expect(doc.messages[0].draft.photos).toEqual([]);
+  expect(restored.messages[0].photos).toEqual([photo]);
+  expect(restored.messages[0].draft!.rawInput!.photos).toEqual([photo]);
+  setCloudSession({ userId: 'other', familyId: 'f' });
+  expect((await readSession('pet', 'old')).messages[0].photos).toEqual([]);
+});
+
+test('旧话题后台同步保留照片快照，不覆盖当前话题', async () => {
+  const old = { ...newSession(), messages: [{ ...row('照片'), photos: ['/local/photo'] }] };
+  const current = newSession(); saveLocalSession('pet', current);
+  rpc.mockResolvedValue({ id: 'old', version: 1, messages: [{ ...row('照片'), photos: [] }] });
+  await pushSession('pet', old, false);
+  expect(loadLocalSession('pet')!.clientId).toBe(current.clientId);
+  expect((await readSession('pet', 'old')).messages[0].photos).toEqual(['/local/photo']);
+});
+
 test('读取等待中切换家庭，不写入另一家庭缓存', async () => {
   rpc.mockImplementation(async () => { setCloudSession({ userId: 'other', familyId: 'other' }); return { id: 'old', version: 1, messages: [] }; });
   await expect(openSession('pet', 'old')).rejects.toThrow('家庭空间已切换');
