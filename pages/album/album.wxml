@@ -17,6 +17,7 @@
   </view>
 
   <scroll-view scroll-y class="body" enhanced show-scrollbar="{{false}}">
+    <view wx:if="{{photoError}}" class="jd-refresh-note"><text>{{photoError}}</text><t-button size="small" variant="text" bindtap="loadPhotos">重试照片</t-button></view>
     <view wx:if="{{loadError && records.length}}" class="jd-refresh-note">
       <text>刷新失败，正在显示已缓存的记录</text>
       <t-button size="small" variant="text" theme="primary" loading="{{refreshing}}" disabled="{{refreshing}}" bindtap="onRetry">重试</t-button>
@@ -105,6 +106,7 @@
         </view>
       </view>
     </block>
+    <t-button wx:if="{{hasMore}}" variant="text" theme="primary" block bindtap="onLoadMore">查看更多回忆</t-button>
     <view class="body-pad"></view>
   </scroll-view>
 

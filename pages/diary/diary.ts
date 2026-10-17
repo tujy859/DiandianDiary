@@ -6,7 +6,7 @@ import {
 } from '../../utils/store';
 import { displayDate, relDay } from '../../utils/date';
 import { extractTags } from '../../utils/intent';
-import { updateRecord, removeRecord, refreshCloudIfStale } from '../../utils/repository';
+import { updateRecord, removeRecord, refreshRecord, displayRecordPhotos } from '../../utils/repository';
 import { guardReady } from '../../utils/onboard';
 import { diarySaveFeedback } from '../../utils/save-feedback';
 import { SaveProgress, saveLoadingTitle } from '../../utils/save-progress';
@@ -26,6 +26,7 @@ Page({
     originalExpanded: false,
     canEdit: false,
     familyRole: '' as FamilyRole,
+    photoError: '',
   },
 
   onLoad(options: Record<string, string>) {
@@ -54,9 +55,10 @@ Page({
     this.setData({ loading: !this.data.record, refreshing: true });
     try {
       // 缓存无记录时必须读云端确认；重试也不能被最近成功刷新的节流跳过。
-      const [, familyRole] = await Promise.all([refreshCloudIfStale(force || !this.data.record ? 0 : 30000), readFamilyRole()]);
+      const [, familyRole] = await Promise.all([refreshRecord(this.data.id), readFamilyRole()]);
       this.setData({ pets: getPets(), familyRole });
       this.reload();
+      await this.loadPhotos();
     } catch (err: any) {
       // 保留已有内容；读取失败不能当作云端确认记录不存在。
       // 权限 / 身份错误可能已清理缓存，此时不能保留失效的页面快照。
@@ -71,6 +73,18 @@ Page({
 
   onRetry() {
     return this.loadRecord(true);
+  },
+
+  async loadPhotos() {
+    const record = this.data.record, epoch = getCloudSessionEpoch();
+    this.setData({ photoError: '' });
+    if (!record) return;
+    try {
+      const [display] = await displayRecordPhotos([record]);
+      if (epoch === getCloudSessionEpoch() && this.data.record === record) this.setData({ record: { ...record, photos: display.photos } });
+    } catch (_) {
+      if (epoch === getCloudSessionEpoch() && this.data.record === record) this.setData({ photoError: '照片暂时无法显示，文字已保留' });
+    }
   },
 
   goAlbum() {

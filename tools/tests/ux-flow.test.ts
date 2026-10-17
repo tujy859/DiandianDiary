@@ -1,6 +1,6 @@
 /** 真实页面方法的跨页与失败状态回归；所有云端 / 模型请求均为模拟。 */
 import * as store from '../../utils/store';
-import { refreshCloudIfStale, connectCloud } from '../../utils/repository';
+import { refreshCloudIfStale, connectCloud, displayRecordPhotos } from '../../utils/repository';
 import { testConnection } from '../../utils/llm';
 import { openAddPet, consumeAddPetRequest } from '../../utils/pet-navigation';
 import { enableDeveloperMode, disableDeveloperMode } from '../../utils/developer';
@@ -13,7 +13,10 @@ import { CORE_SELF_CHECKS } from '../../utils/self-check';
 jest.mock('tdesign-miniprogram/dialog/index', () => ({ __esModule: true, default: { alert: jest.fn(), confirm: jest.fn() } }), { virtual: true });
 jest.mock('tdesign-miniprogram/toast/index', () => ({ __esModule: true, default: jest.fn() }), { virtual: true });
 jest.mock('tdesign-miniprogram/action-sheet/index', () => ({ __esModule: true, default: { show: jest.fn() } }), { virtual: true });
-jest.mock('../../utils/repository', () => ({ refreshCloudIfStale: jest.fn(), connectCloud: jest.fn() }));
+jest.mock('../../utils/repository', () => ({ refreshCloudIfStale: jest.fn(), connectCloud: jest.fn(),
+  refreshRecord: () => require('../../utils/repository').refreshCloudIfStale(0),
+  displayRecordPhotos: jest.fn(async records => records),
+}));
 jest.mock('../../utils/llm', () => ({ ...jest.requireActual('../../utils/llm'), testConnection: jest.fn() }));
 jest.mock('../../utils/layout', () => ({ resetViewport: jest.fn(), getLayout: () => ({ tabbarHeight: 56, viewportHeight: 667 }) }));
 jest.mock('../../utils/cloud', () => ({ ...jest.requireActual('../../utils/cloud'), callCloud: jest.fn() }));
@@ -343,6 +346,30 @@ test('时光册已有缓存时刷新失败保留记录，手动重试绕过节�
   await album.onRetry();
   expect(refresh).toHaveBeenLastCalledWith(0);
   expect(album.data.loadError).toBe('');
+});
+
+test('时光册分批展示，画廊可找到较早照片，局部显示不裁剪完整事实缓存', async () => {
+  const rows = Array.from({ length: 65 }, (_, i) => ({ ...record, id: `r${i}`, createdAt: 100 - i, photos: i === 64 ? ['cloud://old/photo'] : [] }));
+  store.cacheCloudData([pet], rows);
+  const album = page('album'); await album.onShow();
+  expect(album.data.records).toHaveLength(30); expect(album.data.hasMore).toBe(true);
+  album.onLoadMore(); expect(album.data.records).toHaveLength(60);
+  expect(store.getRecords()).toHaveLength(65);
+  album.onSwitchView({ currentTarget: { dataset: { view: 'gallery' } } });
+  expect(album.data.gallery).toHaveLength(1); expect(album.data.gallery[0].recordId).toBe('r64');
+});
+
+test('照片解析失败只提示图片错误，详情与时间轴正文保持可见', async () => {
+  store.cacheCloudData([pet], [record]);
+  (displayRecordPhotos as jest.Mock).mockRejectedValue(new Error('图片失败'));
+  try {
+    const diary = page('diary'); diary.onLoad({ id: record.id }); await diary.onShow();
+    expect(diary.data.record.text).toBe(record.text); expect(diary.data.loadError).toBe('');
+    expect(diary.data.photoError).toContain('照片');
+    const album = page('album'); await album.onShow(); await Promise.resolve();
+    expect(album.data.records[0].text).toBe(record.text); expect(album.data.loadError).toBe('');
+    expect(album.data.photoError).toContain('照片');
+  } finally { (displayRecordPhotos as jest.Mock).mockImplementation(async records => records); }
 });
 
 test('身份或权限错误清理缓存后，日记和时光册不再展示原页面快照', async () => {

@@ -28,6 +28,8 @@ export interface DiaryRecord {
   text: string;
   tags: string[];
   photos: string[];
+  /** 展示链接与稳定云端标识分开，列表按需解析照片。 */
+  photoIds?: string[];
   createdAt: number;
   updatedAt: number;
   rawInput?: RawInput;

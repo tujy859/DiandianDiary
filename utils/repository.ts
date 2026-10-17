@@ -40,6 +40,9 @@ async function mapUrls(ids: string[], s: local.CloudSession): Promise<Record<str
   sameSession(s);
   const reverse = mediaMap(s);
   Object.keys(map).forEach((id) => { reverse[map[id]] = id; reverse[id] = id; });
+  // 旧签名链接仅用于兼容已打开的编辑表单，限制历史链接累积。
+  const links = Object.keys(reverse).filter(key => /^https:/.test(key));
+  links.slice(0, Math.max(0, links.length - 2048)).forEach(key => delete reverse[key]);
   wx.setStorageSync(mediaKey(s), reverse);
   return map;
 }
@@ -111,7 +114,7 @@ async function allPages<T>(action: string, data: object): Promise<T[]> {
 }
 function hydrate(d: CloudDiary, urls: Record<string, string>): DiaryRecord {
   return { id: d.id, familyId: d.familyId, petId: d.petId, ...d.formatted,
-    photos: d.formatted.photos.map((id) => urls[id] || id), rawInput: d.rawInput,
+    photos: d.formatted.photos.map((id) => urls[id] || id), photoIds: d.formatted.photos.slice(), rawInput: d.rawInput,
     createdAt: d.createdAt, updatedAt: d.updatedAt, createdBy: d.createdBy, version: d.version, formatting: d.formatting };
 }
 export async function refreshCloud(): Promise<void> {
@@ -125,7 +128,8 @@ export async function refreshCloud(): Promise<void> {
     const diaries: CloudDiary[] = [];
     for (const pet of cloudPets) diaries.push(...await allPages<CloudDiary>('diary.list', { familyId: s.familyId, petId: pet.id }));
     const avatarIds = cloudPets.map((p) => p.avatar || '').filter(Boolean);
-    const urls = await mapUrls(diaries.flatMap((d) => d.formatted.photos).concat(avatarIds), s);
+    // 日记文字全量保留用于准确查询；照片仅在列表可见或打开详情时解析。
+    const urls = await mapUrls(avatarIds, s);
     sameSession(s);
     // 宠物头像在云端存 fileId，缓存里统一换成可展示的临时链接（与日记照片同一生命周期）
     const pets = cloudPets.map((p) => ({ ...p, avatar: p.avatar ? (urls[p.avatar] || '') : '' }));
@@ -142,6 +146,38 @@ export async function refreshCloud(): Promise<void> {
     }
     throw error;
   }
+}
+
+/** 只读取目标日记；图片显示失败不阻止正文缓存提交。 */
+export async function refreshRecord(id: string): Promise<void> {
+  const s = session(), revision = local.getCloudCacheRevision();
+  try {
+    const identity = await callCloud<{ id: string }>('auth.login');
+    if (identity.id !== s.userId) throw new CloudError('UNAUTHENTICATED', '微信账号已变更，请重新连接云端');
+    let d: CloudDiary | null = null;
+    try { d = await callCloud<CloudDiary>('diary.get', { familyId: s.familyId, id }); }
+    catch (error) { if (!(error instanceof CloudError) || error.code !== 'NOT_FOUND') throw error; }
+    const pets = d && !local.getPets().some(p => p.id === d!.petId)
+      ? await allPages<Pet>('pet.list', { familyId: s.familyId }) : local.getPets();
+    sameSession(s);
+    if (local.getCloudCacheRevision() === revision) {
+      cacheCloudData(pets, local.getRecords().filter(r => r.id !== id).concat(d ? [hydrate(d, {})] : []));
+    }
+  } catch (error) {
+    if (error instanceof CloudError && ['FORBIDDEN', 'UNAUTHENTICATED'].includes(error.code)) {
+      sameSession(s); local.clearAll();
+      if (error.code === 'FORBIDDEN') { forgetFamilyState(s.userId, s.familyId); setCloudSession({ userId: s.userId, familyId: '' }); }
+    }
+    throw error;
+  }
+}
+
+/** 返回展示副本，不将局部列表写回完整事实缓存。 */
+export async function displayRecordPhotos(records: DiaryRecord[]): Promise<DiaryRecord[]> {
+  const ids = records.flatMap(r => r.photoIds || r.photos.filter(p => p.startsWith('cloud://')));
+  if (!ids.length) return records;
+  const urls = await resolvePhotoUrls(ids);
+  return records.map(r => ({ ...r, photos: (r.photoIds || r.photos).map(id => urls[id] || id) }));
 }
 
 /**

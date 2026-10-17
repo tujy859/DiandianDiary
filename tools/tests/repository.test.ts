@@ -260,6 +260,22 @@ test('云端版本冲突不覆盖本机已读取记录；刷新后可以重新�
   expect(local.getRecord(first.id)!.version).toBe(3);
 });
 
+test('刷新文字不解析全部照片，详情只读目标，图片服务失败不丢正文', async () => {
+  await repo.connectCloud(); const pet = await repo.savePet({ name: '演示', species: '猫' });
+  const rec = await repo.addRecord(input(pet.id));
+  const doc = db.dump('diaries')[0];
+  await db.set('diaries', rec.id, { ...doc, formatted: { ...doc.formatted, photos: ['cloud://demo/photo'] } });
+  failAction = 'media.urls'; rpc.mockClear();
+  await repo.refreshCloud();
+  expect(local.getRecord(rec.id)!.text).toBe(rec.text);
+  expect(rpc.mock.calls.some(([action]) => action === 'media.urls')).toBe(false);
+  rpc.mockClear(); await repo.refreshRecord(rec.id);
+  expect(rpc.mock.calls.some(([action]) => action === 'diary.list')).toBe(false);
+  expect(rpc.mock.calls.some(([action]) => action === 'diary.get')).toBe(true);
+  await expect(repo.displayRecordPhotos([local.getRecord(rec.id)!])).rejects.toMatchObject({ code: 'NETWORK' });
+  expect(local.getRecord(rec.id)!.text).toBe(rec.text);
+});
+
 test('宠物编辑保留打开表单时的版本，不随缓存刷新升级', async () => {
   await repo.connectCloud();
   const first = await repo.savePet({ name: '最初名字', species: '猫' });

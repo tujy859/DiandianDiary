@@ -1,9 +1,9 @@
 import { petAvatar } from '../../utils/pet-avatars';
 import {
-  getPets, getCurrentPet, setCurrentPet, getRecords, Pet, DiaryRecord, getCloudSession, getCloudCacheRevision,
+  getPets, getCurrentPet, setCurrentPet, getRecords, Pet, DiaryRecord, getCloudSession, getCloudCacheRevision, getCloudSessionEpoch,
 } from '../../utils/store';
 import { displayDate, relDay } from '../../utils/date';
-import { refreshCloudIfStale } from '../../utils/repository';
+import { refreshCloudIfStale, displayRecordPhotos } from '../../utils/repository';
 import { getLayout, resetViewport } from '../../utils/layout';
 import { showPetPicker } from '../../utils/pet-picker';
 import { guardReady } from '../../utils/onboard';
@@ -35,6 +35,9 @@ Page({
     loading: true,
     refreshing: false,
     loadError: '',
+    photoError: '',
+    visibleCount: 30,
+    hasMore: false,
   },
 
   /** 缓存优先渲染；后台刷新后只有数据真的变化才重渲染 */
@@ -92,10 +95,17 @@ Page({
   reload() {
     const pet = this.data.currentPet;
     if (!pet) {
-      this.setData({ records: [], gallery: [] });
+      this.setData({ records: [], gallery: [], hasMore: false, photoError: '' });
       return;
     }
-    const list = getRecords(pet.id);
+    const all = getRecords(pet.id).filter(r => this.data.view !== 'gallery' || r.photos.length);
+    const list = all.slice(0, this.data.visibleCount);
+    this.setData({ hasMore: all.length > list.length });
+    this.renderRecords(list);
+    this.loadPhotos();
+  },
+
+  renderRecords(list: DiaryRecord[]) {
     const records: TimelineItem[] = list.map((r) => ({
       ...r,
       dateText: displayDate(r.date),
@@ -110,8 +120,26 @@ Page({
     this.setData({ records, gallery });
   },
 
+  async loadPhotos() {
+    const records = this.data.records, epoch = getCloudSessionEpoch();
+    this.setData({ photoError: '' });
+    try {
+      const display = await displayRecordPhotos(records);
+      if (epoch === getCloudSessionEpoch() && this.data.records === records) this.renderRecords(display);
+    } catch (_) {
+      if (epoch === getCloudSessionEpoch() && this.data.records === records) this.setData({ photoError: '照片暂时无法显示，文字已保留' });
+    }
+  },
+
+  onLoadMore() {
+    this.setData({ visibleCount: this.data.visibleCount + 30 });
+    this.reload();
+  },
+
   onSwitchView(e: WechatMiniprogram.TouchEvent) {
     this.setData({ view: e.currentTarget.dataset.view });
+    this.setData({ visibleCount: 30 });
+    this.reload();
   },
 
   onOpenDiary(e: WechatMiniprogram.TouchEvent) {
@@ -137,7 +165,7 @@ Page({
     const pet = this.data.pets[index];
     if (!pet) return;
     setCurrentPet(pet.id);
-    this.setData({ currentPet: pet, petAvatar: petAvatar(pet) });
+    this.setData({ currentPet: pet, petAvatar: petAvatar(pet), visibleCount: 30 });
     this.reload();
   },
 

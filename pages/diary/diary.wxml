@@ -1,5 +1,6 @@
 <test-space-bar />
 <view wx:if="{{record}}" class="page">
+  <view wx:if="{{photoError}}" class="jd-refresh-note"><text>{{photoError}}</text><t-button size="small" variant="text" bindtap="loadPhotos">重试照片</t-button></view>
   <view wx:if="{{loadError}}" class="jd-refresh-note">
     <text>刷新失败，正在显示已缓存的日记</text>
     <t-button size="small" variant="text" theme="primary" loading="{{refreshing}}" disabled="{{refreshing}}" bindtap="onRetry">重试</t-button>
