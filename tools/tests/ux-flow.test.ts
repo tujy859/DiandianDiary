@@ -41,7 +41,7 @@ beforeEach(() => {
   consumeAddPetRequest();
   refresh.mockReset().mockResolvedValue(true);
   (testConnection as jest.Mock).mockReset().mockResolvedValue('收到');
-  (callCloud as jest.Mock).mockReset().mockResolvedValue([{ id: 'demo-family', name: '演示家庭' }]);
+  (callCloud as jest.Mock).mockReset().mockResolvedValue([{ id: 'demo-family', name: '演示家庭', members: [{ userId: 'demo-user', role: 'owner' }] }]);
   jest.spyOn(wx, 'switchTab').mockImplementation(() => {});
 });
 afterEach(() => jest.restoreAllMocks());
@@ -59,6 +59,23 @@ function page(name: string) {
 }
 
 const cloudConfig = { source: 'cloud' as const, provider: '微信云开发 AI', baseUrl: '', apiKey: '', model: 'hy3' };
+
+test('成员能阅读他人日记但不能打开编辑；作者与创建者可编辑，成员不能管理宠物', async () => {
+  const shared = { ...record, familyId: 'demo-family', createdBy: 'another', version: 1 };
+  store.cacheCloudData([pet], [shared]);
+  (callCloud as jest.Mock).mockResolvedValue([{ id: 'demo-family', members: [{ userId: 'demo-user', role: 'member' }] }]);
+  const diary = page('diary'); diary.onLoad({ id: record.id }); await diary.onShow();
+  expect(diary.data.record.text).toBe(record.text);
+  expect(diary.data.canEdit).toBe(false); diary.onEdit(); expect(diary.data.editorVisible).toBe(false);
+  const mine = page('mine'); await mine.onShow(); mine.onAddPet();
+  expect(mine.data.canManagePets).toBe(false); expect(mine.data.formVisible).toBe(false);
+  store.cacheCloudData([pet], [{ ...shared, createdBy: 'demo-user' }]); await diary.onShow();
+  expect(diary.data.canEdit).toBe(true);
+  store.cacheCloudData([pet], [shared]);
+  (callCloud as jest.Mock).mockResolvedValue([{ id: 'demo-family', members: [{ userId: 'demo-user', role: 'owner' }] }]);
+  await diary.onShow(); await mine.onShow();
+  expect(diary.data.canEdit).toBe(true); expect(mine.data.canManagePets).toBe(true);
+});
 const chooseCloud = { currentTarget: { dataset: { source: 'cloud' } } };
 
 test('请求日志单独复制只导出选中请求，复制全部保留其他请求且均脱敏', () => {

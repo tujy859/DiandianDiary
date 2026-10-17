@@ -11,6 +11,7 @@ import { guardReady } from '../../utils/onboard';
 import { diarySaveFeedback } from '../../utils/save-feedback';
 import { SaveProgress, saveLoadingTitle } from '../../utils/save-progress';
 import { CloudError } from '../../utils/cloud';
+import { readFamilyRole, canEditDiary, FamilyRole } from '../../utils/permissions';
 
 Page({
   data: {
@@ -23,6 +24,8 @@ Page({
     editorVisible: false,
     editorValue: {} as any,
     originalExpanded: false,
+    canEdit: false,
+    familyRole: '' as FamilyRole,
   },
 
   onLoad(options: Record<string, string>) {
@@ -41,7 +44,7 @@ Page({
   async loadRecord(force = false) {
     if (this.data.refreshing) return;
     // 先用本地缓存渲染：文字立即可见，照片按 <image> 各自进度加载
-    this.setData({ pets: getPets(), loadError: '' });
+    this.setData({ pets: getPets(), loadError: '', familyRole: '', canEdit: false });
     this.reload();
     if (!getCloudSession()) {
       this.setData({ loadError: '请先连接云端，再读取这条日记' });
@@ -51,8 +54,8 @@ Page({
     this.setData({ loading: !this.data.record, refreshing: true });
     try {
       // 缓存无记录时必须读云端确认；重试也不能被最近成功刷新的节流跳过。
-      await refreshCloudIfStale(force || !this.data.record ? 0 : 30000);
-      this.setData({ pets: getPets() });
+      const [, familyRole] = await Promise.all([refreshCloudIfStale(force || !this.data.record ? 0 : 30000), readFamilyRole()]);
+      this.setData({ pets: getPets(), familyRole });
       this.reload();
     } catch (err: any) {
       // 保留已有内容；读取失败不能当作云端确认记录不存在。
@@ -77,7 +80,7 @@ Page({
   reload() {
     const rec = this.data.id ? getRecord(this.data.id) : null;
     if (!rec) {
-      this.setData({ record: null, loading: false, originalExpanded: false });
+      this.setData({ record: null, loading: false, originalExpanded: false, canEdit: false });
       return;
     }
     const pet = this.data.pets.find((p) => p.id === rec.petId);
@@ -90,6 +93,7 @@ Page({
         petAvatar: petAvatar(pet || { species: '其他' }),
       },
       loading: false,
+      canEdit: canEditDiary(rec, this.data.familyRole),
     });
   },
 
@@ -103,6 +107,7 @@ Page({
   },
 
   onEdit() {
+    if (getCloudSession() && !this.data.canEdit) return;
     const rec = this.data.record!;
     this._editRecord = { ...rec, tags: rec.tags.slice() };
     this._editEpoch = getCloudSessionEpoch();
@@ -123,6 +128,7 @@ Page({
     wx.showLoading({ title: '保存中…', mask: true });
     let progress: SaveProgress = { stage: 'local' };
     try {
+      if (getCloudSession() && !this.data.canEdit) throw new CloudError('FORBIDDEN', '当前记录不可编辑');
       const baseline = this._editRecord;
       if (!baseline || this._editEpoch !== getCloudSessionEpoch()) throw new CloudError('SESSION_CHANGED', '请重新打开编辑');
       const savedPhotos = await persistPhotos(photos);
@@ -144,6 +150,7 @@ Page({
   },
 
   onDelete() {
+    if (!this.data.canEdit) return;
     Dialog.confirm({
       context: this,
       selector: '#t-dialog',

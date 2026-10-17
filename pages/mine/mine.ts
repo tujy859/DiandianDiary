@@ -10,6 +10,7 @@ import { guardReady } from '../../utils/onboard';
 import { consumeAddPetRequest } from '../../utils/pet-navigation';
 import { isDeveloperMode, enableDeveloperMode, disableDeveloperMode } from '../../utils/developer';
 import { isTestFamily } from '../../utils/new-user-test';
+import { readFamilyRole } from '../../utils/permissions';
 
 const SPECIES = ['猫', '狗', '其他'];
 
@@ -29,6 +30,7 @@ Page({
     aboutTaps: 0,
     tabbarHeight: 60,
     cloudOn: false,
+    canManagePets: false,
   },
 
   async onShow() {
@@ -39,12 +41,16 @@ Page({
     const revision = getCloudCacheRevision();
     this.setData({ cloudOn: !!getCloudSession(), tabbarHeight: getLayout(true).tabbarHeight, devMode: isDeveloperMode() });
     this.reload();
-    if (consumeAddPetRequest()) this.onAddPet();
+    const addRequested = consumeAddPetRequest();
+    this.setData({ canManagePets: false });
     this.setData({ modelNote: isModelReady(getModelConfig()) ? '已接入' : '未接入' });
     const tabbar = this.getTabBar && this.getTabBar();
     if (tabbar) tabbar.setData({ selected: 2 });
     if (!getCloudSession()) return;
     try {
+      const role = await readFamilyRole();
+      this.setData({ canManagePets: role === 'owner' });
+      if (addRequested && role === 'owner') this.onAddPet();
       const refreshed = await refreshCloudIfStale();
       if (refreshed && getCloudCacheRevision() !== revision) this.reload();
     } catch (err: any) {
@@ -66,6 +72,7 @@ Page({
   /* ---------- 宠物表单 ---------- */
 
   onAddPet() {
+    if (getCloudSession() && !this.data.canManagePets) return;
     this._petEditVersion = undefined;
     this._petCreateId = uid();
     this.setData({
@@ -78,6 +85,7 @@ Page({
   },
 
   onEditPet(e: WechatMiniprogram.TouchEvent) {
+    if (getCloudSession() && !this.data.canManagePets) return;
     const pet = this.data.pets.find((p) => p.id === e.currentTarget.dataset.id);
     if (!pet) return;
     this._petEditVersion = pet.version;
@@ -129,6 +137,7 @@ Page({
   },
 
   async onSavePet() {
+    if (getCloudSession() && !this.data.canManagePets) return;
     if (this._savingPet) return;
     const { id, name, species, breed, birthday, avatarId } = this.data.form;
     if (!name.trim()) {
@@ -152,6 +161,7 @@ Page({
   },
 
   onDeletePet(e: WechatMiniprogram.TouchEvent) {
+    if (getCloudSession() && !this.data.canManagePets) return;
     const pet = this.data.pets.find((p) => p.id === e.currentTarget.dataset.id);
     if (!pet) return;
     Dialog.confirm({

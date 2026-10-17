@@ -10,12 +10,12 @@
   </view>
 
   <!-- 宠物档案 -->
-  <view class="section-heading"><view class="section-title">宠物档案</view><view class="section-add" bindtap="onAddPet" aria-role="button"><t-icon name="add" size="28rpx" color="#32694F" /><text>添加宠物</text></view></view>
+  <view class="section-heading"><view class="section-title">宠物档案</view><view wx:if="{{canManagePets}}" class="section-add" bindtap="onAddPet" aria-role="button"><t-icon name="add" size="28rpx" color="#32694F" /><text>添加宠物</text></view></view>
   <view class="jd-card panel">
     <view wx:if="{{!pets.length}}" class="panel-empty">
       <view>还没有小伙伴</view>
       <view class="panel-empty-sub">名字和物种，就能开启陪伴记录</view>
-      <t-button theme="primary" size="medium" shape="round" bindtap="onAddPet">添加宠物</t-button>
+      <t-button wx:if="{{canManagePets}}" theme="primary" size="medium" shape="round" bindtap="onAddPet">添加宠物</t-button>
     </view>
     <view wx:for="{{pets}}" wx:key="id" class="pet-row" data-id="{{item.id}}" bindtap="onEditPet">
       <image class="pet-avatar" src="{{item.avatar}}" mode="aspectFit" />
@@ -23,9 +23,11 @@
         <text class="pet-name">{{item.name}}</text>
         <text class="pet-sub">{{item.species}}{{item.breed ? ' · ' + item.breed : ''}}{{item.birthdayText ? ' · ' + item.birthdayText + ' 出生' : ''}}</text>
       </view>
-      <t-icon name="chevron-right" size="30rpx" color="#A4ACA5" />
+      <t-icon wx:if="{{canManagePets}}" name="chevron-right" size="30rpx" color="#A4ACA5" />
     </view>
   </view>
+
+  <view wx:if="{{!canManagePets}}" class="panel-empty-sub">宠物档案由家庭创建者管理</view>
 
   <!-- 设置 -->
   <view class="section-title">设置</view>

@@ -74,7 +74,7 @@ test('日记编辑保存使用简短阶段标题，超时给分类弹窗并保�
     (global as any).Page = value => { definition = value; };
     require('../../pages/diary/diary.ts');
   } finally { (global as any).Page = previous; }
-  const page = { ...definition, data: { ...definition.data, id: 'demo', record: { id: 'demo', text: '演示', tags: [], photos: [], version: 1 }, editorVisible: true },
+  const page = { ...definition, data: { ...definition.data, id: 'demo', canEdit: true, record: { id: 'demo', text: '演示', tags: [], photos: [], version: 1 }, editorVisible: true },
     setData(patch: any) { Object.assign(this.data, patch); } };
   page.onEdit();
   page.data.record = { ...page.data.record, text: '刷新后的内容', version: 2 };
