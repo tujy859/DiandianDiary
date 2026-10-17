@@ -11,7 +11,7 @@ import {
 import {
   ChatSession, SessionIndex, MAX_MESSAGES,
   loadLocalSession, saveLocalSession, newSession, pushSession, pullSession, listSessions, removeSession,
-  generateTitle, generateSessionMeta, readSession,
+  generateTitle, generateSessionMeta, readSession, saveSessionSnapshot,
 } from '../../utils/chat-store';
 import { extractTags } from '../../utils/intent';
 import { chatWithModel } from '../../utils/llm';
@@ -397,6 +397,10 @@ Page({
     const scope = JSON.stringify(getCloudSession());
     const epoch = getCloudSessionEpoch();
     if (!petId || !target || !getCloudSession()) return;
+    target.dirty = true;
+    target.localRevision = (target.localRevision || 0) + 1;
+    if (this._session === target) saveLocalSession(petId, target);
+    else saveSessionSnapshot(petId, target);
     this._syncPending++;
     // 同一页面的保存按顺序执行，避免用户消息和 AI 回复同时以旧版本覆盖彼此。
     const work = this._syncTail.catch(() => {}).then(async () => {
@@ -409,17 +413,19 @@ Page({
         const saved = await pushSession(petId, snapshot, false);
         target.id = saved.id;
         target.version = saved.version;
+        target.dirty = target.localRevision !== snapshot.localRevision;
         if (this._disposed || getCloudSessionEpoch() !== epoch || JSON.stringify(getCloudSession()) !== scope) return;
         if (this._session?.clientId === target.clientId && this.data.currentPet?.id === petId) {
           this._session.id = saved.id;
           this._session.version = saved.version;
+          this._session.dirty = this._session.localRevision !== snapshot.localRevision;
           this.setData({ sessionId: saved.id, sessionVersion: saved.version });
           saveLocalSession(petId, this._session);
         }
       } catch (err: any) {
         if (this._session?.clientId !== target.clientId || this.data.currentPet?.id !== petId) return;
         Toast({ context: this, selector: '#t-toast', message: String(err?.code) === 'CONFLICT'
-          ? '另一台设备更新了话题，本机内容已保留，请重新打开话题后继续' : err.message || '会话同步失败', theme: 'error' });
+          ? '话题存在冲突，本机内容已保留。点击话题目录中的当前话题，可另存为新话题' : err.message || '会话同步失败', theme: 'error' });
       }
     }).finally(() => { this._syncPending--; });
     this._syncTail = work;
@@ -470,10 +476,24 @@ Page({
   async onOpenSession(e: WechatMiniprogram.TouchEvent) {
     const { id } = e.currentTarget.dataset;
     const petId = this.data.currentPet?.id;
-    if (!petId || !id || id === this.data.sessionId) {
+    if (!petId || !id) {
       this.setData({ sessionListVisible: false });
       return;
     }
+    if ((id === this.data.sessionId || id === `local:${this._session?.clientId}`) && this._session?.dirty) {
+      const active = this._session;
+      const epoch = getCloudSessionEpoch();
+      try {
+        await Dialog.confirm({ context: this, selector: '#t-dialog', title: '保留为新话题？',
+          content: '此话题有未同步内容。将本机内容另存为新话题，原云端话题保留。', confirmBtn: '另存新话题', cancelBtn: '继续保留本机' });
+        if (this._disposed || this._session !== active || epoch !== getCloudSessionEpoch()) return;
+        this._session = { ...newSession(), title: active.title, summary: active.summary, messages: active.messages };
+        this.setData({ sessionId: '', sessionVersion: 0, sessionListVisible: false });
+        this.persist();
+      } catch (_) { /* 取消保留本机内容 */ }
+      return;
+    }
+    if (id === this.data.sessionId) { this.setData({ sessionListVisible: false }); return; }
     wx.showLoading({ title: '打开会话…', mask: true });
     this.clearTopicTimer();
     this.cancelGeneration();

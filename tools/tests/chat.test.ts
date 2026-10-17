@@ -509,6 +509,18 @@ test('旧话题同步迟到，不能覆盖正在聊的新话题', async () => {
   expect(page.data.messages[0].text).toBe('新话题');
 });
 
+test('同步失败后持久保留未同步标志，成功重试才清除', async () => {
+  store.setCloudSession({ userId: 'u', familyId: 'f' });
+  page._session = { ...sessions.newSession(), id: 's', version: 1, messages: [] };
+  page.data.sessionId = 's'; page.data.sessionVersion = 1;
+  const push = jest.spyOn(sessions, 'pushSession').mockRejectedValueOnce(new CloudError('CONFLICT', '冲突'));
+  await page.syncSession();
+  expect(sessions.loadLocalSession(a.id)!.dirty).toBe(true);
+  push.mockImplementation(async (_pet, s) => ({ ...s, version: 2, dirty: false }));
+  await page.syncSession();
+  expect(sessions.loadLocalSession(a.id)!.dirty).toBe(false);
+});
+
 test('旧话题标题迟到不会写到新话题', async () => {
   const pending = deferred();
   jest.spyOn(sessions, 'generateTitle').mockReturnValueOnce(pending.promise);

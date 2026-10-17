@@ -32,6 +32,8 @@ export interface ChatSession {
   title: string;
   summary: string;
   messages: ChatMessage[];
+  dirty?: boolean;
+  localRevision?: number;
 }
 
 function localKey(petId: string): string {
@@ -49,6 +51,8 @@ export function loadLocalSession(petId: string): ChatSession | null {
     title: String(raw.title || ''),
     summary: String(raw.summary || ''),
     messages: raw.messages,
+    dirty: raw.dirty === true,
+    localRevision: Number(raw.localRevision) || 0,
   };
 }
 
@@ -70,6 +74,12 @@ function localSnapshot(petId: string, id: string): ChatSession | null {
   if (current?.id === id) return current;
   const saved = wx.getStorageSync(`${localKey(petId)}:topic:${id}`);
   return saved && Array.isArray(saved.messages) ? saved : null;
+}
+
+function localTopics(petId: string): ChatSession[] {
+  const prefix = `${localKey(petId)}:topic:`;
+  return (wx.getStorageInfoSync().keys as string[]).filter(k => k.startsWith(prefix))
+    .map(k => wx.getStorageSync(k)).filter(s => s && Array.isArray(s.messages));
 }
 
 /** 新会话：新的 clientId 保证服务端幂等，且不会串到别的会话上 */
@@ -125,6 +135,12 @@ export async function listSessions(petId: string): Promise<SessionIndex[]> {
     items.push(...(page.items || []));
     after = page.next || '';
   } while (after);
+  for (const local of localTopics(petId)) {
+    if (!local.dirty || items.some(item => item.id === local.id)) continue;
+    items.push({ id: local.id || `local:${local.clientId}`, title: local.title || '本机未同步话题',
+      summary: local.summary, messageCount: local.messages.length, version: local.version,
+      startedAt: local.messages[0]?.time || 0, updatedAt: local.messages[local.messages.length - 1]?.time || 0 });
+  }
   return items.sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
@@ -151,12 +167,18 @@ export async function readSession(petId: string, id: string): Promise<ChatSessio
   const s = getCloudSession();
   const epoch = getCloudSessionEpoch();
   if (!s) throw new Error('请先登录');
+  if (id.startsWith('local:')) {
+    const local = localTopics(petId).find(item => item.clientId === id.slice(6) && !item.id);
+    if (!local) throw new Error('本机话题不存在');
+    return local;
+  }
   const doc = await callCloud<any>('session.get', { familyId: s.familyId, petId, id });
   assertScope(s, epoch);
   const result = await hydrate(doc, petId);
   assertScope(s, epoch);
   const local = localSnapshot(petId, id);
   // 同版本的云端内容不包含尚未确认的本机照片，不能用它覆盖完整快照。
+  if (local?.dirty) return local;
   if (local && local.version === result.version) return { ...local, title: result.title, summary: result.summary };
   return result;
 }
@@ -169,7 +191,7 @@ export async function openSession(petId: string, id: string): Promise<ChatSessio
 
 /** 拉取当前会话的云端最新版本；本机有未同步改动时保留本机 */
 export async function pullSession(petId: string, session: ChatSession): Promise<ChatSession> {
-  if (!session.id) return session;
+  if (!session.id || session.dirty) return session;
   const latest = await readSession(petId, session.id);
   if (latest.version > session.version) return latest;
   return { ...session, title: latest.title, summary: latest.summary };
@@ -215,10 +237,14 @@ export async function pushSession(petId: string, session: ChatSession, cacheLoca
     title: session.title, summary: session.summary, messages,
   });
   // 服务端只收已入库的照片；回包不能覆盖本机尚未保存的照片、重试信息和原始输入。
-  const saved: ChatSession = { ...session, id: doc.id, version: doc.version };
+  const saved: ChatSession = { ...session, id: doc.id, version: doc.version, dirty: false };
   assertScope(s, epoch);
   if (cacheLocal) saveLocalSession(petId, saved);
-  else saveSessionSnapshot(petId, saved);
+  else {
+    const newer = localTopics(petId).find(item => item.clientId === session.clientId
+      && (item.localRevision || 0) > (session.localRevision || 0));
+    saveSessionSnapshot(petId, newer ? { ...newer, id: doc.id, version: doc.version } : saved);
+  }
   return saved;
 }
 
@@ -293,6 +319,11 @@ export async function removeSession(petId: string, id: string): Promise<void> {
   const s = getCloudSession();
   const epoch = getCloudSessionEpoch();
   if (!s) return;
+  if (id.startsWith('local:')) {
+    wx.removeStorageSync(`${localKey(petId)}:topic:${id.slice(6)}`);
+    if (loadLocalSession(petId)?.clientId === id.slice(6)) wx.removeStorageSync(localKey(petId));
+    return;
+  }
   await callCloud('session.delete', { familyId: s.familyId, petId, id });
   assertScope(s, epoch);
   wx.removeStorageSync(`${localKey(petId)}:topic:${id}`);

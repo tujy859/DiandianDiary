@@ -1,5 +1,5 @@
 import { callCloud } from '../../utils/cloud';
-import { newSession, readSession, openSession, pushSession, saveLocalSession, loadLocalSession, pullSession, MAX_MESSAGES } from '../../utils/chat-store';
+import { newSession, readSession, openSession, pushSession, saveLocalSession, loadLocalSession, pullSession, listSessions, MAX_MESSAGES } from '../../utils/chat-store';
 import { setCloudSession, ChatMessage } from '../../utils/store';
 
 jest.mock('../../utils/cloud', () => ({ callCloud: jest.fn() }));
@@ -90,4 +90,23 @@ test('读取等待中切换家庭，不写入另一家庭缓存', async () => {
   rpc.mockImplementation(async () => { setCloudSession({ userId: 'other', familyId: 'other' }); return { id: 'old', version: 1, messages: [] }; });
   await expect(openSession('pet', 'old')).rejects.toThrow('家庭空间已切换');
   expect(loadLocalSession('pet')).toBeNull();
+});
+
+test('本机未同步内容在重启、拉取新版和重新打开旧话题后均保留', async () => {
+  const dirty = { ...newSession(), id: 'cloud', version: 1, dirty: true, messages: [row('本机独有')] };
+  saveLocalSession('pet', dirty);
+  rpc.mockResolvedValue({ id: 'cloud', version: 2, messages: [row('远端独有')] });
+  expect((await pullSession('pet', loadLocalSession('pet')!)).messages[0].text).toBe('本机独有');
+  saveLocalSession('pet', newSession());
+  expect((await openSession('pet', 'cloud')).messages[0].text).toBe('本机独有');
+  expect(loadLocalSession('pet')!.dirty).toBe(true);
+});
+
+test('首次同步失败的话题在目录可恢复，不要求先有云端 id', async () => {
+  const dirty = { ...newSession(), dirty: true, messages: [row('尚未上云')] };
+  saveLocalSession('pet', dirty); saveLocalSession('pet', newSession());
+  rpc.mockResolvedValue({ items: [], next: '' });
+  const index = await listSessions('pet');
+  expect(index).toHaveLength(1);
+  expect((await openSession('pet', index[0].id)).messages[0].text).toBe('尚未上云');
 });
