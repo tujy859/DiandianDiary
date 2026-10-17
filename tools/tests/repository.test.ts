@@ -254,8 +254,18 @@ test('云端版本冲突不覆盖本机已读取记录；刷新后可以重新�
   expect(local.getRecord(first.id)!.text).toBe(first.text);
   await repo.refreshCloud();
   expect(local.getRecord(first.id)!.text).toBe('另一台设备修改');
+  await expect(repo.updateRecord(first.id, { text: '基于旧表单的修改' }, undefined, first.version)).rejects.toMatchObject({ code: 'CONFLICT' });
+  expect(db.dump('diaries')[0].formatted.text).toBe('另一台设备修改');
   await repo.updateRecord(first.id, { text: '合并后的内容' });
   expect(local.getRecord(first.id)!.version).toBe(3);
+});
+
+test('宠物编辑保留打开表单时的版本，不随缓存刷新升级', async () => {
+  await repo.connectCloud();
+  const first = await repo.savePet({ name: '最初名字', species: '猫' });
+  await repo.savePet({ ...first, name: '其他设备修改' });
+  await expect(repo.savePet({ ...first, name: '旧表单修改' })).rejects.toMatchObject({ code: 'CONFLICT' });
+  expect(local.getPets()[0].name).toBe('其他设备修改');
 });
 
 test('超过 1MB 的选图原样上传并保存；原始输入复用同一照片，不再次压缩', async () => {

@@ -74,8 +74,10 @@ test('日记编辑保存使用简短阶段标题，超时给分类弹窗并保�
     (global as any).Page = value => { definition = value; };
     require('../../pages/diary/diary.ts');
   } finally { (global as any).Page = previous; }
-  const page = { ...definition, data: { ...definition.data, id: 'demo', record: { text: '演示', tags: [] }, editorVisible: true },
+  const page = { ...definition, data: { ...definition.data, id: 'demo', record: { id: 'demo', text: '演示', tags: [], photos: [], version: 1 }, editorVisible: true },
     setData(patch: any) { Object.assign(this.data, patch); } };
+  page.onEdit();
+  page.data.record = { ...page.data.record, text: '刷新后的内容', version: 2 };
   (updateRecord as jest.Mock).mockImplementationOnce(async (_id, _patch, progress) => {
     progress({ stage: 'upload', photoIndex: 0, photoTotal: 2 });
     throw photoUploadError({ errMsg: 'request:fail timeout private details' });
@@ -86,5 +88,6 @@ test('日记编辑保存使用简短阶段标题，超时给分类弹窗并保�
     expect(loading).toHaveBeenCalledWith({ title: '上传照片 1/2…', mask: true });
     expect(Dialog.alert).toHaveBeenCalledWith(expect.objectContaining({ title: '照片上传超时' }));
     expect(page.data.editorVisible).toBe(true); expect(page._saving).toBe(false);
+    expect(updateRecord).toHaveBeenCalledWith('demo', expect.anything(), expect.any(Function), 1);
   } finally { loading.mockRestore(); }
 });

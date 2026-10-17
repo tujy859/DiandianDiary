@@ -2,7 +2,7 @@ import { petAvatar } from '../../utils/pet-avatars';
 import Dialog from 'tdesign-miniprogram/dialog/index';
 import Toast from 'tdesign-miniprogram/toast/index';
 import {
-  getRecord, getPets, persistPhotos, Pet, DiaryRecord, getCloudSession,
+  getRecord, getPets, persistPhotos, Pet, DiaryRecord, getCloudSession, getCloudSessionEpoch,
 } from '../../utils/store';
 import { displayDate, relDay } from '../../utils/date';
 import { extractTags } from '../../utils/intent';
@@ -10,6 +10,7 @@ import { updateRecord, removeRecord, refreshCloudIfStale } from '../../utils/rep
 import { guardReady } from '../../utils/onboard';
 import { diarySaveFeedback } from '../../utils/save-feedback';
 import { SaveProgress, saveLoadingTitle } from '../../utils/save-progress';
+import { CloudError } from '../../utils/cloud';
 
 Page({
   data: {
@@ -103,6 +104,8 @@ Page({
 
   onEdit() {
     const rec = this.data.record!;
+    this._editRecord = { ...rec, tags: rec.tags.slice() };
+    this._editEpoch = getCloudSessionEpoch();
     this.setData({
       editorVisible: true,
       editorValue: { petId: rec.petId, date: rec.date, text: rec.text, photos: rec.photos.slice() },
@@ -120,12 +123,15 @@ Page({
     wx.showLoading({ title: '保存中…', mask: true });
     let progress: SaveProgress = { stage: 'local' };
     try {
+      const baseline = this._editRecord;
+      if (!baseline || this._editEpoch !== getCloudSessionEpoch()) throw new CloudError('SESSION_CHANGED', '请重新打开编辑');
       const savedPhotos = await persistPhotos(photos);
-      const tags = text !== this.data.record!.text ? extractTags(text) : this.data.record!.tags;
-      await updateRecord(this.data.id, { petId, date, text, photos: savedPhotos, tags }, next => {
+      if (this._editEpoch !== getCloudSessionEpoch()) throw new CloudError('SESSION_CHANGED', '请重新打开编辑');
+      const tags = text !== baseline.text ? extractTags(text) : baseline.tags;
+      await updateRecord(baseline.id, { petId, date, text, photos: savedPhotos, tags }, next => {
         progress = next;
         wx.showLoading({ title: saveLoadingTitle(next), mask: true });
-      });
+      }, baseline.version);
       wx.hideLoading();
       this.setData({ editorVisible: false });
       this.reload();

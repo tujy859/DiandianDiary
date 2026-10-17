@@ -17,7 +17,7 @@ export function diarySaveMessage(error: any): string {
     case 'UNAUTHENTICATED': return '登录已失效，请重新登录后保存';
     case 'NO_FAMILY': return '请先创建或加入家庭，再保存日记';
     case 'FORBIDDEN': return '当前家庭访问权限已变化，请刷新后重试';
-    case 'CONFLICT': return '这条记录已有新内容，请刷新后再保存';
+    case 'CONFLICT': return '这条记录已有新内容，请先保留本次修改，关闭编辑并刷新，再重新打开编辑核对';
     case 'INVALID': return '记录内容未通过检查，请检查日期、文字和照片后重试';
     case 'NOT_FOUND': return '这条记录或宠物已不存在，请刷新后重试';
     case 'MEDIA_UNAVAILABLE': return '照片暂时无法显示，请刷新确认日记保存结果';

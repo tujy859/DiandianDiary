@@ -66,6 +66,7 @@ Page({
   /* ---------- 宠物表单 ---------- */
 
   onAddPet() {
+    this._petEditVersion = undefined;
     this._petCreateId = uid();
     this.setData({
       formVisible: true,
@@ -79,6 +80,7 @@ Page({
   onEditPet(e: WechatMiniprogram.TouchEvent) {
     const pet = this.data.pets.find((p) => p.id === e.currentTarget.dataset.id);
     if (!pet) return;
+    this._petEditVersion = pet.version;
     this.setData({
       formVisible: true,
       form: { id: pet.id, name: pet.name, species: pet.species, breed: pet.breed || '', birthday: pet.birthday || '', avatarId: avatarIdFor(pet) },
@@ -140,7 +142,7 @@ Page({
     this._savingPet = true;
     try {
       if (!this._petCreateId) this._petCreateId = uid();
-      await savePet({ id: id || undefined, name, species, breed, birthday, avatarId, clientId: this._petCreateId });
+      await savePet({ id: id || undefined, version: this._petEditVersion, name, species, breed, birthday, avatarId, clientId: this._petCreateId });
       this.setData({ formVisible: false });
       this.reload();
       Toast({ context: this, selector: '#t-toast', message: id ? '已保存' : '欢迎新伙伴', theme: 'success' });

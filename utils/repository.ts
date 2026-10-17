@@ -217,7 +217,7 @@ export async function savePet(input: Partial<Pet> & { name: string; species: str
     avatarId = input.avatar.indexOf('cloud://') === 0 ? input.avatar : (await uploadPhotos([input.avatar], s))[0];
     sameSession(s);
   }
-  const pet = await callCloud<Pet>('pet.save', { ...input, id: input.id || undefined, ...(input.avatar !== undefined ? { avatar: avatarId } : {}), familyId: s.familyId, version: old?.version, clientId: input.clientId || uid() });
+  const pet = await callCloud<Pet>('pet.save', { ...input, id: input.id || undefined, ...(input.avatar !== undefined ? { avatar: avatarId } : {}), familyId: s.familyId, version: input.version ?? old?.version, clientId: input.clientId || uid() });
   sameSession(s);
   const savedAvatar = pet.avatar || '';
   const urls = savedAvatar ? await mapUrls([savedAvatar], s) : {};
@@ -251,7 +251,7 @@ export async function addRecord(input: { petId: string; date: string; text: stri
   cacheCloudData(local.getPets(), local.getRecords().filter((r) => r.id !== rec.id).concat(rec));
   return rec;
 }
-export async function updateRecord(id: string, patch: Partial<DiaryRecord>, onProgress?: SaveProgressObserver): Promise<DiaryRecord | null> {
+export async function updateRecord(id: string, patch: Partial<DiaryRecord>, onProgress?: SaveProgressObserver, expectedVersion?: number): Promise<DiaryRecord | null> {
   const old = local.getRecord(id);
   if (!old) throw new Error('记录不存在，请刷新');
   const s = session();
@@ -259,7 +259,7 @@ export async function updateRecord(id: string, patch: Partial<DiaryRecord>, onPr
   const photos = await uploadPhotos(value.photos, s, undefined, onProgress);
   sameSession(s);
   notifySaveProgress(onProgress, { stage: 'save', photoTotal: value.photos.length });
-  const d = await callCloud<CloudDiary>('diary.save', { id, version: old.version, familyId: s.familyId, petId: value.petId,
+  const d = await callCloud<CloudDiary>('diary.save', { id, version: expectedVersion ?? old.version, familyId: s.familyId, petId: value.petId,
     formatted: { date: value.date, text: value.text, tags: value.tags, photos }, mode: 'manual' });
   sameSession(s);
   notifySaveProgress(onProgress, { stage: 'refresh' });
