@@ -98,7 +98,16 @@ test('云端更新文字后仍保留本机未确认照片，不复活云端已�
   expect(restored.messages[0].draft!.rawInput!.photos).toEqual(['/local/unsaved']);
 });
 
-
+test('首次写入响应丢失后幂等返回旧内容，必须补交新增消息才标记同步成功', async () => {
+  const current = { ...newSession(), dirty: true, messages: [row('原消息'), row('后来新增')] };
+  rpc.mockImplementation(async (_action, data) => data.id
+    ? { ...data, version: 2 } : { ...data, id: 'created', version: 1, messages: [data.messages[0]] });
+  const saved = await pushSession('pet', current);
+  expect(rpc).toHaveBeenCalledTimes(2);
+  expect(rpc.mock.calls[1][1]).toMatchObject({ id: 'created', version: 1, messages: expect.any(Array) });
+  expect(rpc.mock.calls[1][1].messages).toHaveLength(2);
+  expect(saved.dirty).toBe(false); expect(saved.version).toBe(2);
+});
 
 test('读取等待中切换家庭，不写入另一家庭缓存', async () => {
   rpc.mockImplementation(async () => { setCloudSession({ userId: 'other', familyId: 'other' }); return { id: 'old', version: 1, messages: [] }; });

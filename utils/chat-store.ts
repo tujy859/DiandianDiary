@@ -247,13 +247,27 @@ export async function pushSession(petId: string, session: ChatSession, cacheLoca
     }
     return row;
   });
-  const doc = await callCloud<any>('session.save', {
+  const payload = {
     familyId: s.familyId, petId,
     id: session.id || undefined,
     clientId: session.clientId,
     version: session.id ? session.version : undefined,
     title: session.title, summary: session.summary, messages,
-  });
+  };
+  let doc = await callCloud<any>('session.save', payload);
+  if (!session.id && Array.isArray(doc.messages)) {
+    // 首次请求已写入但响应丢失时，幂等创建可能返回较早快照；不能把新增本机内容误标为已同步。
+    const matches = (actual: any, expected: any): boolean => {
+      if (expected === undefined) return true;
+      if (Array.isArray(expected)) return Array.isArray(actual) && actual.length === expected.length && expected.every((v, i) => matches(actual[i], v));
+      if (expected && typeof expected === 'object') return !!actual && Object.keys(expected).every(k => matches(actual[k], expected[k]));
+      return actual === expected;
+    };
+    if (!matches(doc.messages, messages) || doc.title !== session.title || doc.summary !== session.summary) {
+      assertScope(s, epoch);
+      doc = await callCloud<any>('session.save', { ...payload, id: doc.id, version: doc.version });
+    }
+  }
   // 服务端只收已入库的照片；回包不能覆盖本机尚未保存的照片、重试信息和原始输入。
   const saved: ChatSession = { ...session, id: doc.id, version: doc.version, dirty: false };
   assertScope(s, epoch);

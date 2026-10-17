@@ -107,6 +107,7 @@ export const chatSessionMethods = {
           saveLocalSession(petId, this._session);
         }
       } catch (err: any) {
+        if (this._disposed || epoch !== getCloudSessionEpoch()) return;
         if (this._session?.clientId !== target.clientId || this.data.currentPet?.id !== petId) return;
         Toast({ context: this, selector: '#t-toast', message: String(err?.code) === 'CONFLICT'
           ? '话题存在冲突，本机内容已保留。点击话题目录中的当前话题，可另存为新话题' : err.message || '会话同步失败', theme: 'error' });
