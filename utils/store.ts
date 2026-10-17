@@ -278,8 +278,14 @@ export function clearModelConfig(): void {
 export function clearAll(): void {
   const session = getCloudSession();
   if (session) {
+    // 清缓存也是生命周期边界：旧同步/刷新回包不得重新写回已清理内容。
+    cloudSessionEpoch++;
     write('jd_cache_revision', getCloudCacheRevision() + 1);
     wx.removeStorageSync(`jd_media_${session.userId}_${session.familyId}`);
+    const prefix = `jd_chat_${session.userId}_${session.familyId}_`;
+    for (const key of wx.getStorageInfoSync().keys) {
+      if (key.startsWith(prefix)) wx.removeStorageSync(key);
+    }
   }
   getPets().forEach((p) => wx.removeStorageSync(scopedKey(`${MSGS_PREFIX}${p.id}`)));
   [PETS_KEY, RECORDS_KEY, MSGS_LEGACY_KEY, CUR_KEY].forEach((k) => wx.removeStorageSync(scopedKey(k)));

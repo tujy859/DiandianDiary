@@ -1,6 +1,6 @@
 import { callCloud } from '../../utils/cloud';
 import { newSession, readSession, openSession, pushSession, saveLocalSession, loadLocalSession, pullSession, listSessions, MAX_MESSAGES } from '../../utils/chat-store';
-import { setCloudSession, ChatMessage } from '../../utils/store';
+import { setCloudSession, ChatMessage, clearAll, getCloudSession, getCloudSessionEpoch } from '../../utils/store';
 
 jest.mock('../../utils/cloud', () => ({ callCloud: jest.fn() }));
 jest.mock('../../utils/repository', () => ({
@@ -109,4 +109,23 @@ test('首次同步失败的话题在目录可恢复，不要求先有云端 id',
   const index = await listSessions('pet');
   expect(index).toHaveLength(1);
   expect((await openSession('pet', index[0].id)).messages[0].text).toBe('尚未上云');
+});
+
+test('清缓存同时清当前和历史话题，保留其他家庭并拒绝旧同步回写', async () => {
+  const session = { ...newSession(), id: 'old', messages: [row('本机消息')] };
+  saveLocalSession('pet', session); saveLocalSession('pet', newSession());
+  setCloudSession({ userId: 'u', familyId: 'other' }); saveLocalSession('pet', session);
+  setCloudSession({ userId: 'u', familyId: 'f' });
+  let resolve!: (value: any) => void;
+  rpc.mockReturnValue(new Promise(ok => { resolve = ok; }));
+  const pending = pushSession('pet', session);
+  const epoch = getCloudSessionEpoch(); clearAll();
+  expect(getCloudSession()).toEqual({ userId: 'u', familyId: 'f' });
+  expect(getCloudSessionEpoch()).toBeGreaterThan(epoch);
+  resolve({ id: 'old', version: 2 });
+  await expect(pending).rejects.toThrow('家庭空间已切换');
+  expect(loadLocalSession('pet')).toBeNull();
+  expect((wx.getStorageInfoSync().keys as string[]).some(k => k.startsWith('jd_chat_u_f_'))).toBe(false);
+  setCloudSession({ userId: 'u', familyId: 'other' });
+  expect(loadLocalSession('pet')!.id).toBe('old');
 });
